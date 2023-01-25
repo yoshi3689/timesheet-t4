@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Timesheet.Data;
+using Timesheet.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +15,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+        .AddRoles<IdentityRole>()
+        .AddEntityFrameworkStores<ApplicationDbContext>();
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
@@ -23,6 +26,8 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
+    app.UseHsts();
+
 }
 else
 {
@@ -44,4 +49,50 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
 
+
+var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
+
+using (var scope = scopeFactory.CreateScope())
+{
+    var DbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    var UserManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var RoleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    List<IdentityRole> roles = new List<IdentityRole>();
+    roles.Add(new IdentityRole { Name = "ResponsibleEngineer", NormalizedName = "RESPONSIBLEENGINEER" });
+    roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
+    roles.Add(new IdentityRole { Name = "EmployeeManager", NormalizedName = "EMPLOYEEMANAGER" });
+    roles.Add(new IdentityRole { Name = "HRManager", NormalizedName = "HRMANAGER" });
+    roles.Add(new IdentityRole { Name = "ProjectManager", NormalizedName = "PROJECTMANAGER" });
+    roles.Add(new IdentityRole { Name = "AssistantProjectManager", NormalizedName = "ASSISTANTPROJECTMANAGER" });
+    roles.Add(new IdentityRole { Name = "ProjectSupervisor", NormalizedName = "PROJECTSUPERVISOR" });
+    roles.Add(new IdentityRole { Name = "LineManager", NormalizedName = "LINEMANAGER" });
+    roles.Add(new IdentityRole { Name = "Employee", NormalizedName = "EMPLOYEE" });
+
+    foreach (var role in roles)
+    {
+        var roleExist = await RoleManager.RoleExistsAsync(role.Name);
+        if (!roleExist)
+        {
+            DbContext.Roles.Add(role);
+            DbContext.SaveChanges();
+        }
+    }
+
+    IdentityUser user = new IdentityUser{
+        Email = "admin@admin.com",
+        UserName = "admin@admin.com",
+        EmailConfirmed = true
+    };
+    var adminExist = await UserManager.FindByEmailAsync(user.Email);
+    if(adminExist == null){
+        await UserManager.CreateAsync(user, "Password123!");
+        var newAdmin = await UserManager.FindByEmailAsync("admin@admin.com");
+        await UserManager.AddToRoleAsync(newAdmin, "Admin");
+    }
+}
+
+
 app.Run();
+

@@ -16,7 +16,7 @@ namespace TimesheetBE.Data.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "5.0.0-rc.1.20417.2");
 
-            modelBuilder.Entity("test3.Models.ApplicationUser", b =>
+            modelBuilder.Entity("Timesheet.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("VARCHAR(250)");
