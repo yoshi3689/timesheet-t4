@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Timesheet.Models;
+using TimesheetApp.Models;
 
-namespace Timesheet.Controllers;
+namespace TimesheetApp.Controllers;
 
 public class HomeController : Controller
 {
@@ -18,7 +18,7 @@ public class HomeController : Controller
     {
         return View();
     }
-    [Authorize(Roles="Admin")]
+    [Authorize(Roles="Admin,HRManager")]
     public IActionResult Privacy()
     {
         return View();

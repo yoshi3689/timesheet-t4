@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Timesheet.Data;
-using Timesheet.Models;
+using TimesheetApp.Data;
+using TimesheetApp.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 

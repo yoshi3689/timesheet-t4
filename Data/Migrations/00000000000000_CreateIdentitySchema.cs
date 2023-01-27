@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace TimesheetBE.Data.Migrations
+namespace TimesheetApp.Data.Migrations
 {
     public partial class CreateIdentitySchema : Migration
     {

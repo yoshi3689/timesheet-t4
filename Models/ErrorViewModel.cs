@@ -1,4 +1,4 @@
-namespace Timesheet.Models;
+namespace TimesheetApp.Models;
 
 public class ErrorViewModel
 {
