@@ -144,16 +144,6 @@ public class ApplicationDbContext : IdentityDbContext
             entity.Property(e => e.SubjectId).HasColumnType("text");
         });
 
-        modelBuilder.Entity<EfmigrationsHistory>(entity =>
-        {
-            entity.HasKey(e => e.MigrationId).HasName("PRIMARY");
-
-            entity.ToTable("__EFMigrationsHistory");
-
-            entity.Property(e => e.MigrationId).HasMaxLength(150);
-            entity.Property(e => e.ProductVersion).HasMaxLength(32);
-        });
-
         modelBuilder.Entity<Key>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");

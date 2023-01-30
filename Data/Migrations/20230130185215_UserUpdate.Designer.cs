@@ -11,8 +11,8 @@ using TimesheetApp.Data;
 namespace TimesheetApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230130063226_M1")]
-    partial class M1
+    [Migration("20230130185215_UserUpdate")]
+    partial class UserUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -308,6 +308,12 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<int>("EmailConfirmed")
                         .HasColumnType("int");
 
+                    b.Property<string>("FirstName")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("longtext");
+
                     b.Property<int>("LockoutEnabled")
                         .HasColumnType("int");
 
@@ -477,23 +483,6 @@ namespace TimesheetApp.Data.Migrations
                     b.HasIndex(new[] { "Expiration" }, "IX_DeviceCodes_Expiration");
 
                     b.ToTable("DeviceCode");
-                });
-
-            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.EfmigrationsHistory", b =>
-                {
-                    b.Property<string>("MigrationId")
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)");
-
-                    b.Property<string>("ProductVersion")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.HasKey("MigrationId")
-                        .HasName("PRIMARY");
-
-                    b.ToTable("__EFMigrationsHistory", (string)null);
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Key", b =>
