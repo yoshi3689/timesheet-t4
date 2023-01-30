@@ -13,7 +13,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 }
 );
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
         .AddRoles<IdentityRole>()
         .AddEntityFrameworkStores<ApplicationDbContext>();
 
@@ -55,7 +55,7 @@ using (var scope = scopeFactory.CreateScope())
 {
     var DbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-    var UserManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var UserManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var RoleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
     List<IdentityRole> roles = new List<IdentityRole>();
@@ -79,9 +79,11 @@ using (var scope = scopeFactory.CreateScope())
         }
     }
 
-    IdentityUser user = new IdentityUser{
+    ApplicationUser user = new ApplicationUser{
         Email = "admin@admin.com",
         UserName = "admin@admin.com",
+        FirstName = "admin",
+        LastName = "admin",
         EmailConfirmed = true
     };
     var adminExist = await UserManager.FindByEmailAsync(user.Email);

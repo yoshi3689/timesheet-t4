@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Data;
 
-public class ApplicationDbContext : IdentityDbContext
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -19,6 +20,14 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder
             .UseCollation("utf8mb4_0900_ai_ci")
             .HasCharSet("utf8mb4");
+
+        modelBuilder.Entity<ApplicationUser>()
+            .Property(e => e.FirstName)
+            .HasMaxLength(250);
+
+        modelBuilder.Entity<ApplicationUser>()
+            .Property(e => e.LastName)
+            .HasMaxLength(250);
 
         modelBuilder.Entity<AspNetRole>(entity =>
         {
