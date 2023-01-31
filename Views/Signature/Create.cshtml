@@ -56,7 +56,7 @@
 
             $('#accept').click(function(){
 
-                var data = pad.toDataURL("image/svg+xml", 0.1);
+                var data = pad.toDataURL();
                 
                 console.log(data);
                 $('#savetarget').attr('src', data);
