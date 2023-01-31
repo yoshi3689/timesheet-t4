@@ -15,5 +15,5 @@ public partial class Timesheet
 
     public virtual ICollection<TimesheetRow> TimesheetRows { get; } = new List<TimesheetRow>();
 
-    public virtual AspNetUser User { get; set; } = null!;
+    public virtual ApplicationUser User { get; set; } = null!;
 }

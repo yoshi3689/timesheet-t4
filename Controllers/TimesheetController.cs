@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TimesheetApp.Data;
 using TimesheetApp.Models.TimesheetModels;
+using TimesheetApp.Models;
 
 namespace TimesheetApp.Controllers
 {
@@ -48,7 +49,7 @@ namespace TimesheetApp.Controllers
         // GET: Timesheet/Create
         public IActionResult Create()
         {
-            ViewData["UserId"] = new SelectList(_context.Set<AspNetUser>(), "Id", "Id");
+            ViewData["UserId"] = new SelectList(_context.Set<ApplicationUser>(), "Id", "Id");
             return View();
         }
 
@@ -65,7 +66,7 @@ namespace TimesheetApp.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.Set<AspNetUser>(), "Id", "Id", timesheet.UserId);
+            ViewData["UserId"] = new SelectList(_context.Set<ApplicationUser>(), "Id", "Id", timesheet.UserId);
             return View(timesheet);
         }
 
@@ -82,7 +83,7 @@ namespace TimesheetApp.Controllers
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(_context.Set<AspNetUser>(), "Id", "Id", timesheet.UserId);
+            ViewData["UserId"] = new SelectList(_context.Set<ApplicationUser>(), "Id", "Id", timesheet.UserId);
             return View(timesheet);
         }
 
@@ -118,7 +119,7 @@ namespace TimesheetApp.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.Set<AspNetUser>(), "Id", "Id", timesheet.UserId);
+            ViewData["UserId"] = new SelectList(_context.Set<ApplicationUser>(), "Id", "Id", timesheet.UserId);
             return View(timesheet);
         }
 
