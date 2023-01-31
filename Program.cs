@@ -59,19 +59,19 @@ using (var scope = scopeFactory.CreateScope())
     var RoleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
     List<IdentityRole> roles = new List<IdentityRole>();
-    roles.Add(new IdentityRole { Name = "ResponsibleEngineer", NormalizedName = "RESPONSIBLEENGINEER" });
+    roles.Add(new IdentityRole { Name = "Responsible Engineer", NormalizedName = "RESPONSIBLE ENGINEER" });
     roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
-    roles.Add(new IdentityRole { Name = "EmployeeManager", NormalizedName = "EMPLOYEEMANAGER" });
-    roles.Add(new IdentityRole { Name = "HRManager", NormalizedName = "HRMANAGER" });
-    roles.Add(new IdentityRole { Name = "ProjectManager", NormalizedName = "PROJECTMANAGER" });
-    roles.Add(new IdentityRole { Name = "AssistantProjectManager", NormalizedName = "ASSISTANTPROJECTMANAGER" });
-    roles.Add(new IdentityRole { Name = "ProjectSupervisor", NormalizedName = "PROJECTSUPERVISOR" });
-    roles.Add(new IdentityRole { Name = "LineManager", NormalizedName = "LINEMANAGER" });
+    roles.Add(new IdentityRole { Name = "Employee Manager", NormalizedName = "EMPLOYEE MANAGER" });
+    roles.Add(new IdentityRole { Name = "HR Manager", NormalizedName = "HR MANAGER" });
+    roles.Add(new IdentityRole { Name = "Project Manager", NormalizedName = "PROJECT MANAGER" });
+    roles.Add(new IdentityRole { Name = "Assistant Project Manager", NormalizedName = "ASSISTANT PROJECTMANAGER" });
+    roles.Add(new IdentityRole { Name = "Project Supervisor", NormalizedName = "PROJECT SUPERVISOR" });
+    roles.Add(new IdentityRole { Name = "Line Manager", NormalizedName = "LINE MANAGER" });
     roles.Add(new IdentityRole { Name = "Employee", NormalizedName = "EMPLOYEE" });
 
     foreach (var role in roles)
     {
-        var roleExist = await RoleManager.RoleExistsAsync(role.Name);
+        var roleExist = await RoleManager.RoleExistsAsync(role.NormalizedName);
         if (!roleExist)
         {
             DbContext.Roles.Add(role);
