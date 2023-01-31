@@ -49,7 +49,7 @@ namespace TimesheetApp.Controllers
         public IActionResult Create()
         {
             ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id");
-            return View();
+            return View(new Signature());
         }
 
         // POST: Signature/Create

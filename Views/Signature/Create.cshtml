@@ -24,7 +24,7 @@
                     <canvas width="500" height="400" id="signature" style="border:1px solid black"></canvas><br>
                     <button type="button" id="accept" class="btn btn-primary">Accept signature</button>
                     <img width="500" height="400" id="savetarget" style="border:1px solid black"><br>
-                    <input asp-for="SignatureImage" class="form-control" name="base64String" />
+                    <input asp-for="SignatureImage" class="form-control" style="display: none;"/>
                     <span asp-validation-for="SignatureImage" class="text-danger"></span>
                 </p>
 
@@ -56,12 +56,12 @@
 
             $('#accept').click(function(){
 
-                var data = pad.toDataURL();
+                var data = pad.toDataURL("image/svg+xml", 0.1);
                 
                 console.log(data);
                 $('#savetarget').attr('src', data);
 
-                $("input[name=base64String]").val(data);
+                $("input[name=SignatureImage]").val(data);
 
                 // TODO: .off function not working?
                 pad.current.off();
