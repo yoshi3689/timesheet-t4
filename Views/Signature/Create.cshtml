@@ -1,0 +1,74 @@
+@model TimesheetApp.Models.Signature
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Signature</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <p>
+                    <label asp-for="SignatureImage" class="control-label"></label>
+                    <canvas width="500" height="400" id="signature" style="border:1px solid black"></canvas><br>
+                    <button type="button" id="accept" class="btn btn-primary">Accept signature</button>
+                    <img width="500" height="400" id="savetarget" style="border:1px solid black"><br>
+                    <input asp-for="SignatureImage" class="form-control" name="base64String" />
+                    <span asp-validation-for="SignatureImage" class="text-danger"></span>
+                </p>
+
+            </div>
+            @* User id will be taken from the user logged in *@
+            <div class="form-group">
+                <label asp-for="UserId" class="control-label"></label>
+                <select asp-for="UserId" class="form-control" asp-items="ViewBag.UserId"></select>
+            </div>
+            <div class="form-group">
+                <input id="signatureSubmit" type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts{
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.3.4/signature_pad.js"></script>
+    <script>
+        $(function () {
+
+            var canvas = document.querySelector('#signature');
+            var pad = new SignaturePad(canvas);
+
+            $('#accept').click(function(){
+
+                var data = pad.toDataURL();
+                
+                console.log(data);
+                $('#savetarget').attr('src', data);
+
+                $("input[name=base64String]").val(data);
+
+                // TODO: .off function not working?
+                pad.current.off();
+
+            });
+
+        });
+    </script>
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -15,6 +15,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public virtual DbSet<TimesheetRow> TimesheetRows { get; set; }
 
+    public virtual DbSet<Signature> Signatures { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
 
@@ -60,6 +62,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_TimesheetRow_Timesheet_TimesheetId");
         });
+        // TODO: add a foreign key constraint to the Signature table
+        // modelBuilder.Entity<Timesheet>(entity =>
+        // {
+        //     entity.ToTable("Signature");
+        //     entity.HasOne(u => u.User).WithOne(p => p.)
+        //         .HasForeignKey(d => d.UserId)
+        //         .OnDelete(DeleteBehavior.ClientSetNull)
+        //         .HasConstraintName("Signatures_ibfk_1");
+        // });
     }
 
 }
