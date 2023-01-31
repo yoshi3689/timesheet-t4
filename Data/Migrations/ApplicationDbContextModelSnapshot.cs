@@ -223,6 +223,29 @@ namespace TimesheetApp.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("TimesheetApp.Models.Signature", b =>
+                {
+                    b.Property<int>("SignatureId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("SignatureImage")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("SignatureId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Signatures");
+                });
+
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Timesheet", b =>
                 {
                     b.Property<int>("TimesheetId")
@@ -349,6 +372,17 @@ namespace TimesheetApp.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("TimesheetApp.Models.Signature", b =>
+                {
+                    b.HasOne("TimesheetApp.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Timesheet", b =>
