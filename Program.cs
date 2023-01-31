@@ -67,7 +67,6 @@ using (var scope = scopeFactory.CreateScope())
     roles.Add(new IdentityRole { Name = "Assistant Project Manager", NormalizedName = "ASSISTANT PROJECTMANAGER" });
     roles.Add(new IdentityRole { Name = "Project Supervisor", NormalizedName = "PROJECT SUPERVISOR" });
     roles.Add(new IdentityRole { Name = "Line Manager", NormalizedName = "LINE MANAGER" });
-    roles.Add(new IdentityRole { Name = "Employee", NormalizedName = "EMPLOYEE" });
 
     foreach (var role in roles)
     {
