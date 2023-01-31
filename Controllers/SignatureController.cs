@@ -59,8 +59,14 @@ namespace TimesheetApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("SignatureId,Name,SignatureImage,UserId")] Signature signature)
         {
+            Console.WriteLine("Hello " + signature.SignatureImage + signature.Name);
             if (ModelState.IsValid)
-            {
+            {   
+                string base64String = signature.SignatureImage!;
+                byte[] bytes = Convert.FromBase64String(base64String.Split(',')[1]);
+                var binarySignature = Convert.FromBase64String(base64String);
+                System.IO.File.WriteAllBytes("Signature.png", binarySignature);
+
                 _context.Add(signature);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
