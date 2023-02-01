@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TimesheetApp.Models.TimesheetModels;
 
@@ -29,7 +30,8 @@ public partial class TimesheetRow
 
     public double? Fri { get; set; }
 
-    public int? TimesheetId { get; set; }
+    public int TimesheetId { get; set; }
 
-    public virtual Timesheet? Timesheet { get; set; }
+    [ForeignKey("TimesheetId")]
+    public Timesheet? Timesheet { get; set; }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TimesheetApp.Models.TimesheetModels;
 
@@ -15,5 +16,6 @@ public partial class Timesheet
 
     public virtual ICollection<TimesheetRow> TimesheetRows { get; } = new List<TimesheetRow>();
 
-    public virtual ApplicationUser User { get; set; } = null!;
+    [ForeignKey("UserId")]
+    public ApplicationUser? User { get; set; } = null!;
 }
