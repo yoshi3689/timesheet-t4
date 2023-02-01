@@ -26,6 +26,23 @@ namespace TimesheetApp.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var applicationDbContext = _context.Timesheets.Where(t => t.UserId == userId);
             List<int> timesheetIDs = applicationDbContext.Select(t => t.TimesheetId).OrderBy(id => id).ToList();
+            if(timesheetIDs.Count == 0){
+                Timesheet newSheet = new Timesheet{
+                    EndDate = DateOnly.FromDateTime(DateTime.Today),
+                    UserId = userId
+                };
+                _context.Timesheets.Add(newSheet);
+                await _context.SaveChangesAsync();
+                timesheetIDs.Add(newSheet.TimesheetId);
+                for(int i = 0; i < 5; i++){
+                    TimesheetRow newRow = new TimesheetRow{
+                        TimesheetId = newSheet.TimesheetId
+                    };
+                    _context.TimesheetRows.Add(newRow);
+                }
+                await _context.SaveChangesAsync();
+
+            }
             var rowContext = _context.TimesheetRows.Where(r => timesheetIDs.Contains((int)r.TimesheetId));
 
             var model = new TimesheetViewModel()
