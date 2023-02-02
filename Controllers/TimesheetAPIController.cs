@@ -9,9 +9,11 @@ using TimesheetApp.Data;
 using TimesheetApp.Models.TimesheetModels;
 using TimesheetApp.Models;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TimesheetApp.Controllers
 {
+    [Authorize]
     public class TimesheetAPIController : Controller
     {
         private readonly ApplicationDbContext _context;
