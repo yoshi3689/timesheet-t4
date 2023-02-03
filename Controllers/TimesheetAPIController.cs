@@ -23,6 +23,7 @@ namespace TimesheetApp.Controllers
             _context = context;
         }
 
+        //TODO: update this to create a row per work package
         public async Task<IActionResult> Index()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
