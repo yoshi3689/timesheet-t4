@@ -9,7 +9,7 @@ namespace TimesheetApp.Models
         public string? Name { get; set; }
         public string? SignatureImage { get; set; }
 
-        public string UserId { get; set; } = null!;
-        public virtual ApplicationUser User { get; set; } = null!;
+        public string? UserId { get; set; }
+        public virtual ApplicationUser? User { get; set; }
     }
 }
