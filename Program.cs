@@ -59,14 +59,11 @@ using (var scope = scopeFactory.CreateScope())
     var RoleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
     List<IdentityRole> roles = new List<IdentityRole>();
+    roles.Add(new IdentityRole { Name = "HR", NormalizedName = "HR" });
+    roles.Add(new IdentityRole { Name = "Project Manager", NormalizedName = "PROJECT MANAGER" });
     roles.Add(new IdentityRole { Name = "Responsible Engineer", NormalizedName = "RESPONSIBLE ENGINEER" });
     roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
-    roles.Add(new IdentityRole { Name = "Employee Manager", NormalizedName = "EMPLOYEE MANAGER" });
-    roles.Add(new IdentityRole { Name = "HR Manager", NormalizedName = "HR MANAGER" });
-    roles.Add(new IdentityRole { Name = "Project Manager", NormalizedName = "PROJECT MANAGER" });
-    roles.Add(new IdentityRole { Name = "Assistant Project Manager", NormalizedName = "ASSISTANT PROJECTMANAGER" });
-    roles.Add(new IdentityRole { Name = "Project Supervisor", NormalizedName = "PROJECT SUPERVISOR" });
-    roles.Add(new IdentityRole { Name = "Line Manager", NormalizedName = "LINE MANAGER" });
+    roles.Add(new IdentityRole { Name = "Timesheet Approver", NormalizedName = "TIMESHEET APPROVER" });
 
     foreach (var role in roles)
     {

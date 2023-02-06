@@ -277,10 +277,10 @@ namespace TimesheetApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<double?>("Fri")
+                    b.Property<double>("Fri")
                         .HasColumnType("double");
 
-                    b.Property<double?>("Mon")
+                    b.Property<double>("Mon")
                         .HasColumnType("double");
 
                     b.Property<string>("Notes")
@@ -288,28 +288,28 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("char(200)")
                         .IsFixedLength();
 
-                    b.Property<int?>("ProjectId")
+                    b.Property<int>("ProjectId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("Sat")
+                    b.Property<double>("Sat")
                         .HasColumnType("double");
 
-                    b.Property<double?>("Sun")
+                    b.Property<double>("Sun")
                         .HasColumnType("double");
 
-                    b.Property<double?>("Thu")
+                    b.Property<double>("Thu")
                         .HasColumnType("double");
 
-                    b.Property<int?>("TimesheetId")
+                    b.Property<int>("TimesheetId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("TotalHoursRow")
+                    b.Property<double>("TotalHoursRow")
                         .HasColumnType("double");
 
-                    b.Property<double?>("Tue")
+                    b.Property<double>("Tue")
                         .HasColumnType("double");
 
-                    b.Property<double?>("Wed")
+                    b.Property<double>("Wed")
                         .HasColumnType("double");
 
                     b.Property<string>("WorkPackageId")
@@ -402,6 +402,7 @@ namespace TimesheetApp.Data.Migrations
                         .WithMany("TimesheetRows")
                         .HasForeignKey("TimesheetId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
                         .HasConstraintName("FK_TimesheetRow_Timesheet_TimesheetId");
 
                     b.Navigation("Timesheet");
