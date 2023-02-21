@@ -53,11 +53,11 @@
             <td>
                 @Html.DisplayFor(modelItem => item.ActualCost)
             </td>
-            @* <td>
-                <a asp-action="Edit" asp-route-id="@item.SignatureId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.SignatureId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.SignatureId">Delete</a>
-            </td> *@
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.ProjectId">Manage</a> |
+                @* <a asp-action="Details" asp-route-id="@item.SignatureId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.SignatureId">Delete</a> *@
+            </td>
         </tr>
 }
     </tbody>

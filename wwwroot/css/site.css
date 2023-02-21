@@ -16,3 +16,14 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.wp {
+  border: 4px solid black;
+  margin: 1%;
+  margin-top: 2%;
+  padding: 1%;
+}
+
+.label {
+  margin: 1%;
+}

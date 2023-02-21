@@ -1,0 +1,57 @@
+@model IEnumerable<TimesheetApp.Models.TimesheetModels.WorkPackage>
+@{
+    ViewData["Title"] = "Manage Project";
+}
+
+<head>
+    <title>@ViewData["Title"]</title>
+</head>
+<h1>@ViewData["Title"]</h1>
+
+<div id="WorkPackages"></div>
+
+
+<script>
+@foreach (var wp in Model)
+{
+    <text>
+    let div = document.createElement("div");
+    div.className = "wp";
+    div.id = "@wp.WorkPackageId@wp.ProjectId";
+    let name = document.createElement("span");
+    name.innerHTML = "Work Package Name: @wp.WorkPackageId";
+    name.className = "label";
+    div.appendChild(name);
+    </text>
+    @if(wp.ResponsibleUser != null){
+        <text>
+            let re = document.createElement("span");
+            re.className = "label";
+            re.innerHTML = "Responsible Engineer: @wp.ResponsibleUser.FirstName @wp.ResponsibleUser.LastName;
+            div.appendChild(re);
+        </text>
+    }
+    <text>
+    let ec = document.createElement("span");
+    ec.innerHTML = "Estimated Cost: @wp.EstimatedCost";
+    ec.className = "label";
+    div.appendChild(ec);
+    let closed = document.createElement("span");
+    closed.className = "label";
+    closed.innerHTML = "Closed: @wp.IsClosed";
+    div.appendChild(closed);
+
+    </text>
+    if(wp.ParentWorkPackageId != null && wp.ParentWorkPackageProjectId != null){
+        <text>
+             let parent = document.querySelector("#@wp.ParentWorkPackageId@wp.ParentWorkPackageProjectId");
+             parent.appendChild(div);
+        </text>
+    } else {
+        <text>
+            let parent = document.querySelector("#WorkPackages");
+            parent.appendChild(div);
+        </text>
+    }
+}
+</script>

@@ -552,7 +552,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("ResponsibleUserId")
-                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("WorkPackageId", "ProjectId");
@@ -768,9 +767,7 @@ namespace TimesheetApp.Data.Migrations
 
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "ResponsibleUser")
                         .WithMany("SupervisedWorkPackage")
-                        .HasForeignKey("ResponsibleUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ResponsibleUserId");
 
                     b.HasOne("TimesheetApp.Models.TimesheetModels.WorkPackage", "ParentWorkPackage")
                         .WithMany("ChildWorkPackages")

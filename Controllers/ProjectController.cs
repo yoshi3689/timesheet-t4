@@ -15,6 +15,7 @@ using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Controllers
 {
+    [Authorize]
     public class ProjectController : Controller
     {
         private readonly ILogger<ProjectController> _logger;
@@ -57,21 +58,37 @@ namespace TimesheetApp.Controllers
             return View(new Project());
         }
 
+        [Authorize(Roles = "HR,Admin")]
+        public IActionResult Edit(string? id)
+        {
+            var workpackages = _context.WorkPackages.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser);
+            return View(workpackages);
+        }
+
+
         [HttpPost]
         [Authorize(Roles = "HR,Admin")]
         [ValidateAntiForgeryToken]
         public IActionResult Create([Bind("ProjectId,ProjectManagerId,MasterBudget")] Project project)
         {
-            Console.WriteLine(project.ProjectId, project.ProjectManagerId, project.MasterBudget);
-            // var newProject = new Project
-            // {
-            //     ProjectId = project.ProjectId,
-            //     ProjectManagerId = project.ProjectManagerId,
-            //     MasterBudget = project.MasterBudget
-            // };
-            // _context.Projects.Add(newProject);
-            // _context.SaveChanges();
-            return Index();
+            // Console.WriteLine(project.ProjectId, project.ProjectManagerId, project.MasterBudget);
+            var newProject = new Project
+            {
+                ProjectId = project.ProjectId,
+                ProjectManagerId = project.ProjectManagerId,
+                MasterBudget = project.MasterBudget
+            };
+            _context.Projects.Add(newProject);
+            _context.SaveChanges();
+            var newWP = new WorkPackage
+            {
+                WorkPackageId = project.ProjectId,
+                ProjectId = project.ProjectId,
+                IsBottomLevel = true
+            };
+            _context.WorkPackages.Add(newWP);
+            _context.SaveChanges();
+            return RedirectToAction("Index");
         }
 
 

@@ -19,7 +19,6 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? WorkPackageId { get; set; }
         [Required]
         public string? ProjectId { get; set; }
-        [Required]
         public string? ResponsibleUserId { get; set; }
         public string? ParentWorkPackageId { get; set; }
         public string? ParentWorkPackageProjectId { get; set; }
