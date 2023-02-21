@@ -12,15 +12,39 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
     }
     public virtual DbSet<Timesheet> Timesheets { get; set; }
-
     public virtual DbSet<TimesheetRow> TimesheetRows { get; set; }
-
     public virtual DbSet<Signature> Signatures { get; set; }
+    public virtual DbSet<ApprovedTimesheet> ApprovedTimesheet { get; set; }
+    public virtual DbSet<ApprovedTimesheetRow> ApprovedTimesheetRows { get; set; }
+    public virtual DbSet<EmployeeProject> EmployeeProjects { get; set; }
+    public virtual DbSet<EmployeeWorkPackage> EmployeeWorkPackages { get; set; }
+    public virtual DbSet<LabourGrade> LabourGrades { get; set; }
+    public virtual DbSet<Project> Projects { get; set; }
+    public virtual DbSet<WorkPackage> WorkPackages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
 
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<WorkPackage>()
+            .HasOne(p => p.ParentWorkPackage)
+            .WithMany(c => c.ChildWorkPackages)
+            .HasForeignKey(p => new { p.ParentWorkPackageId, p.ParentWorkPackageProjectId });
+
+        modelBuilder.Entity<EmployeeWorkPackage>()
+            .HasOne(p => p.WorkPackage)
+            .WithMany(c => c.EmployeeWorkPackages)
+            .HasForeignKey(p => new { p.WorkPackageId, p.WorkPackageProjectId });
+
+        modelBuilder.Entity<TimesheetRow>()
+            .Property(e => e.WorkPackageId)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<TimesheetRow>()
+            .HasOne(p => p.WorkPackage)
+            .WithMany(c => c.TimesheetRows)
+            .HasForeignKey(p => new { p.WorkPackageId, p.WorkPackageProjectId });
 
         modelBuilder.Entity<ApplicationUser>()
             .Property(e => e.FirstName)
@@ -30,38 +54,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .Property(e => e.LastName)
             .HasMaxLength(250);
 
-        modelBuilder.Entity<Timesheet>(entity =>
-        {
-            entity.HasKey(e => e.TimesheetId).HasName("PRIMARY");
 
-            entity.HasIndex(e => e.UserId, "UserId");
-
-            entity.Property(e => e.UserId).HasMaxLength(250);
-
-            entity.HasOne(d => d.User).WithMany(p => p.Timesheets)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("Timesheets_ibfk_1");
-        });
-
-        modelBuilder.Entity<TimesheetRow>(entity =>
-        {
-            entity.HasKey(e => e.TimesheetRowId).HasName("PRIMARY");
-
-            entity.ToTable("TimesheetRow");
-
-            entity.HasIndex(e => e.TimesheetId, "FK_TimesheetRow_Timesheet_TimesheetId");
-
-            entity.Property(e => e.Notes)
-                .HasMaxLength(200)
-                .IsFixedLength();
-            entity.Property(e => e.WorkPackageId).HasColumnType("tinytext");
-
-            entity.HasOne(d => d.Timesheet).WithMany(p => p.TimesheetRows)
-                .HasForeignKey(d => d.TimesheetId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK_TimesheetRow_Timesheet_TimesheetId");
-        });
         // TODO: add a foreign key constraint to the Signature table
         // modelBuilder.Entity<Timesheet>(entity =>
         // {

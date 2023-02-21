@@ -29,16 +29,20 @@ namespace TimesheetApp.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var applicationDbContext = _context.Timesheets.Where(t => t.UserId == userId);
             List<int> timesheetIDs = applicationDbContext.Select(t => t.TimesheetId).OrderBy(id => id).ToList();
-            if(timesheetIDs.Count == 0){
-                Timesheet newSheet = new Timesheet{
+            if (timesheetIDs.Count == 0)
+            {
+                Timesheet newSheet = new Timesheet
+                {
                     EndDate = DateOnly.FromDateTime(DateTime.Today),
                     UserId = userId
                 };
                 _context.Timesheets.Add(newSheet);
                 await _context.SaveChangesAsync();
                 timesheetIDs.Add(newSheet.TimesheetId);
-                for(int i = 0; i < 5; i++){
-                    TimesheetRow newRow = new TimesheetRow{
+                for (int i = 0; i < 5; i++)
+                {
+                    TimesheetRow newRow = new TimesheetRow
+                    {
                         TimesheetId = newSheet.TimesheetId
                     };
                     _context.TimesheetRows.Add(newRow);
@@ -78,7 +82,7 @@ namespace TimesheetApp.Controllers
             TimesheetRow row = new TimesheetRow()
             {
                 WorkPackageId = "",
-                ProjectId = 0,
+                ProjectId = "0",
                 Sat = 0,
                 Sun = 0,
                 Mon = 0,
