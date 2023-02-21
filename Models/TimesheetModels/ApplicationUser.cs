@@ -32,11 +32,9 @@ namespace TimesheetApp.Models
         public string? JobTitle { get; set; }
         public bool HasTempPassword { get; set; }
         public double Salary { get; set; }
-        [Required]
         public string? PublicKey { get; set; }
         [Required]
         public string? LabourGradeCode { get; set; }
-        [Required]
         public string? SupervisorId { get; set; }
 
         [InverseProperty("User")]

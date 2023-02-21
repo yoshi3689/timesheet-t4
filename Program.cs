@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TimesheetApp.Data;
 using TimesheetApp.Models;
+using TimesheetApp.Models.TimesheetModels;
 
 internal class Program
 {
@@ -62,40 +63,6 @@ internal class Program
             var UserManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var RoleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-
-            //create basic roles
-            List<IdentityRole> roles = new List<IdentityRole>();
-            roles.Add(new IdentityRole { Name = "HR", NormalizedName = "HR" });
-            roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
-
-            foreach (var role in roles)
-            {
-                var roleExist = await RoleManager.RoleExistsAsync(role.NormalizedName);
-                if (!roleExist)
-                {
-                    DbContext.Roles.Add(role);
-                    DbContext.SaveChanges();
-                }
-            }
-
-
-            //create a default admin
-            ApplicationUser user = new ApplicationUser
-            {
-                Email = "admin@admin.com",
-                UserName = "admin@admin.com",
-                FirstName = "admin",
-                LastName = "admin",
-                EmailConfirmed = true
-            };
-            var adminExist = await UserManager.FindByEmailAsync(user.Email);
-            if (adminExist == null)
-            {
-                await UserManager.CreateAsync(user, "Password123!");
-                var newAdmin = await UserManager.FindByEmailAsync("admin@admin.com");
-                await UserManager.AddToRoleAsync(newAdmin, "Admin");
-            }
-
             //automatically apply migrations
             try
             {
@@ -105,6 +72,71 @@ internal class Program
             {
                 Console.WriteLine("failed to automatically update database");
             }
+
+            //create basic roles
+            List<IdentityRole> roles = new List<IdentityRole>();
+            roles.Add(new IdentityRole { Name = "HR", NormalizedName = "HR" });
+            roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
+
+            foreach (var role in roles)
+            {
+                var roleExist = await RoleManager.RoleExistsAsync(role.NormalizedName ?? "");
+                if (!roleExist)
+                {
+                    DbContext.Roles.Add(role);
+                    DbContext.SaveChanges();
+                }
+            }
+
+            //try create labour grades
+            var grades = DbContext.LabourGrades;
+            LabourGrade adminGrade;
+            if (grades.Count() == 0)
+            {
+                //Default labour grades
+                List<LabourGrade> labourGrades = new List<LabourGrade>();
+                adminGrade = new LabourGrade { LabourCode = "JS", Rate = 1 };
+                labourGrades.Add(adminGrade);
+                labourGrades.Add(new LabourGrade { LabourCode = "DS", Rate = 1 });
+                labourGrades.Add(new LabourGrade { LabourCode = "P1", Rate = 1 });
+                labourGrades.Add(new LabourGrade { LabourCode = "P2", Rate = 2 });
+                labourGrades.Add(new LabourGrade { LabourCode = "P3", Rate = 3 });
+                labourGrades.Add(new LabourGrade { LabourCode = "P4", Rate = 4 });
+                labourGrades.Add(new LabourGrade { LabourCode = "P5", Rate = 5 });
+                labourGrades.Add(new LabourGrade { LabourCode = "P6", Rate = 6 });
+                foreach (var lg in labourGrades)
+                {
+                    DbContext.LabourGrades.Add(lg);
+                }
+                DbContext.SaveChanges();
+            }
+            else
+            {
+                adminGrade = DbContext.LabourGrades.FirstOrDefault() ?? new LabourGrade { LabourCode = "JS", Rate = 1 };
+            }
+
+            //create a default admin
+            ApplicationUser user = new ApplicationUser
+            {
+                Email = "admin@admin.com",
+                UserName = "admin@admin.com",
+                FirstName = "admin",
+                LastName = "admin",
+                JobTitle = "admin",
+                EmailConfirmed = true,
+                LabourGrade = adminGrade
+            };
+            var adminExist = await UserManager.FindByEmailAsync(user.Email);
+            if (adminExist == null)
+            {
+                await UserManager.CreateAsync(user, "Password123!");
+                var newAdmin = await UserManager.FindByEmailAsync("admin@admin.com");
+                if (newAdmin != null)
+                {
+                    await UserManager.AddToRoleAsync(newAdmin, "Admin");
+                }
+            }
+
         }
         app.Run();
     }

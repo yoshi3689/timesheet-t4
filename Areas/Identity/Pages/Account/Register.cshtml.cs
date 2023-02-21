@@ -16,10 +16,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TimesheetApp.Data;
 using TimesheetApp.Models;
+using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account
 {
@@ -33,6 +36,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
         private readonly RoleManager<IdentityRole> roleManager;
+        private readonly ApplicationDbContext _context;
 
         public RegisterModel(
             UserManager<ApplicationUser> userManager,
@@ -40,8 +44,10 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             SignInManager<ApplicationUser> signInManager,
             ILogger<RegisterModel> logger,
             RoleManager<IdentityRole> roleManager,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            ApplicationDbContext context)
         {
+            _context = context;
             _userManager = userManager;
             _userStore = userStore;
             _emailStore = GetEmailStore();
@@ -50,28 +56,27 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             _emailSender = emailSender;
             this.roleManager = roleManager;
         }
-
-
         [BindProperty]
         public InputModel Input { get; set; }
 
         public string ReturnUrl { get; set; }
 
-        [BindProperty]
-        public List<string> AreTypes { get; set; }
-
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
-
-        public List<IdentityRole> rolesList {get; set;}
+        [BindProperty]
+        public List<IdentityRole> rolesList { get; set; }
         public class InputModel
         {
             [Required]
-            [Display(Name = "FirstName")]
+            [Display(Name = "First Name")]
             public string FirstName { get; set; }
 
             [Required]
-            [Display(Name = "LastName")]
+            [Display(Name = "Last Name")]
             public string LastName { get; set; }
+
+            [Required]
+            [Display(Name = "Employee Number")]
+            public int EmployeeNumber { get; set; }
 
             [Required]
             [EmailAddress]
@@ -82,7 +87,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             [Required]
             [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
             [DataType(DataType.Password)]
-            [Display(Name = "Password")]
+            [Display(Name = "Temporary Password")]
             public string Password { get; set; }
 
 
@@ -91,19 +96,30 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
             public string ConfirmPassword { get; set; }
 
-        }
+            [Display(Name = "Labour Grade")]
+            // [Required]
+            public string LabourGrade { get; set; }
 
+
+            [Required]
+            [Display(Name = "Job Title")]
+            public string JobTitle { get; set; }
+
+            public List<string> AreTypes { get; set; } = new List<string>();
+        }
 
         public async Task OnGetAsync(string returnUrl = null)
         {
+            ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
             rolesList = await roleManager.Roles.ToListAsync();
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         }
 
+
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
-            string[] roles = AreTypes.ToArray();
+            string[] roles = Input.AreTypes.ToArray();
             foreach (string role in roles)
             {
                 _logger.LogInformation(role);
@@ -116,6 +132,10 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 var user = CreateUser();
                 user.FirstName = Input.FirstName;
                 user.LastName = Input.LastName;
+                user.HasTempPassword = true;
+                user.JobTitle = Input.JobTitle;
+                user.LabourGradeCode = Input.LabourGrade;
+                user.EmployeeNumber = Input.EmployeeNumber;
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);

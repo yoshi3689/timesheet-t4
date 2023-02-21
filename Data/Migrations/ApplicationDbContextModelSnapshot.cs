@@ -222,7 +222,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("PublicKey")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<double>("Salary")
@@ -235,7 +234,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("double");
 
                     b.Property<string>("SupervisorId")
-                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.Property<bool>("TwoFactorEnabled")
@@ -629,9 +627,7 @@ namespace TimesheetApp.Data.Migrations
 
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "Supervisor")
                         .WithMany("SupervisedUsers")
-                        .HasForeignKey("SupervisorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("SupervisorId");
 
                     b.Navigation("LabourGrade");
 

@@ -15,18 +15,23 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using TimesheetApp.Models;
+using TimesheetApp.Data;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account
 {
     public class LoginModel : PageModel
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly ApplicationDbContext context;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
         {
+            _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            this.context = context;
         }
 
         /// <summary>
@@ -116,6 +121,11 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
+                    ApplicationUser currentUser = await _userManager.FindByEmailAsync(Input.Email);
+                    if (currentUser.HasTempPassword)
+                    {
+                        return LocalRedirect("/Identity/Account/SetPassword");
+                    }
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
