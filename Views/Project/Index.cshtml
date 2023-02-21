@@ -1,0 +1,64 @@
+@model IEnumerable<TimesheetApp.Models.TimesheetModels.Project>
+
+@{
+    if (User.Identity.IsAuthenticated && (User.IsInRole("HR")|| User.IsInRole("Admin")))
+    {
+        ViewData["Title"] = "All Projects";
+    } else {
+        ViewData["Title"] = "My Projects";
+    }
+}
+
+<head>
+    <title>@ViewData["Title"]</title>
+</head>
+<h1>@ViewData["Title"]</h1>
+
+@if (User.Identity.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
+{
+    <p>
+        <a asp-action="Create">Create New Project</a>
+    </p>
+}
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.ProjectId)
+            </th>
+            <th>
+                Project Manager Name
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.MasterBudget)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ActualCost)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProjectId)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProjectManager.FirstName) @item.ProjectManager.LastName
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.MasterBudget)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ActualCost)
+            </td>
+            @* <td>
+                <a asp-action="Edit" asp-route-id="@item.SignatureId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.SignatureId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.SignatureId">Delete</a>
+            </td> *@
+        </tr>
+}
+    </tbody>
+</table>

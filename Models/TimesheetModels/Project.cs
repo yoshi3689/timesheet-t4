@@ -15,12 +15,18 @@ namespace TimesheetApp.Models.TimesheetModels
     {
         [Key]
         [Required]
+        [Display(Name = "Project Name (Unique)")]
         public string? ProjectId { get; set; }
         [Required]
+        [Display(Name = "Project Manager")]
         public string? ProjectManagerId { get; set; }
+        [Display(Name = "Budget")]
         public double MasterBudget { get; set; }
+        [Display(Name = "Actual Cost")]
         public double ActualCost { get; set; }
+
         [ForeignKey("ProjectManagerId")]
+        [Display(Name = "Project Manager")]
         public virtual ApplicationUser? ProjectManager { get; set; }
 
         [InverseProperty("Project")]
