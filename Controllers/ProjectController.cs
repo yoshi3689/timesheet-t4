@@ -58,7 +58,7 @@ namespace TimesheetApp.Controllers
             return View(new Project());
         }
 
-        [Authorize(Roles = "HR,Admin")]
+        [Authorize]
         public IActionResult Edit(string? id)
         {
             var workpackages = _context.WorkPackages.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser);
