@@ -21,9 +21,7 @@ namespace TimesheetApp.Controllers
         private readonly ILogger<ProjectController> _logger;
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-
-
-
+        private string CurrentProject;
         public ProjectController(ILogger<ProjectController> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _logger = logger;
@@ -61,7 +59,16 @@ namespace TimesheetApp.Controllers
         [Authorize]
         public IActionResult Edit(string? id)
         {
+            CurrentProject = id;
             var workpackages = _context.WorkPackages.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser);
+            return View(workpackages);
+        }
+
+        [Authorize(Roles = "HR,Admin")]
+        public IActionResult Split(string? name)
+        {
+            Console.WriteLine("split:" + name);
+            var workpackages = _context.WorkPackages.Where(c => c.ProjectId == CurrentProject).Include(c => c.ResponsibleUser);
             return View(workpackages);
         }
 

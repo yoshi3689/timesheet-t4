@@ -10,6 +10,9 @@
 
 <div id="WorkPackages"></div>
 
+<template>
+    <a asp-action="Split" id="splitLabel"></a>
+</template>
 
 <script>
 @foreach (var wp in Model)
@@ -40,6 +43,18 @@
     closed.className = "label";
     closed.innerHTML = "Closed: @wp.IsClosed";
     div.appendChild(closed);
+
+    let splitButton = document.createElement("button");
+    splitButton.value = "@wp.WorkPackageId@wp.ProjectId";
+    splitButton.name = "name";
+    splitButton.className = "label";
+    splitButton.addEventListener('click', function callSplit(info){
+        console.log(info.srcElement.value);
+    }, false);
+    splitButton.type = "button";
+    splitButton.innerHTML = "Split Into Children";
+
+    div.appendChild(splitButton);
 
     </text>
     if(wp.ParentWorkPackageId != null && wp.ParentWorkPackageProjectId != null){

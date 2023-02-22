@@ -9,11 +9,16 @@ internal class Program
     private static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        var host = builder.Configuration["DBHOST"] ?? "localhost";
+        var port = builder.Configuration["DBPORT"] ?? "3333";
+        var password = builder.Configuration["DBPASSWORD"] ?? "password123";
+        var db = builder.Configuration["DBNAME"] ?? "test-db";
 
+        string connectionString = $"server={host}; userid=root; pwd={password};"
+                + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
-            string connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
         }
         );
@@ -77,6 +82,7 @@ internal class Program
             List<IdentityRole> roles = new List<IdentityRole>();
             roles.Add(new IdentityRole { Name = "HR", NormalizedName = "HR" });
             roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
+            roles.Add(new IdentityRole { Name = "Supervisor", NormalizedName = "SUPERVISOR" });
 
             foreach (var role in roles)
             {
