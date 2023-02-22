@@ -39,15 +39,15 @@ namespace TimesheetApp.Controllers
                 _context.Timesheets.Add(newSheet);
                 await _context.SaveChangesAsync();
                 timesheetIDs.Add(newSheet.TimesheetId);
-                for (int i = 0; i < 5; i++)
-                {
-                    TimesheetRow newRow = new TimesheetRow
-                    {
-                        TimesheetId = newSheet.TimesheetId
-                    };
-                    _context.TimesheetRows.Add(newRow);
-                }
-                await _context.SaveChangesAsync();
+                // for (int i = 0; i < 5; i++)
+                // {
+                //     TimesheetRow newRow = new TimesheetRow
+                //     {
+                //         TimesheetId = newSheet.TimesheetId
+                //     };
+                //     _context.TimesheetRows.Add(newRow);
+                // }
+                // await _context.SaveChangesAsync();
 
             }
             var rowContext = _context.TimesheetRows.Where(r => timesheetIDs.Contains((int)r.TimesheetId));
