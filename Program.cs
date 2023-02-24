@@ -16,6 +16,7 @@ internal class Program
 
         string connectionString = $"server={host}; userid=root; pwd={password};"
                 + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";
+        Console.WriteLine(connectionString);
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
