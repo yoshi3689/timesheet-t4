@@ -19,6 +19,7 @@ WORKDIR /App
 COPY . ./
 # Restore as distinct layers
 RUN dotnet restore
+RUN dotnet ef migrations add M1 -o Data/Migrations
 # Build and publish a release
 RUN dotnet publish -c Release -o out
 
