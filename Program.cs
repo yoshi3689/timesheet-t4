@@ -69,14 +69,12 @@ internal class Program
             var UserManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var RoleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            //automatically apply migrations
-            try
+            var services = scope.ServiceProvider;
+
+            var context = services.GetRequiredService<ApplicationDbContext>();
+            if (context.Database.GetPendingMigrations().Any())
             {
-                DbContext.Database.Migrate();
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("failed to automatically update database");
+                context.Database.Migrate();
             }
 
             //create basic roles
