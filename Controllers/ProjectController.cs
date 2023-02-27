@@ -21,7 +21,7 @@ namespace TimesheetApp.Controllers
         private readonly ILogger<ProjectController> _logger;
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private string CurrentProject;
+        private string? CurrentProject;
         public ProjectController(ILogger<ProjectController> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _logger = logger;
@@ -31,15 +31,15 @@ namespace TimesheetApp.Controllers
 
         public IActionResult Index()
         {
-            if (User.Identity.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
+            if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
             {
-                var projects = _context.Projects.Include(s => s.ProjectManager);
+                var projects = _context.Projects!.Include(s => s.ProjectManager);
                 return View(projects);
             }
             else
             {
                 var userId = _userManager.GetUserId(HttpContext.User);
-                var project = _context.Projects.Where(s => s.ProjectManager.Id == userId).Include(s => s.ProjectManager);
+                var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId).Include(s => s.ProjectManager);
                 return View(project);
             }
         }
@@ -60,7 +60,7 @@ namespace TimesheetApp.Controllers
         public IActionResult Edit(string? id)
         {
             CurrentProject = id;
-            var workpackages = _context.WorkPackages.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser);
+            var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser);
             return View(workpackages);
         }
 
@@ -68,7 +68,7 @@ namespace TimesheetApp.Controllers
         public IActionResult Split(string? name)
         {
             Console.WriteLine("split:" + name);
-            var workpackages = _context.WorkPackages.Where(c => c.ProjectId == CurrentProject).Include(c => c.ResponsibleUser);
+            var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == CurrentProject).Include(c => c.ResponsibleUser);
             return View(workpackages);
         }
 
@@ -85,7 +85,7 @@ namespace TimesheetApp.Controllers
                 ProjectManagerId = project.ProjectManagerId,
                 MasterBudget = project.MasterBudget
             };
-            _context.Projects.Add(newProject);
+            _context.Projects!.Add(newProject);
             _context.SaveChanges();
             var newWP = new WorkPackage
             {
@@ -93,7 +93,7 @@ namespace TimesheetApp.Controllers
                 ProjectId = project.ProjectId,
                 IsBottomLevel = true
             };
-            _context.WorkPackages.Add(newWP);
+            _context.WorkPackages!.Add(newWP);
             _context.SaveChanges();
             return RedirectToAction("Index");
         }

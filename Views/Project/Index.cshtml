@@ -1,7 +1,7 @@
 @model IEnumerable<TimesheetApp.Models.TimesheetModels.Project>
 
 @{
-    if (User.Identity.IsAuthenticated && (User.IsInRole("HR")|| User.IsInRole("Admin")))
+    if (User.Identity!.IsAuthenticated && (User.IsInRole("HR")|| User.IsInRole("Admin")))
     {
         ViewData["Title"] = "All Projects";
     } else {
@@ -14,7 +14,7 @@
 </head>
 <h1>@ViewData["Title"]</h1>
 
-@if (User.Identity.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
+@if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
 {
     <p>
         <a asp-action="Create">Create New Project</a>
@@ -45,7 +45,7 @@
                 @Html.DisplayFor(modelItem => item.ProjectId)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.ProjectManager.FirstName) @item.ProjectManager.LastName
+                @Html.DisplayFor(modelItem => item.ProjectManager!.FirstName) @item.ProjectManager!.LastName
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.MasterBudget)

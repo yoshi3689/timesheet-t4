@@ -96,7 +96,7 @@ internal class Program
             //try create labour grades
             var grades = DbContext.LabourGrades;
             LabourGrade adminGrade;
-            if (grades.Count() == 0)
+            if (grades != null && grades.Count() == 0)
             {
                 //Default labour grades
                 List<LabourGrade> labourGrades = new List<LabourGrade>();
@@ -111,13 +111,13 @@ internal class Program
                 labourGrades.Add(new LabourGrade { LabourCode = "P6", Rate = 6 });
                 foreach (var lg in labourGrades)
                 {
-                    DbContext.LabourGrades.Add(lg);
+                    DbContext.LabourGrades!.Add(lg);
                 }
                 DbContext.SaveChanges();
             }
             else
             {
-                adminGrade = DbContext.LabourGrades.FirstOrDefault() ?? new LabourGrade { LabourCode = "JS", Rate = 1 };
+                adminGrade = DbContext.LabourGrades!.FirstOrDefault() ?? new LabourGrade { LabourCode = "JS", Rate = 1 };
             }
 
             //create a default admin

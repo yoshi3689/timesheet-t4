@@ -24,7 +24,7 @@ namespace TimesheetApp.Controllers
         // GET: Signature
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Signatures.Include(s => s.User);
+            var applicationDbContext = _context.Signatures!.Include(s => s.User);
             return View(await applicationDbContext.ToListAsync());
         }
 
@@ -36,7 +36,7 @@ namespace TimesheetApp.Controllers
                 return NotFound();
             }
 
-            var signature = await _context.Signatures
+            var signature = await _context.Signatures!
                 .Include(s => s.User)
                 .FirstOrDefaultAsync(m => m.SignatureId == id);
             if (signature == null)
@@ -62,14 +62,15 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult> Create([Bind("SignatureId,Name,SignatureImage,UserId")] Signature signature)
         {
             // Console.WriteLine("Hello " + signature.SignatureImage + signature.Name);
-                signature.SignatureImage = signature.SignatureImage!.Replace("=","").Replace(" ", "");
-            if (ModelState.IsValid) {   
+            signature.SignatureImage = signature.SignatureImage!.Replace("=", "").Replace(" ", "");
+            if (ModelState.IsValid)
+            {
                 string base64String = signature.SignatureImage!.Split(",")[1];
                 Console.WriteLine(base64String);
                 byte[] bytes = Convert.FromBase64String(base64String);
                 var binarySignature = Convert.FromBase64String(base64String);
                 System.IO.File.WriteAllBytes("Signature.png", binarySignature);
-                
+
                 _context.Add(signature);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -86,7 +87,7 @@ namespace TimesheetApp.Controllers
                 return NotFound();
             }
 
-            var signature = await _context.Signatures.FindAsync(id);
+            var signature = await _context.Signatures!.FindAsync(id);
             if (signature == null)
             {
                 return NotFound();
@@ -139,7 +140,7 @@ namespace TimesheetApp.Controllers
                 return NotFound();
             }
 
-            var signature = await _context.Signatures
+            var signature = await _context.Signatures!
                 .Include(s => s.User)
                 .FirstOrDefaultAsync(m => m.SignatureId == id);
             if (signature == null)
@@ -155,15 +156,15 @@ namespace TimesheetApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var signature = await _context.Signatures.FindAsync(id);
-            _context.Signatures.Remove(signature);
+            var signature = await _context.Signatures!.FindAsync(id);
+            _context.Signatures.Remove(signature!);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool SignatureExists(int id)
         {
-            return _context.Signatures.Any(e => e.SignatureId == id);
+            return _context.Signatures!.Any(e => e.SignatureId == id);
         }
     }
 }
