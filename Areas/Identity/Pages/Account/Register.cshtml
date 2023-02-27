@@ -52,6 +52,11 @@
                 <label asp-for="Input.LabourGrade"></label>
                 <span asp-validation-for="Input.LabourGrade" class="text-danger"></span>
             </div>
+            <div class="form-floating">
+                <select asp-for="Input.Supervisor" class ="form-control" aria-required="true" asp-items="ViewBag.Supervisors"></select>
+                <label asp-for="Input.Supervisor"></label>
+                <span asp-validation-for="Input.Supervisor" class="text-danger"></span>
+            </div>
             <div>
                 @for (var i = 0; i < Model.rolesList.Count(); i++){
                     <div class="form-check">

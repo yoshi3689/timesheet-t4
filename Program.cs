@@ -12,11 +12,10 @@ internal class Program
         var host = builder.Configuration["DBHOST"] ?? "localhost";
         var port = builder.Configuration["DBPORT"] ?? "3333";
         var password = builder.Configuration["DBPASSWORD"] ?? "password123";
-        var db = builder.Configuration["DBNAME"] ?? "test-db";
+        var db = builder.Configuration["DBNAME"] ?? "testdb";
 
         string connectionString = $"server={host}; userid=root; pwd={password};"
                 + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";
-        Console.WriteLine(connectionString);
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {

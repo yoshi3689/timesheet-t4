@@ -104,6 +104,8 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             [Required]
             [Display(Name = "Job Title")]
             public string JobTitle { get; set; }
+            [Required]
+            public string Supervisor { get; set; }
 
             public List<string> AreTypes { get; set; } = new List<string>();
         }
@@ -111,6 +113,23 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
         public async Task OnGetAsync(string returnUrl = null)
         {
             ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
+            var supervisors = _userManager.GetUsersInRoleAsync("Supervisor").GetAwaiter().GetResult().Select(s => new
+            {
+                Id = s.Id,
+                Name = s.FirstName + " " + s.LastName
+            });
+            var hrs = _userManager.GetUsersInRoleAsync("HR").GetAwaiter().GetResult().Select(s => new
+            {
+                Id = s.Id,
+                Name = s.FirstName + " " + s.LastName
+            });
+            var admins = _userManager.GetUsersInRoleAsync("Admin").GetAwaiter().GetResult().Select(s => new
+            {
+                Id = s.Id,
+                Name = s.FirstName + " " + s.LastName
+            });
+            ViewData["Supervisors"] = new SelectList(supervisors.Concat(hrs).Concat(admins).ToList(), "Id", "Name");
+
             rolesList = await roleManager.Roles.ToListAsync();
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
@@ -120,11 +139,6 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             string[] roles = Input.AreTypes.ToArray();
-            foreach (string role in roles)
-            {
-                _logger.LogInformation(role);
-            }
-
             returnUrl ??= Url.Content("~/");
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             if (ModelState.IsValid)
@@ -137,6 +151,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 user.LabourGradeCode = Input.LabourGrade;
                 user.EmployeeNumber = Input.EmployeeNumber;
                 user.EmailConfirmed = true;
+                user.SupervisorId = Input.Supervisor;
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
