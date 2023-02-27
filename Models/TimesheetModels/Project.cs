@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using TimesheetApp.Controllers;
 
 namespace TimesheetApp.Models.TimesheetModels
 {
@@ -15,7 +16,8 @@ namespace TimesheetApp.Models.TimesheetModels
     {
         [Key]
         [Required]
-        [Display(Name = "Project Name (Unique)")]
+        [Display(Name = "Project Name")]
+        [UniqueProjectName]
         public string? ProjectId { get; set; }
         [Required]
         [Display(Name = "Project Manager")]

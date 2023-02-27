@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -78,27 +79,31 @@ namespace TimesheetApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create([Bind("ProjectId,ProjectManagerId,MasterBudget")] Project project)
         {
-            // Console.WriteLine(project.ProjectId, project.ProjectManagerId, project.MasterBudget);
-            var newProject = new Project
+            if (ModelState.IsValid)
             {
-                ProjectId = project.ProjectId,
-                ProjectManagerId = project.ProjectManagerId,
-                MasterBudget = project.MasterBudget
-            };
-            _context.Projects!.Add(newProject);
-            _context.SaveChanges();
-            var newWP = new WorkPackage
+                _context.Projects!.Add(project);
+                _context.SaveChanges();
+
+                //create a high level work package
+                var newWP = new WorkPackage
+                {
+                    WorkPackageId = project.ProjectId,
+                    ProjectId = project.ProjectId,
+                    IsBottomLevel = true
+                };
+                _context.WorkPackages!.Add(newWP);
+                _context.SaveChanges();
+                return RedirectToAction("Index");
+
+            }
+            var users = _context.Users.Select(s => new
             {
-                WorkPackageId = project.ProjectId,
-                ProjectId = project.ProjectId,
-                IsBottomLevel = true
-            };
-            _context.WorkPackages!.Add(newWP);
-            _context.SaveChanges();
-            return RedirectToAction("Index");
+                Id = s.Id,
+                Name = s.FirstName + " " + s.LastName
+            });
+            ViewData["UserId"] = new SelectList(users, "Id", "Name");
+            return View();
         }
-
-
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
@@ -106,4 +111,27 @@ namespace TimesheetApp.Controllers
             return View("Error!");
         }
     }
+
+    public class UniqueProjectName : ValidationAttribute
+    {
+        public string GetErrorMessage() =>
+            $"Project name must be unique";
+
+        protected override ValidationResult? IsValid(
+            object? value, ValidationContext validationContext)
+        {
+            string name = Convert.ToString(value)!;
+            var _context = (ApplicationDbContext)validationContext.GetService(typeof(ApplicationDbContext))!;
+            var user = _context.Projects!.Where(c => c.ProjectId == name);
+            if (user.Count() == 0)
+            {
+                return ValidationResult.Success;
+            }
+            else
+            {
+                return new ValidationResult(GetErrorMessage());
+            }
+        }
+    }
+
 }

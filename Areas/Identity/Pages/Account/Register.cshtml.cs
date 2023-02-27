@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TimesheetApp.Controllers;
 using TimesheetApp.Data;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
@@ -76,6 +77,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
 
             [Required]
             [Display(Name = "Employee Number")]
+            [UniqueEmployeeNum]
             public int EmployeeNumber { get; set; }
 
             [Required]
@@ -113,6 +115,14 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
         public async Task OnGetAsync(string returnUrl = null)
         {
             ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
+            ViewData["Supervisors"] = getSupervisors();
+            rolesList = await roleManager.Roles.ToListAsync();
+            ReturnUrl = returnUrl;
+            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        }
+
+        private SelectList getSupervisors()
+        {
             var supervisors = _userManager.GetUsersInRoleAsync("Supervisor").GetAwaiter().GetResult().Select(s => new
             {
                 Id = s.Id,
@@ -128,11 +138,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 Id = s.Id,
                 Name = s.FirstName + " " + s.LastName
             });
-            ViewData["Supervisors"] = new SelectList(supervisors.Concat(hrs).Concat(admins).ToList(), "Id", "Name");
-
-            rolesList = await roleManager.Roles.ToListAsync();
-            ReturnUrl = returnUrl;
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+            return new SelectList(supervisors.Concat(hrs).Concat(admins).ToList(), "Id", "Name");
         }
 
 
@@ -168,6 +174,8 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
             }
+            ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
+            ViewData["Supervisors"] = getSupervisors();
 
             // If we got this far, something failed, redisplay form
             return Page();
