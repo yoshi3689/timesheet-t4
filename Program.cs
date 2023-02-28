@@ -28,6 +28,14 @@ internal class Program
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
         builder.Services.AddControllersWithViews();
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddSession(options =>
+        {
+            options.IdleTimeout = TimeSpan.FromHours(12);
+            options.Cookie.Name = ".ProjectManagement.Session";
+            options.Cookie.IsEssential = true;
+        });
 
         var app = builder.Build();
 
@@ -58,7 +66,7 @@ internal class Program
             pattern: "{controller=Home}/{action=Index}/{id?}");
         app.MapRazorPages();
 
-
+        app.UseSession();
         //get the needed services to add roles and update db
         var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         using (var scope = scopeFactory.CreateScope())

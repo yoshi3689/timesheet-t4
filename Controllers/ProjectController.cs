@@ -61,16 +61,70 @@ namespace TimesheetApp.Controllers
         public IActionResult Edit(string? id)
         {
             CurrentProject = id;
-            var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser);
-            return View(workpackages);
+            HttpContext.Session.SetString("CurrentProject", id!);
+            var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser).Include(c => c.ParentWorkPackage).Include(c => c.ChildWorkPackages);
+            var top = workpackages.Where(c => c.ParentWorkPackage == null).FirstOrDefault()!;
+            return View(findAllChildren(top));
+        }
+
+        private List<WorkPackage> findAllChildren(WorkPackage top)
+        {
+            List<WorkPackage> wps = new List<WorkPackage>();
+            wps.Add(top);
+            if (top.ChildWorkPackages == null || top.ChildWorkPackages.Count() == 0)
+            {
+                top = _context.WorkPackages!.Where(c => c.ProjectId == top.ProjectId && c.WorkPackageId == top.WorkPackageId).Include(c => c.ChildWorkPackages).FirstOrDefault()!;
+            }
+            if (top.ChildWorkPackages != null && top.ChildWorkPackages.Count() != 0)
+            {
+                foreach (var wp in top.ChildWorkPackages)
+                {
+                    foreach (var item in findAllChildren(wp))
+                    {
+                        wps.Add(item);
+                    }
+                }
+            }
+            return wps;
         }
 
         [Authorize(Roles = "HR,Admin")]
-        public IActionResult Split(string? name)
+        public IActionResult Split([FromBody] WorkPackage p)
         {
-            Console.WriteLine("split:" + name);
-            var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == CurrentProject).Include(c => c.ResponsibleUser);
-            return View(workpackages);
+            CurrentProject = HttpContext.Session.GetString("CurrentProject");
+            var parent = _context.WorkPackages!.Where(c => c.ProjectId == CurrentProject && c.WorkPackageId == p.ParentWorkPackageId).FirstOrDefault();
+            if (parent == null)
+            {
+                return Json("Failed to find parent.");
+            }
+            parent.IsBottomLevel = false;
+            var newChild = new WorkPackage
+            {
+                WorkPackageId = p.WorkPackageId,
+                ProjectId = CurrentProject,
+                ParentWorkPackageId = p.ParentWorkPackageId,
+                ParentWorkPackageProjectId = CurrentProject,
+                IsBottomLevel = true,
+                IsClosed = false
+            };
+
+            if (_context.WorkPackages!.Where(c => c.ProjectId == CurrentProject && c.WorkPackageId == newChild.WorkPackageId).Count() == 0)
+            {
+                _context.WorkPackages!.Add(newChild);
+                _context.SaveChanges();
+                return Json(p.WorkPackageId);
+            }
+            else
+            {
+                return Json("Work Package must be unique for a project.");
+            }
+        }
+
+        [Authorize(Roles = "HR,Admin")]
+        public IActionResult GetDirectChildren([FromBody] WorkPackage parent)
+        {
+            CurrentProject = HttpContext.Session.GetString("CurrentProject");
+            return new JsonResult(_context.WorkPackages!.Where(c => c.ProjectId == CurrentProject && c.ParentWorkPackageId == parent.WorkPackageId));
         }
 
 
@@ -110,6 +164,26 @@ namespace TimesheetApp.Controllers
         {
             return View("Error!");
         }
+
+
+
+        //not sure if this is working right now
+        [AcceptVerbs("Get", "Post")]
+        public IActionResult CheckWorkPackage(string WorkPackageId)
+        {
+            Console.WriteLine(WorkPackageId);
+            string project = HttpContext.Session.GetString("CurrentProject")!;
+            var wp = _context.WorkPackages!.Where(c => c.ProjectId == project && c.WorkPackageId == WorkPackageId);
+            if (wp != null && wp.Count() > 0)
+            {
+                // return Json("true");
+                return Json("false");
+            }
+            else
+            {
+                return Json("false");
+            }
+        }
     }
 
     public class UniqueProjectName : ValidationAttribute
@@ -133,5 +207,29 @@ namespace TimesheetApp.Controllers
             }
         }
     }
+
+    // public class UniqueWorkPackageInProject : ValidationAttribute
+    // {
+    //     public string GetErrorMessage() =>
+    //         $"Work Package name must be unique for this project.";
+
+    //     protected override ValidationResult? IsValid(
+    //         object? value, ValidationContext validationContext)
+    //     {
+    //         var _context = (ApplicationDbContext)validationContext.GetService(typeof(ApplicationDbContext))!;
+
+    //         string name = Convert.ToString(value)!;
+    //         string project = hc.Session.GetString("CurrentProject")!;
+    //         var wp = _context.WorkPackages!.Where(c => c.ProjectId == project && c.WorkPackageId == name);
+    //         if (wp.Count() == 0)
+    //         {
+    //             return ValidationResult.Success;
+    //         }
+    //         else
+    //         {
+    //             return new ValidationResult(GetErrorMessage());
+    //         }
+    //     }
+    // }
 
 }

@@ -4,7 +4,9 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TimesheetApp.Controllers;
 
 namespace TimesheetApp.Models.TimesheetModels
 {
@@ -16,6 +18,7 @@ namespace TimesheetApp.Models.TimesheetModels
     public class WorkPackage
     {
         [Required]
+        [Remote(action: "CheckWorkPackage", controller: "Project", ErrorMessage = "Work Package must be unique for this project")]
         public string? WorkPackageId { get; set; }
         [Required]
         public string? ProjectId { get; set; }
