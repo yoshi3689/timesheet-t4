@@ -11,7 +11,7 @@ using TimesheetApp.Data;
 namespace TimesheetApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230227200430_M1")]
+    [Migration("20230301022211_M1")]
     partial class M1
     {
         /// <inheritdoc />
