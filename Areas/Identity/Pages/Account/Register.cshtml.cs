@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
@@ -22,6 +23,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TimesheetApp.Controllers;
 using TimesheetApp.Data;
+using TimesheetApp.Helpers;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
 
@@ -163,6 +165,9 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
                 await _userManager.AddToRolesAsync(user, roles);
+
+                user.PublicKey = KeyHelper.CreateKeyPair(user.Id);
+                _context.SaveChanges();
 
 
                 if (result.Succeeded)

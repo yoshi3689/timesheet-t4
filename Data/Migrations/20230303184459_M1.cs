@@ -90,8 +90,7 @@ namespace TimesheetApp.Data.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     HasTempPassword = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     Salary = table.Column<double>(type: "double", nullable: false),
-                    PublicKey = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    PublicKey = table.Column<byte[]>(type: "longblob", nullable: true),
                     LabourGradeCode = table.Column<string>(type: "varchar(2)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     SupervisorId = table.Column<string>(type: "varchar(255)", nullable: true)

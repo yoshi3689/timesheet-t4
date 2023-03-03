@@ -11,7 +11,7 @@ using TimesheetApp.Data;
 namespace TimesheetApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230303164931_M1")]
+    [Migration("20230303184459_M1")]
     partial class M1
     {
         /// <inheritdoc />
@@ -224,8 +224,8 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<string>("PublicKey")
-                        .HasColumnType("longtext");
+                    b.Property<byte[]>("PublicKey")
+                        .HasColumnType("longblob");
 
                     b.Property<double>("Salary")
                         .HasColumnType("double");

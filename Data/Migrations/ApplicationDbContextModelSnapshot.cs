@@ -221,8 +221,8 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<string>("PublicKey")
-                        .HasColumnType("longtext");
+                    b.Property<byte[]>("PublicKey")
+                        .HasColumnType("longblob");
 
                     b.Property<double>("Salary")
                         .HasColumnType("double");

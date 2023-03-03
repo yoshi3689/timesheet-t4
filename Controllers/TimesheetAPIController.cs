@@ -10,6 +10,7 @@ using TimesheetApp.Models.TimesheetModels;
 using TimesheetApp.Models;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using TimesheetApp.Helpers;
 
 namespace TimesheetApp.Controllers
 {
@@ -27,6 +28,8 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult> Index()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            KeyHelper.GetKeyFromContainer(userId);
+
             var applicationDbContext = _context.Timesheets!.Where(t => t.UserId == userId);
             List<int> timesheetIDs = applicationDbContext.Select(t => t.TimesheetId).OrderBy(id => id).ToList();
             if (timesheetIDs.Count == 0)
