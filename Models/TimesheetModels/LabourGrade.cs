@@ -22,8 +22,8 @@ namespace TimesheetApp.Models.TimesheetModels
         [InverseProperty("LabourGrade")]
         public virtual ICollection<ApplicationUser> ApplicationUsers { get; } = new List<ApplicationUser>();
 
-        [InverseProperty("OriginalLabourGrade")]
-        public virtual ICollection<EmployeeWorkPackage>? OriginalEmployees { get; set; }
+        [InverseProperty("LabourGrade")]
+        public virtual ICollection<Budget>? Budgets { get; set; }
 
 
     }

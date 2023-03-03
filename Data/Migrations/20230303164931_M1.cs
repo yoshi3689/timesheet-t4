@@ -96,6 +96,8 @@ namespace TimesheetApp.Data.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     SupervisorId = table.Column<string>(type: "varchar(255)", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    TimesheetApproverId = table.Column<string>(type: "varchar(255)", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     UserName = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     NormalizedUserName = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true)
@@ -128,11 +130,39 @@ namespace TimesheetApp.Data.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
                     table.ForeignKey(
+                        name: "FK_AspNetUsers_AspNetUsers_TimesheetApproverId",
+                        column: x => x.TimesheetApproverId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
                         name: "FK_AspNetUsers_LabourGrades_LabourGradeCode",
                         column: x => x.LabourGradeCode,
                         principalTable: "LabourGrades",
                         principalColumn: "LabourCode",
                         onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Budget",
+                columns: table => new
+                {
+                    BudgetID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    WPProjectId = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    BudgetAmount = table.Column<double>(type: "double", nullable: false),
+                    LabourCode = table.Column<string>(type: "varchar(2)", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Budget", x => x.BudgetID);
+                    table.ForeignKey(
+                        name: "FK_Budget_LabourGrades_LabourCode",
+                        column: x => x.LabourCode,
+                        principalTable: "LabourGrades",
+                        principalColumn: "LabourCode");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -147,6 +177,8 @@ namespace TimesheetApp.Data.Migrations
                     TotalHours = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     UserId = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Signature = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ApproverId = table.Column<string>(type: "varchar(255)", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4")
@@ -272,12 +304,20 @@ namespace TimesheetApp.Data.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ProjectManagerId = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    MasterBudget = table.Column<double>(type: "double", nullable: false),
+                    AssistantProjectManagerId = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    TotalBudget = table.Column<double>(type: "double", nullable: false),
                     ActualCost = table.Column<double>(type: "double", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Projects", x => x.ProjectId);
+                    table.ForeignKey(
+                        name: "FK_Projects_AspNetUsers_AssistantProjectManagerId",
+                        column: x => x.AssistantProjectManagerId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Projects_AspNetUsers_ProjectManagerId",
                         column: x => x.ProjectManagerId,
@@ -418,7 +458,7 @@ namespace TimesheetApp.Data.Migrations
                     ParentWorkPackageProjectId = table.Column<string>(type: "varchar(255)", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     IsBottomLevel = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    EstimatedCost = table.Column<double>(type: "double", nullable: false),
+                    ActualCost = table.Column<double>(type: "double", nullable: false),
                     IsClosed = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
@@ -452,9 +492,6 @@ namespace TimesheetApp.Data.Migrations
                     WorkPackageId = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     WorkPackageProjectId = table.Column<string>(type: "varchar(255)", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    IsTimesheetApprover = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    OriginalLabourCode = table.Column<string>(type: "varchar(2)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
@@ -465,12 +502,6 @@ namespace TimesheetApp.Data.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_EmployeeWorkPackages_LabourGrades_OriginalLabourCode",
-                        column: x => x.OriginalLabourCode,
-                        principalTable: "LabourGrades",
-                        principalColumn: "LabourCode",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_EmployeeWorkPackages_WorkPackages_WorkPackageId_WorkPackageP~",
@@ -496,18 +527,19 @@ namespace TimesheetApp.Data.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Notes = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Sat = table.Column<double>(type: "double", nullable: false),
-                    Sun = table.Column<double>(type: "double", nullable: false),
-                    Mon = table.Column<double>(type: "double", nullable: false),
-                    Tue = table.Column<double>(type: "double", nullable: false),
-                    Wed = table.Column<double>(type: "double", nullable: false),
-                    Thu = table.Column<double>(type: "double", nullable: false),
-                    Fri = table.Column<double>(type: "double", nullable: false),
+                    packedHours = table.Column<long>(type: "bigint", nullable: false),
+                    OriginalLabourCode = table.Column<string>(type: "varchar(2)", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     TimesheetId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TimesheetRows", x => x.TimesheetRowId);
+                    table.ForeignKey(
+                        name: "FK_TimesheetRows_LabourGrades_OriginalLabourCode",
+                        column: x => x.OriginalLabourCode,
+                        principalTable: "LabourGrades",
+                        principalColumn: "LabourCode");
                     table.ForeignKey(
                         name: "FK_TimesheetRows_Projects_ProjectId",
                         column: x => x.ProjectId,
@@ -587,10 +619,20 @@ namespace TimesheetApp.Data.Migrations
                 column: "SupervisorId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AspNetUsers_TimesheetApproverId",
+                table: "AspNetUsers",
+                column: "TimesheetApproverId");
+
+            migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Budget_LabourCode",
+                table: "Budget",
+                column: "LabourCode");
 
             migrationBuilder.CreateIndex(
                 name: "IX_EmployeeProjects_ProjectId",
@@ -598,14 +640,14 @@ namespace TimesheetApp.Data.Migrations
                 column: "ProjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_EmployeeWorkPackages_OriginalLabourCode",
-                table: "EmployeeWorkPackages",
-                column: "OriginalLabourCode");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_EmployeeWorkPackages_WorkPackageId_WorkPackageProjectId",
                 table: "EmployeeWorkPackages",
                 columns: new[] { "WorkPackageId", "WorkPackageProjectId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Projects_AssistantProjectManagerId",
+                table: "Projects",
+                column: "AssistantProjectManagerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Projects_ProjectManagerId",
@@ -616,6 +658,11 @@ namespace TimesheetApp.Data.Migrations
                 name: "IX_Signatures_UserId",
                 table: "Signatures",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TimesheetRows_OriginalLabourCode",
+                table: "TimesheetRows",
+                column: "OriginalLabourCode");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TimesheetRows_ProjectId",
@@ -673,6 +720,9 @@ namespace TimesheetApp.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "Budget");
 
             migrationBuilder.DropTable(
                 name: "EmployeeProjects");

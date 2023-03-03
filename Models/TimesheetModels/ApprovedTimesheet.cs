@@ -21,6 +21,7 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? TotalHours { get; set; }
         [Required]
         public string? UserId { get; set; }
+        public string? Signature { get; set; }
         public string? ApproverId { get; set; }
         [ForeignKey("ApproverId")]
         public ApplicationUser? Approver { get; set; }
