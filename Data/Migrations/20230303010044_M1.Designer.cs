@@ -11,7 +11,7 @@ using TimesheetApp.Data;
 namespace TimesheetApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230227200430_M1")]
+    [Migration("20230303010044_M1")]
     partial class M1
     {
         /// <inheritdoc />
@@ -239,6 +239,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("SupervisorId")
                         .HasColumnType("varchar(255)");
 
+                    b.Property<string>("TimesheetApproverId")
+                        .HasColumnType("varchar(255)");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("tinyint(1)");
 
@@ -261,6 +264,8 @@ namespace TimesheetApp.Data.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.HasIndex("SupervisorId");
+
+                    b.HasIndex("TimesheetApproverId");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -298,6 +303,9 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<string>("EndDate")
                         .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Signature")
                         .HasColumnType("longtext");
 
                     b.Property<string>("TotalHours")
@@ -366,6 +374,28 @@ namespace TimesheetApp.Data.Migrations
                     b.ToTable("ApprovedTimesheetRows");
                 });
 
+            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Budget", b =>
+                {
+                    b.Property<int>("BudgetID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<double>("BudgetAmount")
+                        .HasColumnType("double");
+
+                    b.Property<string>("LabourCode")
+                        .HasColumnType("varchar(2)");
+
+                    b.Property<string>("WPProjectId")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("BudgetID");
+
+                    b.HasIndex("LabourCode");
+
+                    b.ToTable("Budget");
+                });
+
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.EmployeeProject", b =>
                 {
                     b.Property<string>("UserId")
@@ -389,20 +419,11 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("WorkPackageId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<bool>("IsTimesheetApprover")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("OriginalLabourCode")
-                        .IsRequired()
-                        .HasColumnType("varchar(2)");
-
                     b.Property<string>("WorkPackageProjectId")
                         .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("UserId", "WorkPackageId");
-
-                    b.HasIndex("OriginalLabourCode");
 
                     b.HasIndex("WorkPackageId", "WorkPackageProjectId");
 
@@ -431,14 +452,20 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<double>("ActualCost")
                         .HasColumnType("double");
 
-                    b.Property<double>("MasterBudget")
-                        .HasColumnType("double");
+                    b.Property<string>("AssistantProjectManagerId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ProjectManagerId")
                         .IsRequired()
                         .HasColumnType("varchar(255)");
 
+                    b.Property<double>("TotalBudget")
+                        .HasColumnType("double");
+
                     b.HasKey("ProjectId");
+
+                    b.HasIndex("AssistantProjectManagerId");
 
                     b.HasIndex("ProjectManagerId");
 
@@ -475,39 +502,21 @@ namespace TimesheetApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<double>("Fri")
-                        .HasColumnType("double");
-
-                    b.Property<double>("Mon")
-                        .HasColumnType("double");
-
                     b.Property<string>("Notes")
                         .HasColumnType("longtext");
+
+                    b.Property<string>("OriginalLabourCode")
+                        .HasColumnType("varchar(2)");
 
                     b.Property<string>("ProjectId")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
-                    b.Property<double>("Sat")
-                        .HasColumnType("double");
-
-                    b.Property<double>("Sun")
-                        .HasColumnType("double");
-
-                    b.Property<double>("Thu")
-                        .HasColumnType("double");
-
                     b.Property<int>("TimesheetId")
                         .HasColumnType("int");
 
                     b.Property<double>("TotalHoursRow")
-                        .HasColumnType("double");
-
-                    b.Property<double>("Tue")
-                        .HasColumnType("double");
-
-                    b.Property<double>("Wed")
                         .HasColumnType("double");
 
                     b.Property<string>("WorkPackageId")
@@ -520,7 +529,12 @@ namespace TimesheetApp.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<long>("packedHours")
+                        .HasColumnType("bigint");
+
                     b.HasKey("TimesheetRowId");
+
+                    b.HasIndex("OriginalLabourCode");
 
                     b.HasIndex("ProjectId");
 
@@ -539,7 +553,7 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("ProjectId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<double>("EstimatedCost")
+                    b.Property<double>("ActualCost")
                         .HasColumnType("double");
 
                     b.Property<bool>("IsBottomLevel")
@@ -631,9 +645,15 @@ namespace TimesheetApp.Data.Migrations
                         .WithMany("SupervisedUsers")
                         .HasForeignKey("SupervisorId");
 
+                    b.HasOne("TimesheetApp.Models.ApplicationUser", "TimesheetApprover")
+                        .WithMany("ApprovableUsers")
+                        .HasForeignKey("TimesheetApproverId");
+
                     b.Navigation("LabourGrade");
 
                     b.Navigation("Supervisor");
+
+                    b.Navigation("TimesheetApprover");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.Signature", b =>
@@ -665,6 +685,15 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("ApprovedTimesheet");
                 });
 
+            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Budget", b =>
+                {
+                    b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "LabourGrade")
+                        .WithMany("Budgets")
+                        .HasForeignKey("LabourCode");
+
+                    b.Navigation("LabourGrade");
+                });
+
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.EmployeeProject", b =>
                 {
                     b.HasOne("TimesheetApp.Models.TimesheetModels.Project", "Project")
@@ -686,12 +715,6 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.EmployeeWorkPackage", b =>
                 {
-                    b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "OriginalLabourGrade")
-                        .WithMany("OriginalEmployees")
-                        .HasForeignKey("OriginalLabourCode")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "User")
                         .WithMany("WorkPackages")
                         .HasForeignKey("UserId")
@@ -704,8 +727,6 @@ namespace TimesheetApp.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("OriginalLabourGrade");
-
                     b.Navigation("User");
 
                     b.Navigation("WorkPackage");
@@ -713,11 +734,19 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Project", b =>
                 {
+                    b.HasOne("TimesheetApp.Models.ApplicationUser", "AssistantProjectManager")
+                        .WithMany("AssistantManagedProjects")
+                        .HasForeignKey("AssistantProjectManagerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "ProjectManager")
                         .WithMany("ManagedProjects")
                         .HasForeignKey("ProjectManagerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("AssistantProjectManager");
 
                     b.Navigation("ProjectManager");
                 });
@@ -735,6 +764,10 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.TimesheetRow", b =>
                 {
+                    b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "OriginalLabourGrade")
+                        .WithMany()
+                        .HasForeignKey("OriginalLabourCode");
+
                     b.HasOne("TimesheetApp.Models.TimesheetModels.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
@@ -752,6 +785,8 @@ namespace TimesheetApp.Data.Migrations
                         .HasForeignKey("WorkPackageId", "WorkPackageProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("OriginalLabourGrade");
 
                     b.Navigation("Project");
 
@@ -785,7 +820,11 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.ApplicationUser", b =>
                 {
+                    b.Navigation("ApprovableUsers");
+
                     b.Navigation("ApprovedTimesheets");
+
+                    b.Navigation("AssistantManagedProjects");
 
                     b.Navigation("EmployeeProjects");
 
@@ -804,7 +843,7 @@ namespace TimesheetApp.Data.Migrations
                 {
                     b.Navigation("ApplicationUsers");
 
-                    b.Navigation("OriginalEmployees");
+                    b.Navigation("Budgets");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Project", b =>

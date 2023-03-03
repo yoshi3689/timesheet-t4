@@ -26,7 +26,7 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? ParentWorkPackageId { get; set; }
         public string? ParentWorkPackageProjectId { get; set; }
         public bool IsBottomLevel { get; set; }
-        public double EstimatedCost { get; set; }
+        public double ActualCost { get; set; }
         public bool IsClosed { get; set; }
 
         [ForeignKey("ProjectId")]

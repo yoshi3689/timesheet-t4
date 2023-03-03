@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -208,28 +209,25 @@ namespace TimesheetApp.Controllers
         }
     }
 
-    // public class UniqueWorkPackageInProject : ValidationAttribute
-    // {
-    //     public string GetErrorMessage() =>
-    //         $"Work Package name must be unique for this project.";
+    public class WPFormat : ValidationAttribute
+    {
+        public string GetErrorMessage() =>
+            $"Work Package ID must be in format [Letter][4xNumber]";
 
-    //     protected override ValidationResult? IsValid(
-    //         object? value, ValidationContext validationContext)
-    //     {
-    //         var _context = (ApplicationDbContext)validationContext.GetService(typeof(ApplicationDbContext))!;
+        protected override ValidationResult? IsValid(
+            object? value, ValidationContext validationContext)
+        {
+            string name = Convert.ToString(value)!;
 
-    //         string name = Convert.ToString(value)!;
-    //         string project = hc.Session.GetString("CurrentProject")!;
-    //         var wp = _context.WorkPackages!.Where(c => c.ProjectId == project && c.WorkPackageId == name);
-    //         if (wp.Count() == 0)
-    //         {
-    //             return ValidationResult.Success;
-    //         }
-    //         else
-    //         {
-    //             return new ValidationResult(GetErrorMessage());
-    //         }
-    //     }
-    // }
+            if (Regex.IsMatch(name, "[a-zA-z]{1}[0-9]{4}"))
+            {
+                return ValidationResult.Success;
+            }
+            else
+            {
+                return new ValidationResult(GetErrorMessage());
+            }
+        }
+    }
 
 }
