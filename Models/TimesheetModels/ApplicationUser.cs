@@ -32,10 +32,11 @@ namespace TimesheetApp.Models
         public string? JobTitle { get; set; }
         public bool HasTempPassword { get; set; }
         public double Salary { get; set; }
-        public string? PublicKey { get; set; }
+        public byte[]? PublicKey { get; set; }
         [Required]
         public string? LabourGradeCode { get; set; }
         public string? SupervisorId { get; set; }
+        public string? TimesheetApproverId { get; set; }
 
         [InverseProperty("User")]
         public virtual ICollection<Timesheet> Timesheets { get; } = new List<Timesheet>();
@@ -46,11 +47,20 @@ namespace TimesheetApp.Models
         [ForeignKey("SupervisorId")]
         public ApplicationUser? Supervisor { get; set; }
 
+        [ForeignKey("TimesheetApproverId")]
+        public ApplicationUser? TimesheetApprover { get; set; }
+
         [InverseProperty("Supervisor")]
         public virtual ICollection<ApplicationUser> SupervisedUsers { get; } = new List<ApplicationUser>();
 
+        [InverseProperty("TimesheetApprover")]
+        public virtual ICollection<ApplicationUser> ApprovableUsers { get; } = new List<ApplicationUser>();
+
         [InverseProperty("ProjectManager")]
         public virtual ICollection<Project> ManagedProjects { get; } = new List<Project>();
+
+        [InverseProperty("AssistantProjectManager")]
+        public virtual ICollection<Project> AssistantManagedProjects { get; } = new List<Project>();
 
         [InverseProperty("ResponsibleUser")]
         public virtual ICollection<WorkPackage> SupervisedWorkPackage { get; } = new List<WorkPackage>();

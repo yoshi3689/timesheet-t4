@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
@@ -20,7 +21,9 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TimesheetApp.Controllers;
 using TimesheetApp.Data;
+using TimesheetApp.Helpers;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
 
@@ -76,6 +79,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
 
             [Required]
             [Display(Name = "Employee Number")]
+            [UniqueEmployeeNum]
             public int EmployeeNumber { get; set; }
 
             [Required]
@@ -104,6 +108,8 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             [Required]
             [Display(Name = "Job Title")]
             public string JobTitle { get; set; }
+            [Required]
+            public string Supervisor { get; set; }
 
             public List<string> AreTypes { get; set; } = new List<string>();
         }
@@ -111,20 +117,36 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
         public async Task OnGetAsync(string returnUrl = null)
         {
             ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
+            ViewData["Supervisors"] = getSupervisors();
             rolesList = await roleManager.Roles.ToListAsync();
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        }
+
+        private SelectList getSupervisors()
+        {
+            var supervisors = _userManager.GetUsersInRoleAsync("Supervisor").GetAwaiter().GetResult().Select(s => new
+            {
+                Id = s.Id,
+                Name = s.FirstName + " " + s.LastName
+            });
+            var hrs = _userManager.GetUsersInRoleAsync("HR").GetAwaiter().GetResult().Select(s => new
+            {
+                Id = s.Id,
+                Name = s.FirstName + " " + s.LastName
+            });
+            var admins = _userManager.GetUsersInRoleAsync("Admin").GetAwaiter().GetResult().Select(s => new
+            {
+                Id = s.Id,
+                Name = s.FirstName + " " + s.LastName
+            });
+            return new SelectList(supervisors.Concat(hrs).Concat(admins).ToList(), "Id", "Name");
         }
 
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             string[] roles = Input.AreTypes.ToArray();
-            foreach (string role in roles)
-            {
-                _logger.LogInformation(role);
-            }
-
             returnUrl ??= Url.Content("~/");
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             if (ModelState.IsValid)
@@ -137,11 +159,15 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 user.LabourGradeCode = Input.LabourGrade;
                 user.EmployeeNumber = Input.EmployeeNumber;
                 user.EmailConfirmed = true;
+                user.SupervisorId = Input.Supervisor;
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
                 await _userManager.AddToRolesAsync(user, roles);
+
+                user.PublicKey = KeyHelper.CreateKeyPair(user.Id);
+                _context.SaveChanges();
 
 
                 if (result.Succeeded)
@@ -153,6 +179,8 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
             }
+            ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
+            ViewData["Supervisors"] = getSupervisors();
 
             // If we got this far, something failed, redisplay form
             return Page();

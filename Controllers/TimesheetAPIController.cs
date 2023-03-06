@@ -10,6 +10,7 @@ using TimesheetApp.Models.TimesheetModels;
 using TimesheetApp.Models;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using TimesheetApp.Helpers;
 
 namespace TimesheetApp.Controllers
 {
@@ -27,16 +28,18 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult> Index()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var applicationDbContext = _context.Timesheets.Where(t => t.UserId == userId);
+            KeyHelper.GetKeyFromContainer(userId);
+
+            var applicationDbContext = _context.Timesheets!.Where(t => t.UserId == userId);
             List<int> timesheetIDs = applicationDbContext.Select(t => t.TimesheetId).OrderBy(id => id).ToList();
             if (timesheetIDs.Count == 0)
             {
                 Timesheet newSheet = new Timesheet
                 {
                     EndDate = DateOnly.FromDateTime(DateTime.Today),
-                    UserId = userId
+                    UserId = userId!
                 };
-                _context.Timesheets.Add(newSheet);
+                _context.Timesheets!.Add(newSheet);
                 await _context.SaveChangesAsync();
                 timesheetIDs.Add(newSheet.TimesheetId);
                 // for (int i = 0; i < 5; i++)
@@ -50,7 +53,7 @@ namespace TimesheetApp.Controllers
                 // await _context.SaveChangesAsync();
 
             }
-            var rowContext = _context.TimesheetRows.Where(r => timesheetIDs.Contains((int)r.TimesheetId));
+            var rowContext = _context.TimesheetRows!.Where(r => timesheetIDs.Contains((int)r.TimesheetId));
 
             var model = new TimesheetViewModel()
             {
@@ -93,7 +96,7 @@ namespace TimesheetApp.Controllers
                 Notes = "",
                 TimesheetId = 1,
             };
-            _context.TimesheetRows.Add(row);
+            _context.TimesheetRows!.Add(row);
             await _context.SaveChangesAsync();
 
             return RedirectToAction("Index");

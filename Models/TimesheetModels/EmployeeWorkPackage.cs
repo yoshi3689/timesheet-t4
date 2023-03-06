@@ -21,12 +21,6 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? WorkPackageId { get; set; }
         [Required]
         public string? WorkPackageProjectId { get; set; }
-        public bool IsTimesheetApprover { get; set; }
-        [Required]
-        public string? OriginalLabourCode { get; set; }
-
-        [ForeignKey("OriginalLabourCode")]
-        public virtual LabourGrade? OriginalLabourGrade { get; set; }
 
         [ForeignKey("UserId")]
         public virtual ApplicationUser? User { get; set; }

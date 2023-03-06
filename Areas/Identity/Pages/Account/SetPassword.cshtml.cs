@@ -29,12 +29,12 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
 
 
         [BindProperty]
-        public InputModel Input { get; set; }
+        public InputModel? Input { get; set; }
 
-        public string ReturnUrl { get; set; }
+        public string? ReturnUrl { get; set; }
 
         [TempData]
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
 
         public class InputModel
         {
@@ -51,7 +51,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
 
 
 
-        public void OnGet(string returnUrl = null)
+        public void OnGet(string? returnUrl = null)
         {
             if (!string.IsNullOrEmpty(ErrorMessage))
             {
@@ -62,18 +62,18 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             ReturnUrl = returnUrl;
         }
 
-        public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+        public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
 
             if (ModelState.IsValid)
             {
-                if (Input.Password == Input.ConfirmPassword)
+                if (Input!.Password == Input.ConfirmPassword)
                 {
                     var user = await _userManager.GetUserAsync(User);
-                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                    var result = await _userManager.ResetPasswordAsync(user, token, Input.Password);
-                    user.HasTempPassword = false;
+                    var token = await _userManager.GeneratePasswordResetTokenAsync(user!);
+                    var result = await _userManager.ResetPasswordAsync(user!, token, Input.Password!);
+                    user!.HasTempPassword = false;
                     _context.SaveChanges();
                     return LocalRedirect(returnUrl);
                 }

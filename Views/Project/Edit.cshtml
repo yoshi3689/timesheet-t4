@@ -1,4 +1,4 @@
-@model IEnumerable<TimesheetApp.Models.TimesheetModels.WorkPackage>
+@model List<TimesheetApp.Models.TimesheetModels.WorkPackage>
 @{
     ViewData["Title"] = "Manage Project";
 }
@@ -10,63 +10,132 @@
 
 <div id="WorkPackages"></div>
 
-<template>
-    <a asp-action="Split" id="splitLabel"></a>
-</template>
+<div class="modal" tabindex="-1" role="dialog" id="splitModal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create Subpackage</h5>
+      </div>
+      <div class="modal-body">
+        <p id="childWorkPackages">
+        </p>
+        <input type="text" placeholder="Work Package Name..." id="newWorkPackageName">
+        <button type="button" class="btn btn-primary" onclick="splitPackage()">Create</button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onClick="window.location.reload();">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
+    let currentWorkPackage = "";
+    let div;
+    let name;
+    let re;
+    let ec;
+    let closed;
+    let splitButton;
+    let parent;
 @foreach (var wp in Model)
 {
     <text>
-    let div = document.createElement("div");
+    div = document.createElement("div");
     div.className = "wp";
-    div.id = "@wp.WorkPackageId@wp.ProjectId";
-    let name = document.createElement("span");
+    div.id = "@wp.WorkPackageId";
+    name = document.createElement("span");
     name.innerHTML = "Work Package Name: @wp.WorkPackageId";
     name.className = "label";
     div.appendChild(name);
     </text>
     @if(wp.ResponsibleUser != null){
         <text>
-            let re = document.createElement("span");
+            re = document.createElement("span");
             re.className = "label";
             re.innerHTML = "Responsible Engineer: @wp.ResponsibleUser.FirstName @wp.ResponsibleUser.LastName;
             div.appendChild(re);
         </text>
     }
     <text>
-    let ec = document.createElement("span");
-    ec.innerHTML = "Estimated Cost: @wp.EstimatedCost";
+    @* ec = document.createElement("span");
+    ec.innerHTML = "Budget: @wp.Budget";
     ec.className = "label";
-    div.appendChild(ec);
-    let closed = document.createElement("span");
+    div.appendChild(ec); *@
+    closed = document.createElement("span");
     closed.className = "label";
     closed.innerHTML = "Closed: @wp.IsClosed";
     div.appendChild(closed);
 
-    let splitButton = document.createElement("button");
-    splitButton.value = "@wp.WorkPackageId@wp.ProjectId";
+    splitButton = document.createElement("button");
+    splitButton.value = "@wp.WorkPackageId";
     splitButton.name = "name";
     splitButton.className = "label";
-    splitButton.addEventListener('click', function callSplit(info){
-        console.log(info.srcElement.value);
+    splitButton.addEventListener('click', async function callSplit(info){
+        currentWorkPackage = info.srcElement.value;
+        await fetch("/Project/GetDirectChildren", {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                WorkPackageId: info.srcElement.value
+            }),
+        })
+        .then((response) => {
+            return response.json();
+        })
+        .then((response) => {
+            $("#splitModal").modal("show");
+            response.forEach(c => {
+                var a = document.createElement("p");
+                a.innerHTML = c.workPackageId;
+                document.querySelector("#childWorkPackages").appendChild(a);
+            });
+            if(response.length == 0){
+                var a = document.createElement("p");
+                a.innerHTML = "Currently a bottom level package.";
+                document.querySelector("#childWorkPackages").appendChild(a);
+            }
+        });
+
     }, false);
     splitButton.type = "button";
-    splitButton.innerHTML = "Split Into Children";
-
+    splitButton.innerHTML = "Create Subpackage";
     div.appendChild(splitButton);
 
     </text>
     if(wp.ParentWorkPackageId != null && wp.ParentWorkPackageProjectId != null){
         <text>
-             let parent = document.querySelector("#@wp.ParentWorkPackageId@wp.ParentWorkPackageProjectId");
+             parent = document.querySelector("#@wp.ParentWorkPackageId");
              parent.appendChild(div);
         </text>
     } else {
         <text>
-            let parent = document.querySelector("#WorkPackages");
+            parent = document.querySelector("#WorkPackages");
             parent.appendChild(div);
         </text>
     }
+}
+
+async function splitPackage(){
+    await fetch("/Project/Split", {
+        method: "POST",
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            ParentWorkPackageId: currentWorkPackage,
+            WorkPackageId: document.querySelector("#newWorkPackageName").value
+        }),
+    }).then(c => {
+        return c.json();
+    }).then(c => {
+        let element = document.createElement("p");
+        element.innerHTML = c;
+        document.querySelector("#childWorkPackages").appendChild(element);
+    });
 }
 </script>

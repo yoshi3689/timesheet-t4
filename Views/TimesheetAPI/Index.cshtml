@@ -6,7 +6,7 @@
 
 <div style="display: flex;">
     <div style="width: 20%;">
-        @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets)
+        @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
         {
             <div style="border-style: solid; background-color: grey; margin-bottom: 1em; width: 10em">
                 <p>Sheet @timesheet.TimesheetId</p>
@@ -30,7 +30,7 @@
                 <th>Fri</th>
                 <th>Notes</th>
             </tr>
-            @foreach (TimesheetApp.Models.TimesheetModels.TimesheetRow row in Model.TimesheetRows)
+            @foreach (TimesheetApp.Models.TimesheetModels.TimesheetRow row in Model.TimesheetRows!)
             {
                 <tr id="@row.TimesheetRowId">
                     <td class="ProjectId">

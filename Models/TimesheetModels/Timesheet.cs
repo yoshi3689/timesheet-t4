@@ -12,7 +12,6 @@ namespace TimesheetApp.Models.TimesheetModels;
 public partial class Timesheet
 {
     [Key]
-    [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int TimesheetId { get; set; }
 

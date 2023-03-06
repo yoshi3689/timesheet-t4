@@ -12,7 +12,7 @@ internal class Program
         var host = builder.Configuration["DBHOST"] ?? "localhost";
         var port = builder.Configuration["DBPORT"] ?? "3333";
         var password = builder.Configuration["DBPASSWORD"] ?? "password123";
-        var db = builder.Configuration["DBNAME"] ?? "test-db";
+        var db = builder.Configuration["DBNAME"] ?? "testdb";
 
         string connectionString = $"server={host}; userid=root; pwd={password};"
                 + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";
@@ -28,6 +28,14 @@ internal class Program
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
         builder.Services.AddControllersWithViews();
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddSession(options =>
+        {
+            options.IdleTimeout = TimeSpan.FromHours(12);
+            options.Cookie.Name = ".ProjectManagement.Session";
+            options.Cookie.IsEssential = true;
+        });
 
         var app = builder.Build();
 
@@ -58,7 +66,7 @@ internal class Program
             pattern: "{controller=Home}/{action=Index}/{id?}");
         app.MapRazorPages();
 
-
+        app.UseSession();
         //get the needed services to add roles and update db
         var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         using (var scope = scopeFactory.CreateScope())
@@ -68,14 +76,12 @@ internal class Program
             var UserManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var RoleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            //automatically apply migrations
-            try
+            var services = scope.ServiceProvider;
+
+            var context = services.GetRequiredService<ApplicationDbContext>();
+            if (context.Database.GetPendingMigrations().Any())
             {
-                DbContext.Database.Migrate();
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("failed to automatically update database");
+                context.Database.Migrate();
             }
 
             //create basic roles
@@ -97,7 +103,7 @@ internal class Program
             //try create labour grades
             var grades = DbContext.LabourGrades;
             LabourGrade adminGrade;
-            if (grades.Count() == 0)
+            if (grades != null && grades.Count() == 0)
             {
                 //Default labour grades
                 List<LabourGrade> labourGrades = new List<LabourGrade>();
@@ -112,13 +118,13 @@ internal class Program
                 labourGrades.Add(new LabourGrade { LabourCode = "P6", Rate = 6 });
                 foreach (var lg in labourGrades)
                 {
-                    DbContext.LabourGrades.Add(lg);
+                    DbContext.LabourGrades!.Add(lg);
                 }
                 DbContext.SaveChanges();
             }
             else
             {
-                adminGrade = DbContext.LabourGrades.FirstOrDefault() ?? new LabourGrade { LabourCode = "JS", Rate = 1 };
+                adminGrade = DbContext.LabourGrades!.FirstOrDefault() ?? new LabourGrade { LabourCode = "JS", Rate = 1 };
             }
 
             //create a default admin
