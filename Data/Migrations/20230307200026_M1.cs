@@ -153,7 +153,8 @@ namespace TimesheetApp.Data.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     BudgetAmount = table.Column<double>(type: "double", nullable: false),
                     LabourCode = table.Column<string>(type: "varchar(2)", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    isREBudget = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {

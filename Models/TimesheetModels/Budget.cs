@@ -17,6 +17,7 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? WPProjectId { get; set; }
         public double BudgetAmount { get; set; }
         public string? LabourCode { get; set; }
+        public bool isREBudget { get; set; }
         [ForeignKey("LabourCode")]
         public LabourGrade? LabourGrade { get; set; }
     }

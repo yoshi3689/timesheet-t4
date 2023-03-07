@@ -307,6 +307,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("WPProjectId")
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("isREBudget")
+                        .HasColumnType("tinyint(1)");
+
                     b.HasKey("BudgetId");
 
                     b.HasIndex("LabourCode");

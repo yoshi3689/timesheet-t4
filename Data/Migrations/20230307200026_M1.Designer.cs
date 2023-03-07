@@ -11,7 +11,7 @@ using TimesheetApp.Data;
 namespace TimesheetApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230307191948_M1")]
+    [Migration("20230307200026_M1")]
     partial class M1
     {
         /// <inheritdoc />
@@ -309,6 +309,9 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<string>("WPProjectId")
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("isREBudget")
+                        .HasColumnType("tinyint(1)");
 
                     b.HasKey("BudgetId");
 
