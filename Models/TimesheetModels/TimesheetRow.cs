@@ -30,6 +30,8 @@ public partial class TimesheetRow
     [MaxLength(255)]
     public string? WorkPackageProjectId { get; set; }
 
+    public byte[]? Hash { get; set; }
+
     public string? Notes { get; set; }
     [NotMapped]
     public float Sat

@@ -12,7 +12,7 @@ namespace TimesheetApp.Models.TimesheetModels
         [Key]
         [Required]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int BudgetID { get; set; }
+        public int BudgetId { get; set; }
 
         public string? WPProjectId { get; set; }
         public double BudgetAmount { get; set; }

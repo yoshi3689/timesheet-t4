@@ -19,6 +19,8 @@ public partial class Timesheet
     public DateOnly? EndDate { get; set; }
 
     public double? TotalHours { get; set; }
+    public double FlexHours { get; set; }
+    public double Overtime { get; set; }
     [Required]
     public string UserId { get; set; } = null!;
 
