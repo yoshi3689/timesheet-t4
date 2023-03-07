@@ -22,7 +22,6 @@ namespace TimesheetApp.Models.TimesheetModels
         [Required]
         [Display(Name = "Project Manager")]
         public string? ProjectManagerId { get; set; }
-        [Required]
         [Display(Name = "Asst. Project Manager")]
         public string? AssistantProjectManagerId { get; set; }
         [Display(Name = "Budget")]

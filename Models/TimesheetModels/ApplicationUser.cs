@@ -33,6 +33,7 @@ namespace TimesheetApp.Models
         public bool HasTempPassword { get; set; }
         public double Salary { get; set; }
         public byte[]? PublicKey { get; set; }
+        public byte[]? PrivateKey { get; set; }
         [Required]
         public string? LabourGradeCode { get; set; }
         public string? SupervisorId { get; set; }
@@ -70,8 +71,5 @@ namespace TimesheetApp.Models
 
         [InverseProperty("User")]
         public virtual ICollection<EmployeeWorkPackage>? WorkPackages { get; set; }
-
-        [InverseProperty("Approver")]
-        public virtual ICollection<ApprovedTimesheet>? ApprovedTimesheets { get; set; }
     }
 }

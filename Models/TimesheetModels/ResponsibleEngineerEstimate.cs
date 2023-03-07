@@ -13,8 +13,11 @@ namespace TimesheetApp.Models.TimesheetModels
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         public string? ProjectId { get; set; }
-        public string? WorkPackageId { get; set; }
+        public string? WPProjectId { get; set; }
         public double EstimatedCost { get; set; }
-
+        public DateOnly? Date { get; set; }
+        public string? LabourCode { get; set; }
+        [ForeignKey("LabourCode")]
+        public LabourGrade? LabourGrade { get; set; }
     }
 }

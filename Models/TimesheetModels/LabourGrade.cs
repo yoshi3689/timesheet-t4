@@ -25,6 +25,9 @@ namespace TimesheetApp.Models.TimesheetModels
         [InverseProperty("LabourGrade")]
         public virtual ICollection<Budget>? Budgets { get; set; }
 
+        [InverseProperty("LabourGrade")]
+        public virtual ICollection<ResponsibleEngineerEstimate>? ResponsibleEngineerEstimates { get; set; }
+
 
     }
 }

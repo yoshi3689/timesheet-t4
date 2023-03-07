@@ -11,7 +11,7 @@ using TimesheetApp.Data;
 namespace TimesheetApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230303184459_M1")]
+    [Migration("20230307191948_M1")]
     partial class M1
     {
         /// <inheritdoc />
@@ -224,6 +224,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<byte[]>("PrivateKey")
+                        .HasColumnType("longblob");
+
                     b.Property<byte[]>("PublicKey")
                         .HasColumnType("longblob");
 
@@ -292,91 +295,9 @@ namespace TimesheetApp.Data.Migrations
                     b.ToTable("Signatures");
                 });
 
-            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.ApprovedTimesheet", b =>
-                {
-                    b.Property<int>("ApprovedTimesheetId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("ApproverId")
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<string>("EndDate")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Signature")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("TotalHours")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("ApprovedTimesheetId");
-
-                    b.HasIndex("ApproverId");
-
-                    b.ToTable("ApprovedTimesheet");
-                });
-
-            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.ApprovedTimesheetRow", b =>
-                {
-                    b.Property<int>("ApprovedTimesheetRowId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ApprovedTimesheetId")
-                        .IsRequired()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Fri")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Mon")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("ProjectId")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Sat")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Sun")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Thu")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("TotalHoursRow")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Tue")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Wed")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("WorkPackageId")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("ApprovedTimesheetRowId");
-
-                    b.HasIndex("ApprovedTimesheetId");
-
-                    b.ToTable("ApprovedTimesheetRows");
-                });
-
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Budget", b =>
                 {
-                    b.Property<int>("BudgetID")
+                    b.Property<int>("BudgetId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
@@ -389,11 +310,11 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("WPProjectId")
                         .HasColumnType("longtext");
 
-                    b.HasKey("BudgetID");
+                    b.HasKey("BudgetId");
 
                     b.HasIndex("LabourCode");
 
-                    b.ToTable("Budget");
+                    b.ToTable("Budgets");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.EmployeeProject", b =>
@@ -453,7 +374,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("double");
 
                     b.Property<string>("AssistantProjectManagerId")
-                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("ProjectManagerId")
@@ -472,6 +392,34 @@ namespace TimesheetApp.Data.Migrations
                     b.ToTable("Projects");
                 });
 
+            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.ResponsibleEngineerEstimate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<double>("EstimatedCost")
+                        .HasColumnType("double");
+
+                    b.Property<string>("LabourCode")
+                        .HasColumnType("varchar(2)");
+
+                    b.Property<string>("ProjectId")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("WPProjectId")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LabourCode");
+
+                    b.ToTable("ResponsibleEngineerEstimates");
+                });
+
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Timesheet", b =>
                 {
                     b.Property<int>("TimesheetId")
@@ -481,6 +429,12 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<DateOnly?>("EndDate")
                         .IsRequired()
                         .HasColumnType("date");
+
+                    b.Property<double>("FlexHours")
+                        .HasColumnType("double");
+
+                    b.Property<double>("Overtime")
+                        .HasColumnType("double");
 
                     b.Property<double?>("TotalHours")
                         .HasColumnType("double");
@@ -501,6 +455,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<int>("TimesheetRowId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    b.Property<byte[]>("Hash")
+                        .HasColumnType("longblob");
 
                     b.Property<string>("Notes")
                         .HasColumnType("longtext");
@@ -665,26 +622,6 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.ApprovedTimesheet", b =>
-                {
-                    b.HasOne("TimesheetApp.Models.ApplicationUser", "Approver")
-                        .WithMany("ApprovedTimesheets")
-                        .HasForeignKey("ApproverId");
-
-                    b.Navigation("Approver");
-                });
-
-            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.ApprovedTimesheetRow", b =>
-                {
-                    b.HasOne("TimesheetApp.Models.TimesheetModels.ApprovedTimesheet", "ApprovedTimesheet")
-                        .WithMany()
-                        .HasForeignKey("ApprovedTimesheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ApprovedTimesheet");
-                });
-
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Budget", b =>
                 {
                     b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "LabourGrade")
@@ -736,9 +673,7 @@ namespace TimesheetApp.Data.Migrations
                 {
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "AssistantProjectManager")
                         .WithMany("AssistantManagedProjects")
-                        .HasForeignKey("AssistantProjectManagerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("AssistantProjectManagerId");
 
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "ProjectManager")
                         .WithMany("ManagedProjects")
@@ -749,6 +684,15 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("AssistantProjectManager");
 
                     b.Navigation("ProjectManager");
+                });
+
+            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.ResponsibleEngineerEstimate", b =>
+                {
+                    b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "LabourGrade")
+                        .WithMany("ResponsibleEngineerEstimates")
+                        .HasForeignKey("LabourCode");
+
+                    b.Navigation("LabourGrade");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Timesheet", b =>
@@ -822,8 +766,6 @@ namespace TimesheetApp.Data.Migrations
                 {
                     b.Navigation("ApprovableUsers");
 
-                    b.Navigation("ApprovedTimesheets");
-
                     b.Navigation("AssistantManagedProjects");
 
                     b.Navigation("EmployeeProjects");
@@ -844,6 +786,8 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("ApplicationUsers");
 
                     b.Navigation("Budgets");
+
+                    b.Navigation("ResponsibleEngineerEstimates");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Project", b =>
