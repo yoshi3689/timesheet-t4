@@ -2,7 +2,10 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
-<ul class="navbar-nav">
+  <!-- Collapsible content -->
+  <div class="collapse navbar-collapse" id="navbarSupportedContent15">
+
+    <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
     @if(User.IsInRole("Admin")){
@@ -33,3 +36,7 @@ else
     </li>
 }
 </ul>
+
+  </div>
+
+

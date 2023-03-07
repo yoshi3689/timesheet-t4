@@ -118,38 +118,10 @@ namespace TimesheetApp.Controllers
             return View(labourGrade);
         }
 
-        // GET: LabourGrade/Delete/5
-        public async Task<IActionResult> Delete(string id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var labourGrade = await _context.LabourGrades!
-                .FirstOrDefaultAsync(m => m.LabourCode == id);
-            if (labourGrade == null)
-            {
-                return NotFound();
-            }
-
-            return View(labourGrade);
-        }
-
-        // POST: LabourGrade/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(string id)
-        {
-            var labourGrade = await _context.LabourGrades!.FindAsync(id);
-            _context.LabourGrades!.Remove(labourGrade);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
         private bool LabourGradeExists(string id)
         {
             return _context.LabourGrades!.Any(e => e.LabourCode == id);
         }
+
     }
 }
