@@ -43,6 +43,7 @@ public partial class TimesheetRow
         set
         {
             setHour(SAT, value);
+            TotalHoursRow = getSum();
         }
     }
     [NotMapped]
@@ -55,6 +56,7 @@ public partial class TimesheetRow
         set
         {
             setHour(SUN, value);
+            TotalHoursRow = getSum();
         }
     }
     [NotMapped]
@@ -67,6 +69,7 @@ public partial class TimesheetRow
         set
         {
             setHour(MON, value);
+            TotalHoursRow = getSum();
         }
     }
     [NotMapped]
@@ -79,6 +82,7 @@ public partial class TimesheetRow
         set
         {
             setHour(TUE, value);
+            TotalHoursRow = getSum();
         }
     }
     [NotMapped]
@@ -91,6 +95,7 @@ public partial class TimesheetRow
         set
         {
             setHour(WED, value);
+            TotalHoursRow = getSum();
         }
     }
     [NotMapped]
@@ -103,6 +108,7 @@ public partial class TimesheetRow
         set
         {
             setHour(THU, value);
+            TotalHoursRow = getSum();
         }
     }
     [NotMapped]
@@ -115,6 +121,7 @@ public partial class TimesheetRow
         set
         {
             setHour(FRI, value);
+            TotalHoursRow = getSum();
         }
     }
 

@@ -10,9 +10,9 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var host = builder.Configuration["DBHOST"] ?? "localhost";
-        var port = builder.Configuration["DBPORT"] ?? "3333";
-        var password = builder.Configuration["DBPASSWORD"] ?? "password123";
-        var db = builder.Configuration["DBNAME"] ?? "testdb";
+        var port = builder.Configuration["DBPORT"] ?? "3306";
+        var password = builder.Configuration["DBPASSWORD"] ?? "SMarky72212!";
+        var db = builder.Configuration["DBNAME"] ?? "TimesheetDB";
 
         string connectionString = $"server={host}; userid=root; pwd={password};"
                 + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";

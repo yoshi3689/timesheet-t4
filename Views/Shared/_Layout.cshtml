@@ -24,13 +24,19 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="TimesheetAPI"
-                                asp-action="Index">Timesheets</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Project"
-                                asp-action="Index">Projects</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button"
+                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Services
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item  text-dark" asp-area="" asp-controller="TimesheetAPI"
+                                    asp-action="Index">Timesheets</a>
+                                <a class="dropdown-item text-dark" asp-area="" asp-controller="Project"
+                                    asp-action="Index">Projects</a>
+                                <a class="dropdown-item text-dark" asp-area="" asp-controller="EmployeeProject"
+                                    asp-action="Index">Assign Employee</a>
+                            </div>
                         </li>
                     </ul>
                     <partial name="_LoginPartial" />        

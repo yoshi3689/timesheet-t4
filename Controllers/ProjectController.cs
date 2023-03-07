@@ -69,7 +69,7 @@ namespace TimesheetApp.Controllers
             return View(new Project());
         }
 
-        [Authorize(Roles = "HR,Admin")]
+        [Authorize]
         public IActionResult Edit(string? id)
         {
             CurrentProject = id;
