@@ -12,11 +12,12 @@ namespace TimesheetApp.Models.TimesheetModels
         [Key]
         [Required]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int BudgetID { get; set; }
+        public int BudgetId { get; set; }
 
         public string? WPProjectId { get; set; }
         public double BudgetAmount { get; set; }
         public string? LabourCode { get; set; }
+        public bool isREBudget { get; set; }
         [ForeignKey("LabourCode")]
         public LabourGrade? LabourGrade { get; set; }
     }

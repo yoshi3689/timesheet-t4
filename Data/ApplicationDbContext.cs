@@ -14,13 +14,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<Timesheet>? Timesheets { get; set; }
     public virtual DbSet<TimesheetRow>? TimesheetRows { get; set; }
     public virtual DbSet<Signature>? Signatures { get; set; }
-    public virtual DbSet<ApprovedTimesheet>? ApprovedTimesheet { get; set; }
-    public virtual DbSet<ApprovedTimesheetRow>? ApprovedTimesheetRows { get; set; }
     public virtual DbSet<EmployeeProject>? EmployeeProjects { get; set; }
     public virtual DbSet<EmployeeWorkPackage>? EmployeeWorkPackages { get; set; }
     public virtual DbSet<LabourGrade>? LabourGrades { get; set; }
     public virtual DbSet<Project>? Projects { get; set; }
+    public virtual DbSet<Budget>? Budgets { get; set; }
+    public virtual DbSet<ResponsibleEngineerEstimate>? ResponsibleEngineerEstimates { get; set; }
     public virtual DbSet<WorkPackage>? WorkPackages { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
