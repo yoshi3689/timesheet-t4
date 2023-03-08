@@ -16,6 +16,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using TimesheetApp.Models;
 using TimesheetApp.Data;
+using TimesheetApp.Helpers;
+using System.Text;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account
 {

@@ -1,60 +1,96 @@
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
-using TimesheetApp.Models;
+using System.Text;
 
 namespace TimesheetApp.Helpers
 {
-    public class KeyHelper
+    public static class KeyHelper
     {
-        public static byte[] CreateKeyPair(string currentUser)
+
+        private const int Keysize = 128;
+
+        private const int DerivationIterations = 1000;
+
+        public static byte[] Encrypt(byte[] plainText, string passPhrase)
         {
-            var parameters = new CspParameters
+            var saltStringBytes = Generate256BitsOfRandomEntropy();
+            var ivStringBytes = Generate256BitsOfRandomEntropy();
+            using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations, HashAlgorithmName.SHA256))
             {
-                KeyContainerName = currentUser
-            };
-            using var rsa = new RSACryptoServiceProvider(parameters);
-            return rsa.ExportRSAPublicKey();
+                var keyBytes = password.GetBytes(Keysize / 8);
+                using (var symmetricKey = Aes.Create())
+                {
+                    symmetricKey.BlockSize = Keysize;
+                    symmetricKey.Mode = CipherMode.CBC;
+                    symmetricKey.Padding = PaddingMode.PKCS7;
+                    using (var encryptor = symmetricKey.CreateEncryptor(keyBytes, ivStringBytes))
+                    {
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
+                            {
+                                cryptoStream.Write(plainText, 0, plainText.Length);
+                                cryptoStream.FlushFinalBlock();
+                                var cipherTextBytes = saltStringBytes;
+                                cipherTextBytes = cipherTextBytes.Concat(ivStringBytes).ToArray();
+                                cipherTextBytes = cipherTextBytes.Concat(memoryStream.ToArray()).ToArray();
+                                memoryStream.Close();
+                                cryptoStream.Close();
+                                return cipherTextBytes;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-
-        public static void GetKeyFromContainer(string currentUser)
+        public static byte[] Decrypt(byte[] cipherText, string passPhrase)
         {
-            // Create the CspParameters object and set the key container
-            // name used to store the RSA key pair.
-            var parameters = new CspParameters
+            var saltStringBytes = cipherText.Take(Keysize / 8).ToArray();
+            var ivStringBytes = cipherText.Skip(Keysize / 8).Take(Keysize / 8).ToArray();
+            var cipherTextBytes = cipherText.Skip((Keysize / 8) * 2).Take(cipherText.Length - ((Keysize / 8) * 2)).ToArray();
+
+            using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations, HashAlgorithmName.SHA256))
             {
-                KeyContainerName = currentUser
-            };
-
-            // Create a new instance of RSACryptoServiceProvider that accesses
-            // the key container MyKeyContainerName.
-            using var rsa = new RSACryptoServiceProvider(parameters);
-
-            // Display the key information to the console.
-            Console.WriteLine($"Key retrieved from container : \n {rsa.ToXmlString(true)}");
+                var keyBytes = password.GetBytes(Keysize / 8);
+                using (var symmetricKey = Aes.Create())
+                {
+                    symmetricKey.BlockSize = Keysize;
+                    symmetricKey.Mode = CipherMode.CBC;
+                    symmetricKey.Padding = PaddingMode.PKCS7;
+                    using (var decryptor = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
+                    {
+                        using (var memoryStream = new MemoryStream(cipherTextBytes))
+                        {
+                            using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+                            {
+                                byte[] buffer = new byte[4096];
+                                using (var outputStream = new MemoryStream())
+                                {
+                                    int bytesRead;
+                                    while ((bytesRead = cryptoStream.Read(buffer, 0, buffer.Length)) > 0)
+                                    {
+                                        outputStream.Write(buffer, 0, bytesRead);
+                                    }
+                                    return outputStream.ToArray();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-        public static void DeleteKeyFromContainer(string currentUser)
+
+        private static byte[] Generate256BitsOfRandomEntropy()
         {
-            // Create the CspParameters object and set the key container
-            // name used to store the RSA key pair.
-            var parameters = new CspParameters
+            var randomBytes = new byte[16];
+            using (var rngCsp = RandomNumberGenerator.Create())
             {
-                KeyContainerName = currentUser
-            };
-
-            // Create a new instance of RSACryptoServiceProvider that accesses
-            // the key container.
-            using var rsa = new RSACryptoServiceProvider(parameters)
-            {
-                // Delete the key entry in the container.
-                PersistKeyInCsp = false
-            };
-
-            // Call Clear to release resources and delete the key from the container.
-            rsa.Clear();
+                rngCsp.GetBytes(randomBytes);
+            }
+            return randomBytes;
         }
     }
 }
