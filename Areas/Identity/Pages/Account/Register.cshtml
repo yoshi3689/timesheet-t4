@@ -4,7 +4,7 @@
 ViewData["Title"] = "Register";
 }
 
-<h1>@ViewData["Title"]</h1>
+<!-- <h1>@ViewData["Title"]</h1> -->
 
 <div class="row justify-content-center">
     <div class="col-md-8">
@@ -89,25 +89,47 @@ ViewData["Title"] = "Register";
                     </div>
                 </div>
 
-                <!-- MAYBE FIX THE NO DORPDOWN ICON -->
+
+
                 <div class="form-group row mt-3">
                     <label asp-for="Input.LabourGrade" class="col-sm-3 col-form-label">Labour Grade</label>
                     <div class="col-sm-9">
-                        <select asp-for="Input.LabourGrade" class="form-control" autocomplete="off" aria-required="true"
-                            asp-items="ViewBag.LabourGrades" placeholder="Select labour grade"></select>
+                        <select asp-for="Input.LabourGrade" asp-items="ViewBag.LabourGrades" class="form-select"
+                            aria-label="Default select example">
+                        </select>
                         <span asp-validation-for="Input.LabourGrade" class="text-danger"></span>
                     </div>
                 </div>
 
-                <!-- MAYBE FIX THE NO DORPDOWN ICON -->
                 <div class="form-group row mt-3">
+                    <label asp-for="Input.Supervisor" class="col-sm-3 col-form-label">Supervisor</label>
+                    <div class="col-sm-9">
+                        <select asp-for="Input.Supervisor" asp-items="ViewBag.Supervisors" class="form-select"
+                            aria-label="Default select example">
+                        </select>
+                        <span asp-validation-for="Input.Supervisor" class="text-danger"></span>
+                    </div>
+                </div>
+
+
+                <!-- <div class="form-group row mt-3">
+                    <label asp-for="Input.LabourGrade" class="col-sm-3 col-form-label">Labour Grade</label>
+                    <div class="col-sm-9">
+                        <select asp-for="Input.LabourGrade" class="form-control select-caret" autocomplete="off"
+                            aria-required="true" asp-items="ViewBag.LabourGrades"
+                            placeholder="Select labour grade"></select>
+                        <span asp-validation-for="Input.LabourGrade" class="text-danger"></span>
+                    </div>
+                </div> -->
+
+                <!-- <div class="form-group row mt-3">
                     <label asp-for="Input.Supervisor" class="col-sm-3 col-form-label">Supervisor</label>
                     <div class="col-sm-9">
                         <select asp-for="Input.Supervisor" class="form-control" autocomplete="off" aria-required="true"
                             asp-items="ViewBag.Supervisors" placeholder="Select supervisor"></select>
                         <span asp-validation-for="Input.Supervisor" class="text-danger"></span>
                     </div>
-                </div>
+                </div> -->
 
 
             </div>
@@ -137,7 +159,7 @@ ViewData["Title"] = "Register";
 
                 <!-- BUTTON SECTION -->
                 <!-- MAYBE CHANGE COLOR DEPEDNINGON THEME OF SYSTEM -->
-                <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-success px-4 py-3">Create
+                <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary px-4 py-3">Create
                     Account</button>
 
                 <div />
