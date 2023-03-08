@@ -31,8 +31,29 @@
         </div>
     </div>
 
+    <div class="modal" tabindex="-1" role="dialog" id="employeeModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign Employee</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="availableEmployees">
+                    </p>
+                    @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
+                    <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        onClick="window.location.reload();">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentWorkPackage = "";
+        let bottomLevelWorkPackage = "";
         let div;
         let name;
         let re;
@@ -65,6 +86,9 @@
             ec.innerHTML = "Budget: @wp.Budget";
             ec.className = "label";
             div.appendChild(ec);*@
+
+            @* this button should be disabled if 
+            there's any employee to the work package *@
             closed = document.createElement("span");
             closed.className = "label";
             closed.innerHTML = "Closed: @wp.IsClosed";
@@ -116,38 +140,45 @@
                     employeeButton.value = "@wp.WorkPackageId";
                     employeeButton.name = "name";
                     employeeButton.className = "label";
-                    employeeButton.addEventListener('click', async function callSplit(info) {
+                    employeeButton.addEventListener('click', async function getAvailableEmployees(info) {
                 currentWorkPackage = info.srcElement.value;
-                await fetch("/Project/GetDirectChildren", {
-                        method: "POST",
+                bottomLevelWorkPackage = info.target.parentNode.id;
+                const avaialbleEmpEle = document.querySelector("#availableEmployees");
+                await fetch("/Project/GetAvailableEmployees", {
+                        method: "GET",
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({
-                            WorkPackageId: info.srcElement.value
-                        }),
                     })
+
                     .then((response) => {
                         return response.json();
                     })
                     .then((response) => {
-                        $("#splitModal").modal("show");
-                        response.forEach(c => {
-                            var a = document.createElement("p");
-                            a.innerHTML = c.workPackageId;
-                            document.querySelector("#childWorkPackages").appendChild(a);
+                        console.log(response)
+                        $("#employeeModal").modal("show");
+                        response.forEach((c,index) => {
+                            var a = document.createElement("div");
+                            a.classList.add(`emp_${index}`);
+                            a.classList.add(`emp-name`);
+                            a.innerHTML = `
+                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault${index}">
+                                <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
+                                <span style="display:none;" >${c.id}</span>
+                                `;
+                            avaialbleEmpEle.appendChild(a);
                         });
                         if (response.length == 0) {
                             var a = document.createElement("p");
-                            a.innerHTML = "Currently a bottom level package.";
-                            document.querySelector("#childWorkPackages").appendChild(a);
+                            a.innerHTML = "No avaialble employees";
+                            avaialbleEmpEle.appendChild(a);
                         }
                     });
 
             }, false);
             employeeButton.type = "button";
-            employeeButton.innerHTML = "Create Subpackage";
+            employeeButton.innerHTML = "Assign Employee";
             div.appendChild(employeeButton);
                 </text>
             }
@@ -182,5 +213,41 @@
                 element.innerHTML = c;
                 document.querySelector("#childWorkPackages").appendChild(element);
             });
+        }
+
+        async function assignEmployeeToWp() {
+            // creates an array of employees to add to this wp
+            const empList = document.querySelectorAll(".emp-name");
+            let employeesToBeAdded = Array.from(empList).map(e => {
+                if (e.children[0].checked == true) {
+                    return { WorkPackageProjectId: "@Model[0].ProjectId", WorkPackageId : bottomLevelWorkPackage ,UserId : e.children[2].innerHTML};
+                }
+                
+            });
+            console.log(employeesToBeAdded);
+            @* Needs to have the WorkPackageId and ProjectId *@
+
+            // which table should I add to?
+            await fetch("/Project/AssignEmployees", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employeesToBeAdded),
+            }).then(res => {
+                return res.json();
+            }).then(res => {
+                if (res.length !== 0) {
+                    res.forEach(e=> {
+                        console.log(e);
+                        console.log("res after adding emp to wp" +e.firstName);
+                    })
+                }
+                @* let element = document.createElement("p");
+                element.innerHTML = c; *@
+                @* document.querySelector("#childWorkPackages").appendChild(element); *@
+            });
+
         }
     </script>

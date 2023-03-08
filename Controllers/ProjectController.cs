@@ -100,6 +100,23 @@ namespace TimesheetApp.Controllers
             return wps;
         }
 
+
+        [Authorize(Roles = "HR,Admin")]
+        public IActionResult AssignEmployees([FromBody] List<EmployeeWorkPackage> ewps)
+        {
+            foreach (var e in ewps)
+            {
+                Console.WriteLine(e.WorkPackageId);
+                Console.WriteLine(e.WorkPackageProjectId);
+                Console.WriteLine(e.UserId);
+                _context.EmployeeWorkPackages!.Add(e);
+            }
+            _context.SaveChanges();
+
+            // var empsAdded = _context.Users!.Where(ewp => ewps.Contains());
+            return Json(null);
+        }
+
         [Authorize(Roles = "HR,Admin")]
         public IActionResult Split([FromBody] WorkPackage p)
         {
@@ -132,12 +149,24 @@ namespace TimesheetApp.Controllers
             }
         }
 
+
         [Authorize(Roles = "HR,Admin")]
         public IActionResult GetDirectChildren([FromBody] WorkPackage parent)
         {
             CurrentProject = HttpContext.Session.GetString("CurrentProject");
             return new JsonResult(_context.WorkPackages!.Where(c => c.ProjectId == CurrentProject && c.ParentWorkPackageId == parent.WorkPackageId));
         }
+
+
+        // get employees with the project id
+        [Authorize(Roles = "HR,Admin")]
+        public IActionResult GetAvailableEmployees()
+        {
+            // get the name of the bottom level wp
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => ep.ProjectId == HttpContext.Session.GetString("CurrentProject")).Select(e => e.User));
+        }
+
+
 
 
         [HttpPost]
@@ -197,110 +226,115 @@ namespace TimesheetApp.Controllers
             }
         }
 
-        public async Task<IActionResult> Report() {
-    MemoryStream ms = new MemoryStream();
+        public async Task<IActionResult> Report()
+        {
+            MemoryStream ms = new MemoryStream();
 
-    PdfWriter writer = new PdfWriter(ms);
-    PdfDocument pdfDoc = new PdfDocument(writer);
-    Document document = new Document(pdfDoc, PageSize.A4, false);
-    writer.SetCloseStream(false);
+            PdfWriter writer = new PdfWriter(ms);
+            PdfDocument pdfDoc = new PdfDocument(writer);
+            Document document = new Document(pdfDoc, PageSize.A4, false);
+            writer.SetCloseStream(false);
 
-    Paragraph header = new Paragraph("Rate Sheet")
-      .SetTextAlignment(TextAlignment.CENTER)
-      .SetFontSize(20);
+            Paragraph header = new Paragraph("Rate Sheet")
+              .SetTextAlignment(TextAlignment.CENTER)
+              .SetFontSize(20);
 
-    document.Add(header);
+            document.Add(header);
 
-    int fontSizeSH = 15;
-    Paragraph subheader = new Paragraph($"Date of Issue: {DateTime.Now.ToShortDateString()}").SetFontSize(fontSizeSH);
-    document.Add(subheader);
+            int fontSizeSH = 15;
+            Paragraph subheader = new Paragraph($"Date of Issue: {DateTime.Now.ToShortDateString()}").SetFontSize(fontSizeSH);
+            document.Add(subheader);
 
-    Project prj = await _context.Projects!.FindAsync(HttpContext.Session.GetString("CurrentProject")!)!;
-    ApplicationUser mgr = await _context.Users.FindAsync(prj.ProjectManagerId);
-    Console.WriteLine(prj.ProjectId);
-    if (prj != null) {
-        document.Add(new Paragraph($"Project Name: {prj!.ProjectId}").SetFontSize(fontSizeSH));
-        document.Add(new Paragraph($"Manager Name: {mgr!.FirstName} {mgr!.LastName}").SetFontSize(fontSizeSH));
-        // document.Add(new Paragraph($"Manager Name: {prj!.ProjectManagerId}").SetFontSize(fontSizeSH));
+            Project prj = await _context.Projects!.FindAsync(HttpContext.Session.GetString("CurrentProject")!)!;
+            ApplicationUser mgr = await _context.Users.FindAsync(prj.ProjectManagerId);
+            Console.WriteLine(prj.ProjectId);
+            if (prj != null)
+            {
+                document.Add(new Paragraph($"Project Name: {prj!.ProjectId}").SetFontSize(fontSizeSH));
+                document.Add(new Paragraph($"Manager Name: {mgr!.FirstName} {mgr!.LastName}").SetFontSize(fontSizeSH));
+                // document.Add(new Paragraph($"Manager Name: {prj!.ProjectManagerId}").SetFontSize(fontSizeSH));
 
-    }
+            }
 
-    // empty line
-    document.Add(new Paragraph(""));
+            // empty line
+            document.Add(new Paragraph(""));
 
-    // Line separator
-    LineSeparator ls = new LineSeparator(new SolidLine());
-    document.Add(ls);
+            // Line separator
+            LineSeparator ls = new LineSeparator(new SolidLine());
+            document.Add(ls);
 
-    // empty line
-    document.Add(new Paragraph(""));
+            // empty line
+            document.Add(new Paragraph(""));
 
 
 
-    // Add table containing data
-    document.Add(await GetPdfTable());
+            // Add table containing data
+            document.Add(await GetPdfTable());
 
-    // Page Numbers
-    int n = pdfDoc.GetNumberOfPages();
-    for (int i = 1; i <= n; i++) {
-      document.ShowTextAligned(new Paragraph(String
-        .Format("Page " + i + " of " + n)),
-        559, 806, i, TextAlignment.RIGHT,
-        VerticalAlignment.TOP, 0);
-    }
+            // Page Numbers
+            int n = pdfDoc.GetNumberOfPages();
+            for (int i = 1; i <= n; i++)
+            {
+                document.ShowTextAligned(new Paragraph(String
+                  .Format("Page " + i + " of " + n)),
+                  559, 806, i, TextAlignment.RIGHT,
+                  VerticalAlignment.TOP, 0);
+            }
 
-    document.Close();
-    byte[] byteInfo = ms.ToArray();
-    ms.Write(byteInfo, 0, byteInfo.Length);
-    ms.Position = 0;
+            document.Close();
+            byte[] byteInfo = ms.ToArray();
+            ms.Write(byteInfo, 0, byteInfo.Length);
+            ms.Position = 0;
 
-    FileStreamResult fileStreamResult = new FileStreamResult(ms, "application/pdf");
+            FileStreamResult fileStreamResult = new FileStreamResult(ms, "application/pdf");
 
-    //Uncomment this to return the file as a download
-    fileStreamResult.FileDownloadName = "RateSheet.pdf";
+            //Uncomment this to return the file as a download
+            fileStreamResult.FileDownloadName = "RateSheet.pdf";
 
-    return fileStreamResult;
-  }
+            return fileStreamResult;
+        }
 
-  private async Task<Table> GetPdfTable() {
-    // fetch data     
-    List<LabourGrade> lgs = await _context.LabourGrades!.ToListAsync();
-      // Table with 2 columns
-      Table table = new Table(2, false);
-      // Headings
-      Cell cellLabourCode = new Cell(1, 1)
-         .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
-         .SetTextAlignment(TextAlignment.CENTER)
-         .Add(new Paragraph("Labour Grade Code"));
+        private async Task<Table> GetPdfTable()
+        {
+            // fetch data     
+            List<LabourGrade> lgs = await _context.LabourGrades!.ToListAsync();
+            // Table with 2 columns
+            Table table = new Table(2, false);
+            // Headings
+            Cell cellLabourCode = new Cell(1, 1)
+               .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+               .SetTextAlignment(TextAlignment.CENTER)
+               .Add(new Paragraph("Labour Grade Code"));
 
-      Cell cellRates = new Cell(1, 1)
-         .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
-         .SetTextAlignment(TextAlignment.LEFT)
-         .Add(new Paragraph("Rate"));
+            Cell cellRates = new Cell(1, 1)
+               .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+               .SetTextAlignment(TextAlignment.LEFT)
+               .Add(new Paragraph("Rate"));
 
-    //   Cell cellQuantity = new Cell(1, 1)
-    //      .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
-    //      .SetTextAlignment(TextAlignment.CENTER)
-    //      .Add(new Paragraph("Estimate by Responsible Engineer"));
+            //   Cell cellQuantity = new Cell(1, 1)
+            //      .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+            //      .SetTextAlignment(TextAlignment.CENTER)
+            //      .Add(new Paragraph("Estimate by Responsible Engineer"));
 
-      table.AddCell(cellLabourCode);
-      table.AddCell(cellRates);
+            table.AddCell(cellLabourCode);
+            table.AddCell(cellRates);
 
-      foreach (var item in lgs) {
-        Cell cId = new Cell(1, 1)
-            .SetTextAlignment(TextAlignment.CENTER)
-            .Add(new Paragraph(item.LabourCode!.ToString()));
+            foreach (var item in lgs)
+            {
+                Cell cId = new Cell(1, 1)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .Add(new Paragraph(item.LabourCode!.ToString()));
 
-        Cell cName = new Cell(1, 1)
-            .SetTextAlignment(TextAlignment.LEFT)
-            .Add(new Paragraph(item.Rate!.ToString()));
+                Cell cName = new Cell(1, 1)
+                    .SetTextAlignment(TextAlignment.LEFT)
+                    .Add(new Paragraph(item.Rate!.ToString()));
 
-        table.AddCell(cId);
-        table.AddCell(cName);
-      }
+                table.AddCell(cId);
+                table.AddCell(cName);
+            }
 
-      return table;
-  }
+            return table;
+        }
     }
 
     public class UniqueProjectName : ValidationAttribute
@@ -345,7 +379,7 @@ namespace TimesheetApp.Controllers
             }
         }
 
-              
+
     }
 
 }
