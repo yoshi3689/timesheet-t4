@@ -16,7 +16,7 @@ namespace TimesheetApp.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.2")
+                .HasAnnotation("ProductVersion", "7.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -306,6 +306,9 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<string>("WPProjectId")
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("isREBudget")
+                        .HasColumnType("tinyint(1)");
 
                     b.HasKey("BudgetId");
 
