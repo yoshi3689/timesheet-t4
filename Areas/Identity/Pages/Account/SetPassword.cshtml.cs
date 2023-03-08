@@ -87,7 +87,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                     var result = await _userManager.ResetPasswordAsync(user!, token, Input.Password!);
                     user!.HasTempPassword = false;
                     user.PublicKey = rsa.ExportRSAPublicKey();
-                    // user.PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey, Input.SignaturePassword);
+                    user.PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey(), Input.SignaturePassword!);
                     _context.SaveChanges();
                     return LocalRedirect(returnUrl);
                 }

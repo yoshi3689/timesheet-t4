@@ -1,60 +1,96 @@
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using TimesheetApp.Models;
 
 namespace TimesheetApp.Helpers
 {
     public static class KeyHelper
     {
-        private const int Keysize = 256;
+
+        private const int Keysize = 128;
+
         private const int DerivationIterations = 1000;
 
-        public static string Encrypt(string clearText)
+        public static byte[] Encrypt(byte[] plainText, string passPhrase)
         {
-            string EncryptionKey = "abc123";
-            byte[] clearBytes = Encoding.Unicode.GetBytes(clearText);
-            using (Aes encryptor = Aes.Create())
+            var saltStringBytes = Generate256BitsOfRandomEntropy();
+            var ivStringBytes = Generate256BitsOfRandomEntropy();
+            using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations, HashAlgorithmName.SHA256))
             {
-                Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
-                encryptor.Key = pdb.GetBytes(32);
-                encryptor.IV = pdb.GetBytes(16);
-                using (MemoryStream ms = new MemoryStream())
+                var keyBytes = password.GetBytes(Keysize / 8);
+                using (var symmetricKey = Aes.Create())
                 {
-                    using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write))
+                    symmetricKey.BlockSize = Keysize;
+                    symmetricKey.Mode = CipherMode.CBC;
+                    symmetricKey.Padding = PaddingMode.PKCS7;
+                    using (var encryptor = symmetricKey.CreateEncryptor(keyBytes, ivStringBytes))
                     {
-                        cs.Write(clearBytes, 0, clearBytes.Length);
-                        cs.Close();
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
+                            {
+                                cryptoStream.Write(plainText, 0, plainText.Length);
+                                cryptoStream.FlushFinalBlock();
+                                var cipherTextBytes = saltStringBytes;
+                                cipherTextBytes = cipherTextBytes.Concat(ivStringBytes).ToArray();
+                                cipherTextBytes = cipherTextBytes.Concat(memoryStream.ToArray()).ToArray();
+                                memoryStream.Close();
+                                cryptoStream.Close();
+                                return cipherTextBytes;
+                            }
+                        }
                     }
-                    clearText = Convert.ToBase64String(ms.ToArray());
                 }
             }
-            return clearText;
         }
-        public static string Decrypt(string cipherText)
+
+        public static byte[] Decrypt(byte[] cipherText, string passPhrase)
         {
-            string EncryptionKey = "abc123";
-            cipherText = cipherText.Replace(" ", "+");
-            byte[] cipherBytes = Convert.FromBase64String(cipherText);
-            using (Aes encryptor = Aes.Create())
+            var saltStringBytes = cipherText.Take(Keysize / 8).ToArray();
+            var ivStringBytes = cipherText.Skip(Keysize / 8).Take(Keysize / 8).ToArray();
+            var cipherTextBytes = cipherText.Skip((Keysize / 8) * 2).Take(cipherText.Length - ((Keysize / 8) * 2)).ToArray();
+
+            using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations, HashAlgorithmName.SHA256))
             {
-                Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
-                encryptor.Key = pdb.GetBytes(32);
-                encryptor.IV = pdb.GetBytes(16);
-                using (MemoryStream ms = new MemoryStream())
+                var keyBytes = password.GetBytes(Keysize / 8);
+                using (var symmetricKey = Aes.Create())
                 {
-                    using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateDecryptor(), CryptoStreamMode.Write))
+                    symmetricKey.BlockSize = Keysize;
+                    symmetricKey.Mode = CipherMode.CBC;
+                    symmetricKey.Padding = PaddingMode.PKCS7;
+                    using (var decryptor = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
                     {
-                        cs.Write(cipherBytes, 0, cipherBytes.Length);
-                        cs.Close();
+                        using (var memoryStream = new MemoryStream(cipherTextBytes))
+                        {
+                            using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+                            {
+                                byte[] buffer = new byte[4096];
+                                using (var outputStream = new MemoryStream())
+                                {
+                                    int bytesRead;
+                                    while ((bytesRead = cryptoStream.Read(buffer, 0, buffer.Length)) > 0)
+                                    {
+                                        outputStream.Write(buffer, 0, bytesRead);
+                                    }
+                                    return outputStream.ToArray();
+                                }
+                            }
+                        }
                     }
-                    cipherText = Encoding.Unicode.GetString(ms.ToArray());
                 }
             }
-            return cipherText;
+        }
+
+        private static byte[] Generate256BitsOfRandomEntropy()
+        {
+            var randomBytes = new byte[16];
+            using (var rngCsp = RandomNumberGenerator.Create())
+            {
+                rngCsp.GetBytes(randomBytes);
+            }
+            return randomBytes;
         }
     }
 }
