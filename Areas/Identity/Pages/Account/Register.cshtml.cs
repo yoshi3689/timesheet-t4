@@ -165,8 +165,6 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
                 await _userManager.AddToRolesAsync(user, roles);
-
-                user.PublicKey = KeyHelper.CreateKeyPair(user.Id);
                 _context.SaveChanges();
 
 

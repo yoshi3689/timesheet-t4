@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using TimesheetApp.Data;
+using TimesheetApp.Helpers;
 using TimesheetApp.Models;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account
@@ -47,6 +49,15 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             [Display(Name = "Confirm password")]
             [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
             public string? ConfirmPassword { get; set; }
+
+            [Required]
+            [DataType(DataType.Password)]
+            public string? SignaturePassword { get; set; }
+
+            [DataType(DataType.Password)]
+            [Display(Name = "Confirm password")]
+            [Compare("SignaturePassword", ErrorMessage = "The password and confirmation password do not match.")]
+            public string? SignatureConfirmPassword { get; set; }
         }
 
 
@@ -68,12 +79,15 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                if (Input!.Password == Input.ConfirmPassword)
+                if (Input!.Password == Input.ConfirmPassword && Input.SignaturePassword == Input.SignatureConfirmPassword)
                 {
+                    RSA rsa = RSA.Create();
                     var user = await _userManager.GetUserAsync(User);
                     var token = await _userManager.GeneratePasswordResetTokenAsync(user!);
                     var result = await _userManager.ResetPasswordAsync(user!, token, Input.Password!);
                     user!.HasTempPassword = false;
+                    user.PublicKey = rsa.ExportRSAPublicKey();
+                    // user.PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey, Input.SignaturePassword);
                     _context.SaveChanges();
                     return LocalRedirect(returnUrl);
                 }

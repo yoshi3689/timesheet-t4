@@ -2,59 +2,59 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using TimesheetApp.Models;
 
 namespace TimesheetApp.Helpers
 {
-    public class KeyHelper
+    public static class KeyHelper
     {
-        public static byte[] CreateKeyPair(string currentUser)
+        private const int Keysize = 256;
+        private const int DerivationIterations = 1000;
+
+        public static string Encrypt(string clearText)
         {
-            var parameters = new CspParameters
+            string EncryptionKey = "abc123";
+            byte[] clearBytes = Encoding.Unicode.GetBytes(clearText);
+            using (Aes encryptor = Aes.Create())
             {
-                KeyContainerName = currentUser
-            };
-            using var rsa = new RSACryptoServiceProvider(parameters);
-            return rsa.ExportRSAPublicKey();
+                Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
+                encryptor.Key = pdb.GetBytes(32);
+                encryptor.IV = pdb.GetBytes(16);
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write))
+                    {
+                        cs.Write(clearBytes, 0, clearBytes.Length);
+                        cs.Close();
+                    }
+                    clearText = Convert.ToBase64String(ms.ToArray());
+                }
+            }
+            return clearText;
         }
-
-
-        public static void GetKeyFromContainer(string currentUser)
+        public static string Decrypt(string cipherText)
         {
-            // Create the CspParameters object and set the key container
-            // name used to store the RSA key pair.
-            var parameters = new CspParameters
+            string EncryptionKey = "abc123";
+            cipherText = cipherText.Replace(" ", "+");
+            byte[] cipherBytes = Convert.FromBase64String(cipherText);
+            using (Aes encryptor = Aes.Create())
             {
-                KeyContainerName = currentUser
-            };
-
-            // Create a new instance of RSACryptoServiceProvider that accesses
-            // the key container MyKeyContainerName.
-            using var rsa = new RSACryptoServiceProvider(parameters);
-
-            // Display the key information to the console.
-            Console.WriteLine($"Key retrieved from container : \n {rsa.ToXmlString(true)}");
-        }
-        public static void DeleteKeyFromContainer(string currentUser)
-        {
-            // Create the CspParameters object and set the key container
-            // name used to store the RSA key pair.
-            var parameters = new CspParameters
-            {
-                KeyContainerName = currentUser
-            };
-
-            // Create a new instance of RSACryptoServiceProvider that accesses
-            // the key container.
-            using var rsa = new RSACryptoServiceProvider(parameters)
-            {
-                // Delete the key entry in the container.
-                PersistKeyInCsp = false
-            };
-
-            // Call Clear to release resources and delete the key from the container.
-            rsa.Clear();
+                Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
+                encryptor.Key = pdb.GetBytes(32);
+                encryptor.IV = pdb.GetBytes(16);
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateDecryptor(), CryptoStreamMode.Write))
+                    {
+                        cs.Write(cipherBytes, 0, cipherBytes.Length);
+                        cs.Close();
+                    }
+                    cipherText = Encoding.Unicode.GetString(ms.ToArray());
+                }
+            }
+            return cipherText;
         }
     }
 }
