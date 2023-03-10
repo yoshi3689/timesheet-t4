@@ -8,9 +8,8 @@
         <title>@ViewData["Title"]</title>
     </head>
     <h1>@ViewData["Title"]</h1>
-    <a asp-action="Report" class="btn btn-primary">Create Rate Sheet</a>
 
-    <div id="WorkPackages"></div>
+    <div id="WorkPackages" class="accordian"></div>
 
     <div class="modal" tabindex="-1" role="dialog" id="splitModal">
         <div class="modal-dialog" role="document">
@@ -77,10 +76,39 @@
         let splitButton;
         let employeeButton;
         let parent;
+        let item;
+        let headerDiv;
+        let header;
+        let collapse;
+        let ul;
         @foreach(var wp in Model) {
             <text>
-                div = document.createElement("div");
-            div.className = "wp";
+            item = document.createElement("div");
+            item.className = "accordion-item";
+
+            headerDiv = document.createElement("h2");
+            headerDiv.className = "accordion-header";
+            headerDiv.id = "dropdownID" + "@wp.WorkPackageId";
+
+            header = document.createElement("button");
+            header.className = "accordion-button";
+            header.type = "button";
+            header.setAttribute("data-bs-toggle", "collapse");
+            header.setAttribute("data-bs-target", "#" + "@wp.WorkPackageId" + "Panel");
+            header.setAttribute("aria-expanded", false);
+            header.setAttribute("aria-controls", "@wp.WorkPackageId" + "Panel");
+            header.innerHTML = "@wp.WorkPackageId";
+
+            headerDiv.appendChild(header);
+            item.appendChild(headerDiv);
+
+            collapse = document.createElement("div");
+            collapse.id = "@wp.WorkPackageId" + "Panel";
+            collapse.className = "accordion-collapse collapse show";
+            collapse.setAttribute("aria-labelledby", "dropdownID" + "@wp.WorkPackageId");
+
+            div = document.createElement("div");
+            div.className = "accordion-body";
             div.id = "@wp.WorkPackageId";
             name = document.createElement("span");
             name.innerHTML = "Work Package Name: @wp.WorkPackageId";
@@ -97,11 +125,6 @@
                     </text>
                 } 
             <text>
-                @* ec = document.createElement("span");
-            ec.innerHTML = "Budget: @wp.Budget";
-            ec.className = "label";
-            div.appendChild(ec);*@
-
             @* this button should be disabled if 
             there's any employee to the work package *@
             closed = document.createElement("span");
@@ -195,46 +218,49 @@
             employeeButton.type = "button";
             employeeButton.innerHTML = "Assign Employee";
             div.appendChild(employeeButton);
-            let ul = document.createElement("ul");
-            console.log("get assigned emp");
-                fetch("/Project/GetAssignedEmployees", {
-                method: "POST",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    WorkPackageId: employeeButton.value
-                    }),
-                })
-                .then((response) => {
-                    console.log(response)
-                    return response.json();
-                })
-                .then(res=>{
-                    ul.innerHTML = "<h3>Employees Assigned to this wp</h3>"
-                    if (res.length !== 0) {
-                        res.forEach(e=> {
-                        let element = document.createElement("li");
-                        element.innerHTML = e.firstName +" " + e.lastName;
-                        ul.appendChild(element);
-                    });
-                    } else {
-                        ul.innerHTML += "<p>No one is asssigned</p>"
-                    }
-                    div.appendChild(ul);
+            ul = document.createElement("ul");
+            fetch("/Project/GetAssignedEmployees", {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                WorkPackageId: employeeButton.value
+                }),
+            })
+            .then((response) => {
+                console.log(response)
+                return response.json();
+            })
+            .then(res=>{
+                ul.innerHTML = "<h3>Employees Assigned to this wp</h3>"
+                if (res.length !== 0) {
+                    res.forEach(e=> {
+                    let element = document.createElement("li");
+                    element.innerHTML = e.firstName +" " + e.lastName;
+                    ul.appendChild(element);
                 });
+                } else {
+                    ul.innerHTML += "<p>No one is asssigned</p>"
+                }
+                div.appendChild(ul);
+            });
                 </text>
             }
             @if (wp.ParentWorkPackageId != null && wp.ParentWorkPackageProjectId != null) {
                 <text>
-                    parent = document.querySelector("#@wp.ParentWorkPackageId");
-                parent.appendChild(div); 
+                collapse.appendChild(div);
+                item.appendChild(collapse);
+                parent = document.querySelector("#@wp.ParentWorkPackageId");
+                parent.appendChild(item);
                 </text>
             } else {
                 <text>
-                    parent = document.querySelector("#WorkPackages");
-                parent.appendChild(div); 
+                collapse.appendChild(div);
+                item.appendChild(collapse);
+                parent = document.querySelector("#WorkPackages");
+                parent.appendChild(item);
                 </text>
             }
         }
