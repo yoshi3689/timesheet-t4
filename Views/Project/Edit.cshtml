@@ -65,6 +65,27 @@
         </div>
     </div>
 
+    <div class="modal" tabindex="-1" role="dialog" id="RespEngModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                    <div class="modal-header">
+                    <h5 class="modal-title">Assign Responsible Engineer</h5>
+                </div>
+                <div class="modal-body">
+                    <div id="candidateEmployees">
+                        <h3>Candidates</h3>
+                    </div>
+                    @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
+                    <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        onClick="window.location.reload();">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentWorkPackage = "";
         let bottomLevelWorkPackage = "";
@@ -75,6 +96,7 @@
         let closed;
         let splitButton;
         let employeeButton;
+        let respEngButton;
         let parent;
         let item;
         let headerDiv;
@@ -171,53 +193,104 @@
             div.appendChild(splitButton);
 
             </text>
+            @* add two buttons: assign emp & assign resp eng *@
             @if (wp.IsBottomLevel) {
                 <text>
-                    @* get a list of employees *@
+                    @* add assign emp button *@
                     employeeButton = document.createElement("button");
+                    employeeButton.type = "button";
+                    employeeButton.innerHTML = "Assign Employee";
+                    div.appendChild(employeeButton);
                     employeeButton.value = "@wp.WorkPackageId";
                     employeeButton.name = "name";
                     employeeButton.className = "label";
                     employeeButton.addEventListener('click', async function getAvailableEmployees(info) {
-                currentWorkPackage = info.srcElement.value;
-                const avaialbleEmpEle = document.querySelector("#availableEmployees");
-                await fetch("/Project/GetAvailableEmployees", {
-                        method: "POST",
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            workPackageId: employeeButton.value
-                            }),
-                    })
-                    .then((response) => {
-                        return response.json();
-                    })
-                    .then((response) => {
-                        $("#employeeModal").modal("show");
-                        response.forEach((c,index) => {
-                            var a = document.createElement("div");
-                            a.classList.add(`emp_${index}`);
-                            a.classList.add(`emp-name`);
-                            a.innerHTML = `
-                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault${index}">
-                                <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
-                                <span style="display:none;" >${c.id}</span>
-                                `;
-                            avaialbleEmpEle.appendChild(a);
+                    @* currentWorkPackage = info.srcElement.value; *@
+                    const avaialbleEmpEle = document.querySelector("#availableEmployees");
+                    await fetch("/Project/GetAvailableEmployees", {
+                            method: "POST",
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                workPackageId: employeeButton.value
+                                }),
+                        })
+                        .then((response) => {
+                            return response.json();
+                        })
+                        .then((response) => {
+                            $("#employeeModal").modal("show");
+                            response.forEach((c,index) => {
+                                var a = document.createElement("div");
+                                a.classList.add(`emp_${index}`);
+                                a.classList.add(`emp-name`);
+                                a.innerHTML = `
+                                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault${index}">
+                                    <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
+                                    <span style="display:none;" >${c.id}</span>
+                                    `;
+                                avaialbleEmpEle.appendChild(a);
+                            });
+                            if (response.length == 0) {
+                                var a = document.createElement("p");
+                                a.innerHTML = "No avaialble employees";
+                                avaialbleEmpEle.appendChild(a);
+                            }
                         });
-                        if (response.length == 0) {
-                            var a = document.createElement("p");
-                            a.innerHTML = "No avaialble employees";
-                            avaialbleEmpEle.appendChild(a);
-                        }
-                    });
 
-            }, false);
-            employeeButton.type = "button";
-            employeeButton.innerHTML = "Assign Employee";
-            div.appendChild(employeeButton);
+                }, false);
+                    @* add assign respEng button *@
+                    respEngButton = document.createElement("button");
+                    respEngButton.type = "button";
+                    respEngButton.innerHTML = "Add Responsible Engineer";
+                    div.appendChild(respEngButton);
+                    respEngButton.value = "@wp.WorkPackageId";
+                    respEngButton.name = "name";
+                    respEngButton.className = "label";
+                    respEngButton.addEventListener('click', async function getCandidateEmployees(info) {
+                    @* currentWorkPackage = info.srcElement.value; *@
+                    const avaialbleEmpEle = document.querySelector("#candidateEmployees");
+                    await fetch("/Project/GetCandidateEmployees", {
+                            method: "POST",
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                workPackageId: respEngButton.value
+                                }),
+                        })
+                        .then((response) => {
+                            return response.json();
+                        })
+                        .then((response) => {
+                            $("#employeeModal").modal("show");
+                            response.forEach((c,index) => {
+                                var a = document.createElement("div");
+                                a.classList.add(`emp_${index}`);
+                                a.classList.add(`emp-name`);
+                                a.innerHTML = `
+                                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault${index}">
+                                    <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
+                                    <span style="display:none;" >${c.id}</span>
+                                    `;
+                                avaialbleEmpEle.appendChild(a);
+                            });
+                            if (response.length == 0) {
+                                var a = document.createElement("p");
+                                a.innerHTML = "No avaialble employees";
+                                avaialbleEmpEle.appendChild(a);
+                            }
+                        });
+
+                }, false);
+
+
+
+
+            @* updates list of assigned employees *@
             ul = document.createElement("ul");
             fetch("/Project/GetAssignedEmployees", {
             method: "POST",
@@ -249,6 +322,8 @@
                 }
                 div.appendChild(ul);
             });
+
+            
                 </text>
             }
             @if (wp.ParentWorkPackageId != null && wp.ParentWorkPackageProjectId != null) {
