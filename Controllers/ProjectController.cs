@@ -115,6 +115,21 @@ namespace TimesheetApp.Controllers
         }
 
         [Authorize(Roles = "HR,Admin")]
+        public async Task<IActionResult> AssignResponsibleEngineerAsync([FromBody] EmployeeWorkPackage ewp)
+        {
+            var LLWP = await _context.WorkPackages!.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
+            Console.WriteLine(LLWP.ResponsibleUserId);
+            // var PrevRespEng = await _context.Users!.FindAsync(LLWP!.ResponsibleUserId);
+            // var NewRespEng = await _context.Users!.FindAsync(ewp.UserId);
+            LLWP.ResponsibleUserId = ewp.UserId;
+            _context.SaveChanges();
+            // var ResponseArr = new List<ApplicationUser>();
+            // ResponseArr.Add(PrevRespEng);
+            // ResponseArr.Add(NewRespEng);
+            return new JsonResult("Success");
+        }
+
+        [Authorize(Roles = "HR,Admin")]
         public IActionResult Split([FromBody] WorkPackage p)
         {
             CurrentProject = HttpContext.Session.GetString("CurrentProject");
@@ -155,13 +170,24 @@ namespace TimesheetApp.Controllers
         }
 
 
-        // get employees with the project id
+        // get employees with the project id who are not assigned to the bottm lvl wpkg yet
         [Authorize(Roles = "HR,Admin")]
         public IActionResult GetAvailableEmployees([FromBody] WorkPackage LowestLevelWp)
         {
             // get empIds assigned to the lowest level wp
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
             return new JsonResult(_context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetString("CurrentProject")).Select(e => e.User));
+        }
+
+        // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
+        [Authorize(Roles = "HR,Admin")]
+        public async Task<IActionResult> GetCandidateEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
+        {
+
+            // get empIds assigned to the lowest level wp and not a responsible engineer
+            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && (ewp.WorkPackage!.ResponsibleUserId == null)).Select(filtered => filtered.UserId);
+            // just in case, check if the work package is in this project too
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetString("CurrentProject")).Select(e => e.User));
         }
 
         // get employees with the project id
@@ -173,6 +199,17 @@ namespace TimesheetApp.Controllers
 
             // return 
             return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetString("CurrentProject")).Select(e => e.User));
+        }
+
+        // get an employee assigned as a resp engineer
+        [Authorize(Roles = "HR,Admin")]
+        public IActionResult GetResponsibleEngineer([FromBody] WorkPackage LowestLevelWp)
+        {
+            // get userIds of the users assigned to the lowest level wp
+            // Console.WriteLine(LowestLevelWp.WorkPackageId);
+            // var responsibleEngineer = _context.WorkPackages!.Where(wp => wp.WorkPackageId == LowestLevelWp.WorkPackageId).Include(c => c.ResponsibleUser);
+            var responsibleEngineer = _context.WorkPackages!.FindAsync(LowestLevelWp.WorkPackageId, HttpContext.Session.GetString("CurrentProject"));
+            return new JsonResult(responsibleEngineer);
         }
 
 
