@@ -214,6 +214,9 @@
                 .then(res=>{
                     ul.innerHTML = "<h3>Employees Assigned to this wp</h3>"
                     if (res.length !== 0) {
+                        // if any emp assigned to btmLvlwpkg, hide the split workpkg btn 
+                        $(`#${employeeButton.value} button`).first().hide();
+                        
                         res.forEach(e=> {
                         let element = document.createElement("li");
                         element.innerHTML = e.firstName +" " + e.lastName;
@@ -280,6 +283,70 @@
             }).then(res => {
                 if (res.length !== 0) {
                     console.log(`${res.length} employee(s) added`);
+@* 
+                    attempting to add a notification Pop-up
+                    const toast = document.createElement("div");
+                    toast.innerHTML = `
+                    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header">
+                            <img src="..." class="rounded mr-2" alt="...">
+                            <strong class="mr-auto">Bootstrap</strong>
+                            <small class="text-muted">just now</small>
+                            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="toast-body">
+                            See? Just like this.
+                        </div>
+                        </div>`;
+                    document.querySelector("#WorkPackages").appendChild(toast); *@
+                } else {
+                    console.log("no one added")
+                }
+            });
+
+        }
+
+        async function assignResponsibleEngineerToWp() {
+            // creates an array of employees to add to this wp
+            const empList = document.querySelectorAll(".emp-name");
+            let employeesToBeAdded = Array.from(empList).map(e => {
+                if (e.children[0].checked == true) {
+                    return { WorkPackageProjectId: "@Model[0].ProjectId", WorkPackageId : employeeButton.value ,UserId : e.children[2].innerHTML};
+                }
+                
+            });
+            await fetch("/Project/AssignEmployees", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employeesToBeAdded),
+            }).then(res => {
+                return res.json();
+            }).then(res => {
+                if (res.length !== 0) {
+                    console.log(`${res.length} employee(s) added`);
+@* 
+                    attempting to add a notification Pop-up
+                    const toast = document.createElement("div");
+                    toast.innerHTML = `
+                    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header">
+                            <img src="..." class="rounded mr-2" alt="...">
+                            <strong class="mr-auto">Bootstrap</strong>
+                            <small class="text-muted">just now</small>
+                            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="toast-body">
+                            See? Just like this.
+                        </div>
+                        </div>`;
+                    document.querySelector("#WorkPackages").appendChild(toast); *@
                 } else {
                     console.log("no one added")
                 }
