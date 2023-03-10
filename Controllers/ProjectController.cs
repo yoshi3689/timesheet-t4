@@ -104,17 +104,14 @@ namespace TimesheetApp.Controllers
         [Authorize(Roles = "HR,Admin")]
         public IActionResult AssignEmployees([FromBody] List<EmployeeWorkPackage> ewps)
         {
+            // string a = ewps[0].WorkPackageId!;
             foreach (var e in ewps)
             {
-                Console.WriteLine(e.WorkPackageId);
-                Console.WriteLine(e.WorkPackageProjectId);
-                Console.WriteLine(e.UserId);
                 _context.EmployeeWorkPackages!.Add(e);
             }
             _context.SaveChanges();
-
-            // var empsAdded = _context.Users!.Where(ewp => ewps.Contains());
-            return Json(null);
+            // var userIdsInWp = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == a).Select(f => f.UserId);
+            return new JsonResult(_context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == ewps[0].WorkPackageId));
         }
 
         [Authorize(Roles = "HR,Admin")]
@@ -160,11 +157,24 @@ namespace TimesheetApp.Controllers
 
         // get employees with the project id
         [Authorize(Roles = "HR,Admin")]
-        public IActionResult GetAvailableEmployees()
+        public IActionResult GetAvailableEmployees([FromBody] WorkPackage LowestLevelWp)
         {
-            // get the name of the bottom level wp
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => ep.ProjectId == HttpContext.Session.GetString("CurrentProject")).Select(e => e.User));
+            // get empIds assigned to the lowest level wp
+            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetString("CurrentProject")).Select(e => e.User));
         }
+
+        // get employees with the project id
+        [Authorize(Roles = "HR,Admin")]
+        public IActionResult GetAssignedEmployees([FromBody] WorkPackage LowestLevelWp)
+        {
+            // get userIds of the users assigned to the lowest level wp
+            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
+
+            // return 
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetString("CurrentProject")).Select(e => e.User));
+        }
+
 
 
 

@@ -1,6 +1,7 @@
 @model List<TimesheetApp.Models.TimesheetModels.WorkPackage>
     @{
     ViewData["Title"] = "Manage Project";
+    Boolean isAssign = true;
     }
 
     <head>
@@ -34,15 +35,29 @@
     <div class="modal" tabindex="-1" role="dialog" id="employeeModal">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header">
+                @if (isAssign) {
+                    <div class="modal-header">
                     <h5 class="modal-title">Assign Employee</h5>
                 </div>
                 <div class="modal-body">
-                    <p id="availableEmployees">
-                    </p>
+                    <div id="availableEmployees">
+                        <h3>Available employees</h3>
+                    </div>
                     @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
                     <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
                 </div>
+                } else {
+                        <div class="modal-header">
+                    <h5 class="modal-title">Remove Employee</h5>
+                </div>
+                <div class="modal-body">
+                    <div id="availableEmployees">
+                        <h3>Available employees</h3>
+                    </div>
+                    @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
+                    <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
+                </div>
+                }
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
                         onClick="window.location.reload();">Close</button>
@@ -142,21 +157,21 @@
                     employeeButton.className = "label";
                     employeeButton.addEventListener('click', async function getAvailableEmployees(info) {
                 currentWorkPackage = info.srcElement.value;
-                bottomLevelWorkPackage = info.target.parentNode.id;
                 const avaialbleEmpEle = document.querySelector("#availableEmployees");
                 await fetch("/Project/GetAvailableEmployees", {
-                        method: "GET",
+                        method: "POST",
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         },
+                        body: JSON.stringify({
+                            workPackageId: employeeButton.value
+                            }),
                     })
-
                     .then((response) => {
                         return response.json();
                     })
                     .then((response) => {
-                        console.log(response)
                         $("#employeeModal").modal("show");
                         response.forEach((c,index) => {
                             var a = document.createElement("div");
@@ -180,6 +195,35 @@
             employeeButton.type = "button";
             employeeButton.innerHTML = "Assign Employee";
             div.appendChild(employeeButton);
+            let ul = document.createElement("ul");
+            console.log("get assigned emp");
+                fetch("/Project/GetAssignedEmployees", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    WorkPackageId: employeeButton.value
+                    }),
+                })
+                .then((response) => {
+                    console.log(response)
+                    return response.json();
+                })
+                .then(res=>{
+                    ul.innerHTML = "<h3>Employees Assigned to this wp</h3>"
+                    if (res.length !== 0) {
+                        res.forEach(e=> {
+                        let element = document.createElement("li");
+                        element.innerHTML = e.firstName +" " + e.lastName;
+                        ul.appendChild(element);
+                    });
+                    } else {
+                        ul.innerHTML += "<p>No one is asssigned</p>"
+                    }
+                    div.appendChild(ul);
+                });
                 </text>
             }
             @if (wp.ParentWorkPackageId != null && wp.ParentWorkPackageProjectId != null) {
@@ -220,14 +264,10 @@
             const empList = document.querySelectorAll(".emp-name");
             let employeesToBeAdded = Array.from(empList).map(e => {
                 if (e.children[0].checked == true) {
-                    return { WorkPackageProjectId: "@Model[0].ProjectId", WorkPackageId : bottomLevelWorkPackage ,UserId : e.children[2].innerHTML};
+                    return { WorkPackageProjectId: "@Model[0].ProjectId", WorkPackageId : employeeButton.value ,UserId : e.children[2].innerHTML};
                 }
                 
             });
-            console.log(employeesToBeAdded);
-            @* Needs to have the WorkPackageId and ProjectId *@
-
-            // which table should I add to?
             await fetch("/Project/AssignEmployees", {
                 method: "POST",
                 headers: {
@@ -239,14 +279,10 @@
                 return res.json();
             }).then(res => {
                 if (res.length !== 0) {
-                    res.forEach(e=> {
-                        console.log(e);
-                        console.log("res after adding emp to wp" +e.firstName);
-                    })
+                    console.log(`${res.length} employee(s) added`);
+                } else {
+                    console.log("no one added")
                 }
-                @* let element = document.createElement("p");
-                element.innerHTML = c; *@
-                @* document.querySelector("#childWorkPackages").appendChild(element); *@
             });
 
         }
