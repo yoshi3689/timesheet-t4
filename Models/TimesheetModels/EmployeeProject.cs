@@ -18,7 +18,7 @@ namespace TimesheetApp.Models.TimesheetModels
         [Required]
         public string? UserId { get; set; }
         [Required]
-        public string? ProjectId { get; set; }
+        public int? ProjectId { get; set; }
         [ForeignKey("UserId")]
         public ApplicationUser? User { get; set; }
         [ForeignKey("ProjectId")]

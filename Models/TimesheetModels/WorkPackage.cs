@@ -18,13 +18,16 @@ namespace TimesheetApp.Models.TimesheetModels
     public class WorkPackage
     {
         [Required]
+        [Display(Name = "Work Package ID")]
         [Remote(action: "CheckWorkPackage", controller: "Project", ErrorMessage = "Work Package must be unique for this project")]
         public string? WorkPackageId { get; set; }
         [Required]
-        public string? ProjectId { get; set; }
+        public int? ProjectId { get; set; }
+        [Display(Name = "Work Package Title")]
+        public string? Title { get; set; }
         public string? ResponsibleUserId { get; set; }
         public string? ParentWorkPackageId { get; set; }
-        public string? ParentWorkPackageProjectId { get; set; }
+        public int? ParentWorkPackageProjectId { get; set; }
         public bool IsBottomLevel { get; set; }
         public double ActualCost { get; set; }
         public bool IsClosed { get; set; }

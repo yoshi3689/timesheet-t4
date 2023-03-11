@@ -1,4 +1,4 @@
-@model List<TimesheetApp.Models.TimesheetModels.WorkPackage>
+@model TimesheetApp.Models.WorkPackageViewModel
     @{
     ViewData["Title"] = "Manage Project";
     Boolean isAssign = true;
@@ -9,6 +9,8 @@
     </head>
     <h1>@ViewData["Title"]</h1>
 
+
+    <h2>Manage Work Packages</h2>
     <div id="WorkPackages" class="accordian"></div>
 
     <div class="modal" tabindex="-1" role="dialog" id="splitModal">
@@ -18,10 +20,33 @@
                     <h5 class="modal-title">Create Subpackage</h5>
                 </div>
                 <div class="modal-body">
-                    <p id="childWorkPackages">
-                    </p>
-                    <input type="text" placeholder="Work Package Name..." id="newWorkPackageName">
-                    <button type="button" class="btn btn-primary" onclick="splitPackage()">Create</button>
+                    <form asp-action="Split">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                            <input type="hidden" asp-for="WorkPackage.ParentWorkPackageId" value="@Model.WorkPackage.ParentWorkPackageId" id="parentWPID"/>
+                            <div class="form-group">
+                                <label asp-for="WorkPackage.WorkPackageId" class="control-label"></label>
+                                <input asp-for="WorkPackage.WorkPackageId" class="form-control" />
+                                <span asp-validation-for="WorkPackage.WorkPackageId" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <label asp-for="WorkPackage.Title" class="control-label"></label>
+                                <input asp-for="WorkPackage.Title" class="form-control" />
+                                <span asp-validation-for="WorkPackage.Title" class="text-danger"></span>
+                            </div>
+                            <h1>Project Budget</h1>
+                            @for (int i = 0; i < Model.budgets!.Count; i++)
+                            {
+                                <div class="form-group">
+                                    <input type="hidden" asp-for="budgets[i].LabourCode" value="@Model.budgets[i].LabourCode" />
+                                    <span>@Model.budgets[i].LabourCode ($@Model.budgets[i].Rate/hour)</span>
+                                    <input asp-for="budgets[i].BudgetAmount" class="form-control" />
+                                    <span asp-validation-for="budgets[i].BudgetAmount" class="text-danger"></span>
+                                </div>
+                            }
+                            <div class="form-group">
+                                <input type="submit" value="Create" class="btn btn-primary" />
+                            </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
@@ -81,7 +106,7 @@
         let header;
         let collapse;
         let ul;
-        @foreach(var wp in Model) {
+        @foreach(var wp in Model.wps) {
             <text>
             item = document.createElement("div");
             item.className = "accordion-item";
@@ -94,22 +119,22 @@
             header.className = "accordion-button";
             header.type = "button";
             header.setAttribute("data-bs-toggle", "collapse");
-            header.setAttribute("data-bs-target", "#" + "@wp.WorkPackageId" + "Panel");
+            header.setAttribute("data-bs-target", "#Panel" + "@wp.WorkPackageId");
             header.setAttribute("aria-expanded", false);
-            header.setAttribute("aria-controls", "@wp.WorkPackageId" + "Panel");
+            header.setAttribute("aria-controls", "Panel" + "@wp.WorkPackageId");
             header.innerHTML = "@wp.WorkPackageId";
 
             headerDiv.appendChild(header);
             item.appendChild(headerDiv);
 
             collapse = document.createElement("div");
-            collapse.id = "@wp.WorkPackageId" + "Panel";
+            collapse.id = "Panel" + "@wp.WorkPackageId";
             collapse.className = "accordion-collapse collapse show";
             collapse.setAttribute("aria-labelledby", "dropdownID" + "@wp.WorkPackageId");
 
             div = document.createElement("div");
             div.className = "accordion-body";
-            div.id = "@wp.WorkPackageId";
+            div.id = "WP" + "@wp.WorkPackageId";
             name = document.createElement("span");
             name.innerHTML = "Work Package Name: @wp.WorkPackageId";
             name.className = "label";
@@ -138,33 +163,8 @@
             splitButton.className = "label";
             splitButton.addEventListener('click', async function callSplit(info) {
                 currentWorkPackage = info.srcElement.value;
-                await fetch("/Project/GetDirectChildren", {
-                        method: "POST",
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            WorkPackageId: info.srcElement.value
-                        }),
-                    })
-                    .then((response) => {
-                        return response.json();
-                    })
-                    .then((response) => {
-                        $("#splitModal").modal("show");
-                        response.forEach(c => {
-                            var a = document.createElement("p");
-                            a.innerHTML = c.workPackageId;
-                            document.querySelector("#childWorkPackages").appendChild(a);
-                        });
-                        if (response.length == 0) {
-                            var a = document.createElement("p");
-                            a.innerHTML = "Currently a bottom level package.";
-                            document.querySelector("#childWorkPackages").appendChild(a);
-                        }
-                    });
-
+                document.querySelector("#parentWPID").value = @wp.WorkPackageId;
+                $("#splitModal").modal("show");
             }, false);
             splitButton.type = "button";
             splitButton.innerHTML = "Create Subpackage";
@@ -252,7 +252,7 @@
                 <text>
                 collapse.appendChild(div);
                 item.appendChild(collapse);
-                parent = document.querySelector("#@wp.ParentWorkPackageId");
+                parent = document.querySelector("#WP" + "@wp.ParentWorkPackageId");
                 parent.appendChild(item);
                 </text>
             } else {
@@ -290,7 +290,7 @@
             const empList = document.querySelectorAll(".emp-name");
             let employeesToBeAdded = Array.from(empList).map(e => {
                 if (e.children[0].checked == true) {
-                    return { WorkPackageProjectId: "@Model[0].ProjectId", WorkPackageId : employeeButton.value ,UserId : e.children[2].innerHTML};
+                    return { WorkPackageProjectId: "@Model.wps[0].ProjectId", WorkPackageId : employeeButton.value ,UserId : e.children[2].innerHTML};
                 }
                 
             });

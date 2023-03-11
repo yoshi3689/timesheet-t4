@@ -322,8 +322,8 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("ProjectId")
-                        .HasColumnType("varchar(255)");
+                    b.Property<int?>("ProjectId")
+                        .HasColumnType("int");
 
                     b.HasKey("UserId", "ProjectId");
 
@@ -340,9 +340,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("WorkPackageId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("WorkPackageProjectId")
+                    b.Property<int?>("WorkPackageProjectId")
                         .IsRequired()
-                        .HasColumnType("varchar(255)");
+                        .HasColumnType("int");
 
                     b.HasKey("UserId", "WorkPackageId");
 
@@ -367,8 +367,9 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Project", b =>
                 {
-                    b.Property<string>("ProjectId")
-                        .HasColumnType("varchar(255)");
+                    b.Property<int>("ProjectId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
 
                     b.Property<double>("ActualCost")
                         .HasColumnType("double");
@@ -379,6 +380,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("ProjectManagerId")
                         .IsRequired()
                         .HasColumnType("varchar(255)");
+
+                    b.Property<string>("ProjectTitle")
+                        .HasColumnType("longtext");
 
                     b.Property<double>("TotalBudget")
                         .HasColumnType("double");
@@ -465,10 +469,10 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("OriginalLabourCode")
                         .HasColumnType("varchar(2)");
 
-                    b.Property<string>("ProjectId")
+                    b.Property<int?>("ProjectId")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasColumnType("int");
 
                     b.Property<int>("TimesheetId")
                         .HasColumnType("int");
@@ -481,10 +485,10 @@ namespace TimesheetApp.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("WorkPackageProjectId")
+                    b.Property<int?>("WorkPackageProjectId")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasColumnType("int");
 
                     b.Property<long>("packedHours")
                         .HasColumnType("bigint");
@@ -507,8 +511,8 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("WorkPackageId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("ProjectId")
-                        .HasColumnType("varchar(255)");
+                    b.Property<int?>("ProjectId")
+                        .HasColumnType("int");
 
                     b.Property<double>("ActualCost")
                         .HasColumnType("double");
@@ -522,11 +526,14 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("ParentWorkPackageId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("ParentWorkPackageProjectId")
-                        .HasColumnType("varchar(255)");
+                    b.Property<int?>("ParentWorkPackageProjectId")
+                        .HasColumnType("int");
 
                     b.Property<string>("ResponsibleUserId")
                         .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("longtext");
 
                     b.HasKey("WorkPackageId", "ProjectId");
 

@@ -84,7 +84,7 @@ namespace TimesheetApp.Controllers
             TimesheetRow row = new TimesheetRow()
             {
                 WorkPackageId = "",
-                ProjectId = "0",
+                ProjectId = 0,
                 Sat = 0,
                 Sun = 0,
                 Mon = 0,

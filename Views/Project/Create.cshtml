@@ -1,4 +1,4 @@
-@model TimesheetApp.Models.TimesheetModels.Project
+@model TimesheetApp.Models.CreateProjectViewModel
 
 @{
     ViewData["Title"] = "All Projects";
@@ -10,19 +10,24 @@
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="ProjectId" class="control-label"></label>
-                <input asp-for="ProjectId" class="form-control" />
-                <span asp-validation-for="ProjectId" class="text-danger"></span>
+                <label asp-for="project.ProjectTitle" class="control-label"></label>
+                <input asp-for="project.ProjectTitle" class="form-control" />
+                <span asp-validation-for="project.ProjectTitle" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="ProjectManagerId" class="control-label"></label>
-                <select asp-for="ProjectManagerId" class="form-control" asp-items="ViewBag.UserId"></select>
+                <label asp-for="project.ProjectManagerId" class="control-label"></label>
+                <select asp-for="project.ProjectManagerId" class="form-control" asp-items="ViewBag.UserId"></select>
             </div>
-            <div class="form-group">
-                <label asp-for="TotalBudget" class="control-label"></label>
-                <input asp-for="TotalBudget" class="form-control" />
-                <span asp-validation-for="TotalBudget" class="text-danger"></span>
-            </div>
+            <h1>Project Budget</h1>
+            @for (int i = 0; i < Model.budgets!.Count; i++)
+            {
+                <div class="form-group">
+                    <input type="hidden" asp-for="budgets[i].LabourCode" value="@Model.budgets[i].LabourCode" />
+                    <span>@Model.budgets[i].LabourCode ($@Model.budgets[i].Rate/hour)</span>
+                    <input asp-for="budgets[i].BudgetAmount" class="form-control" />
+                    <span asp-validation-for="budgets[i].BudgetAmount" class="text-danger"></span>
+                </div>
+            }
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>
