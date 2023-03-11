@@ -16,9 +16,10 @@ namespace TimesheetApp.Models.TimesheetModels
     {
         [Key]
         [Required]
-        [Display(Name = "Project Name")]
-        [UniqueProjectName]
-        public string? ProjectId { get; set; }
+        [Display(Name = "Project Id")]
+        public int ProjectId { get; set; }
+        [Display(Name = "Project Title")]
+        public string? ProjectTitle { get; set; }
         [Required]
         [Display(Name = "Project Manager")]
         public string? ProjectManagerId { get; set; }

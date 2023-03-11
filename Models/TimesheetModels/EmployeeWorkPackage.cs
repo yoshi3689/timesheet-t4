@@ -20,7 +20,7 @@ namespace TimesheetApp.Models.TimesheetModels
         [Required]
         public string? WorkPackageId { get; set; }
         [Required]
-        public string? WorkPackageProjectId { get; set; }
+        public int? WorkPackageProjectId { get; set; }
 
         [ForeignKey("UserId")]
         public virtual ApplicationUser? User { get; set; }

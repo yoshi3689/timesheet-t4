@@ -19,7 +19,7 @@ public partial class TimesheetRow
 
     [Required]
     [MaxLength(255)]
-    public string? ProjectId { get; set; }
+    public int? ProjectId { get; set; }
 
     public double TotalHoursRow { get; set; }
     [Required]
@@ -28,7 +28,7 @@ public partial class TimesheetRow
 
     [Required]
     [MaxLength(255)]
-    public string? WorkPackageProjectId { get; set; }
+    public int? WorkPackageProjectId { get; set; }
 
     public byte[]? Hash { get; set; }
 
