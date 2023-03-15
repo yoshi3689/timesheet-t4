@@ -124,7 +124,7 @@ internal class Program
             }
             else
             {
-                adminGrade = DbContext.LabourGrades!.FirstOrDefault() ?? new LabourGrade { LabourCode = "JS", Rate = 1 };
+                adminGrade = DbContext.LabourGrades!.FirstOrDefault(c => c.LabourCode == "P6") ?? new LabourGrade { LabourCode = "P6", Rate = 99 };
             }
 
             //create a default admin

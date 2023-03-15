@@ -138,7 +138,7 @@ namespace TimesheetApp.Controllers
             HttpContext.Session.SetInt32("CurrentProject", id ?? 0);
             //find all work packages for the project and include the children so a tree can be made
             var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser).Include(c => c.ParentWorkPackage).Include(c => c.ChildWorkPackages);
-            var top = workpackages.Where(c => c.ParentWorkPackage == null).FirstOrDefault()!;
+            var top = workpackages.FirstOrDefault(c => c.ParentWorkPackage == null)!;
 
             var projectBudget = _context.Budgets.Where(c => c.WPProjectId == Convert.ToString(CurrentProject)).ToList();
             List<Budget> emptyBudgets = new List<Budget>();
@@ -167,7 +167,7 @@ namespace TimesheetApp.Controllers
             wps.Add(top);
             if (top.ChildWorkPackages == null || top.ChildWorkPackages.Count() == 0)
             {
-                top = _context.WorkPackages!.Where(c => c.ProjectId == top.ProjectId && c.WorkPackageId == top.WorkPackageId).Include(c => c.ChildWorkPackages).FirstOrDefault()!;
+                top = _context.WorkPackages!.Include(c => c.ChildWorkPackages).FirstOrDefault(c => c.ProjectId == top.ProjectId && c.WorkPackageId == top.WorkPackageId)!;
             }
             if (top.ChildWorkPackages != null && top.ChildWorkPackages.Count() != 0)
             {
@@ -216,7 +216,7 @@ namespace TimesheetApp.Controllers
         public IActionResult Split(WorkPackageViewModel p)
         {
             CurrentProject = HttpContext.Session.GetInt32("CurrentProject");
-            var parent = _context.WorkPackages!.Where(c => c.ProjectId == CurrentProject && c.WorkPackageId == p.WorkPackage.ParentWorkPackageId).FirstOrDefault();
+            var parent = _context.WorkPackages!.FirstOrDefault(c => c.ProjectId == CurrentProject && c.WorkPackageId == p.WorkPackage.ParentWorkPackageId);
             if (parent != null)
             {
                 parent.IsBottomLevel = false;
@@ -286,7 +286,7 @@ namespace TimesheetApp.Controllers
         {
             // get empIds assigned to the lowest level wp
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User));
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName }));
         }
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg

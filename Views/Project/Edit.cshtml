@@ -72,20 +72,18 @@
                 <div id="availableEmployees">
                     <h3>Available employees</h3>
                 </div>
-@* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
                 <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
             </div>
             }
             else
             {
-                    <div class="modal-header">
+            <div class="modal-header">
                 <h5 class="modal-title">Remove Employee</h5>
             </div>
             <div class="modal-body">
                 <div id="availableEmployees">
                     <h3>Available employees</h3>
                 </div>
-@* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
                 <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
             </div>
             }
@@ -121,7 +119,6 @@
     <script>
         let currentWorkPackage = "";
         let bottomLevelWorkPackage = "";
-
 
         // assigned emp list
         let ul;
@@ -222,7 +219,7 @@
                             },
                             body: JSON.stringify({
                                 workPackageId: employeeButton.value
-                                }),
+                            }),
                         })
                         .then((response) => {
                             return response.json();
@@ -486,7 +483,7 @@
                     collapse.classList.toggle('show', true);
                     title.classList.toggle('collapsed', false);
                     matchFound = true;
-                } else if(title.innerHTML.includes(input) && input.length != 0) {
+                } else if(title.innerHTML.toLowerCase().includes(input.toLowerCase()) && input.length != 0) {
                     collapse.classList.toggle('show', true);
                     title.classList.toggle('collapsed', false);
                     matchFound = true;
