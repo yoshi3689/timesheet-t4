@@ -11,16 +11,16 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         : base(options)
     {
     }
-    public virtual DbSet<Timesheet>? Timesheets { get; set; }
-    public virtual DbSet<TimesheetRow>? TimesheetRows { get; set; }
-    public virtual DbSet<Signature>? Signatures { get; set; }
-    public virtual DbSet<EmployeeProject>? EmployeeProjects { get; set; }
-    public virtual DbSet<EmployeeWorkPackage>? EmployeeWorkPackages { get; set; }
-    public virtual DbSet<LabourGrade>? LabourGrades { get; set; }
-    public virtual DbSet<Project>? Projects { get; set; }
-    public virtual DbSet<Budget>? Budgets { get; set; }
-    public virtual DbSet<ResponsibleEngineerEstimate>? ResponsibleEngineerEstimates { get; set; }
-    public virtual DbSet<WorkPackage>? WorkPackages { get; set; }
+    public virtual DbSet<Timesheet> Timesheets => Set<Timesheet>();
+    public virtual DbSet<TimesheetRow> TimesheetRows => Set<TimesheetRow>();
+    public virtual DbSet<Signature> Signatures => Set<Signature>();
+    public virtual DbSet<EmployeeProject> EmployeeProjects => Set<EmployeeProject>();
+    public virtual DbSet<EmployeeWorkPackage> EmployeeWorkPackages => Set<EmployeeWorkPackage>();
+    public virtual DbSet<LabourGrade> LabourGrades => Set<LabourGrade>();
+    public virtual DbSet<Project> Projects => Set<Project>();
+    public virtual DbSet<Budget> Budgets => Set<Budget>();
+    public virtual DbSet<ResponsibleEngineerEstimate> ResponsibleEngineerEstimates => Set<ResponsibleEngineerEstimate>();
+    public virtual DbSet<WorkPackage> WorkPackages => Set<WorkPackage>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

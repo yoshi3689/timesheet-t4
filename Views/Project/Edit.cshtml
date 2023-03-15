@@ -2,7 +2,7 @@
     @{
     ViewData["Title"] = "Manage Project";
     Boolean isAssign = true;
-    }
+}
 
     <head>
         <title>@ViewData["Title"]</title>
@@ -11,16 +11,17 @@
 
 
     <h2>Manage Work Packages</h2>
+    <input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)"/>
     <div id="WorkPackages" class="accordian"></div>
 
     <div class="modal" tabindex="-1" role="dialog" id="splitModal">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Create Subpackage</h5>
-                </div>
-                <div class="modal-body">
-                    <form asp-action="Split">
+                <form id="newWPForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Create Subpackage</h5>
+                    </div>
+                    <div class="modal-body">
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                             <input type="hidden" asp-for="WorkPackage.ParentWorkPackageId" value="@Model.WorkPackage.ParentWorkPackageId" id="parentWPID"/>
                             <div class="form-group">
@@ -33,25 +34,28 @@
                                 <input asp-for="WorkPackage.Title" class="form-control" />
                                 <span asp-validation-for="WorkPackage.Title" class="text-danger"></span>
                             </div>
-                            <h1>Project Budget</h1>
-                            @for (int i = 0; i < Model.budgets!.Count; i++)
-                            {
-                                <div class="form-group">
-                                    <input type="hidden" asp-for="budgets[i].LabourCode" value="@Model.budgets[i].LabourCode" />
-                                    <span>@Model.budgets[i].LabourCode ($@Model.budgets[i].Rate/hour)</span>
-                                    <input asp-for="budgets[i].BudgetAmount" class="form-control" />
-                                    <span asp-validation-for="budgets[i].BudgetAmount" class="text-danger"></span>
-                                </div>
-                            }
-                            <div class="form-group">
-                                <input type="submit" value="Create" class="btn btn-primary" />
+                            <h1>Work Package Budget</h1>
+                            <h3>Hours per Labour Grade</h3>
+                    @for (int i = 0; i < Model.budgets!.Count; i++)
+                    {
+                        <div class="form-group">
+                            <input type="hidden" asp-for="budgets[i]!.LabourCode" value="@Model!.budgets[i]!.LabourCode" />
+                            <span>@Model.budgets[i].LabourCode</span>
+                            <div style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+                                <input asp-for="budgets[i]!.BudgetAmount!" style="width: 20%;" class="form-control" onchange="setTotal('@Model.budgets[i].LabourCode', @Model.budgets[i].Rate, this.value, @Model.budgets[i].Remaining)"/> x $@Model!.budgets[i]!.Rate/hour = <span id="@Model.budgets[i].LabourCode"> $0</span>
+                                &nbsp;&nbsp;
+                                <span id='@(String.Format("R{0}", Model.budgets[i].LabourCode))'>Remaining: $@Model.budgets[i].Remaining</span>
                             </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-                        onClick="window.location.reload();">Close</button>
-                </div>
+                            <span asp-validation-for="budgets[i]!.BudgetAmount" class="text-danger"></span>
+                        </div>
+                        <br/>
+                    }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <input type="submit" value="Create" class="btn btn-primary" />
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -59,29 +63,32 @@
     <div class="modal" tabindex="-1" role="dialog" id="employeeModal">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                @if (isAssign) {
+            @if (isAssign)
+            {
+                <div class="modal-header">
+                <h5 class="modal-title">Assign Employee</h5>
+            </div>
+            <div class="modal-body">
+                <div id="availableEmployees">
+                    <h3>Available employees</h3>
+                </div>
+@* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
+                <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
+            </div>
+            }
+            else
+            {
                     <div class="modal-header">
-                    <h5 class="modal-title">Assign Employee</h5>
+                <h5 class="modal-title">Remove Employee</h5>
+            </div>
+            <div class="modal-body">
+                <div id="availableEmployees">
+                    <h3>Available employees</h3>
                 </div>
-                <div class="modal-body">
-                    <div id="availableEmployees">
-                        <h3>Available employees</h3>
-                    </div>
-                    @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
-                    <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
-                </div>
-                } else {
-                        <div class="modal-header">
-                    <h5 class="modal-title">Remove Employee</h5>
-                </div>
-                <div class="modal-body">
-                    <div id="availableEmployees">
-                        <h3>Available employees</h3>
-                    </div>
-                    @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
-                    <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
-                </div>
-                }
+@* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
+                <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Assign</button>
+            </div>
+            }
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
                         onClick="window.location.reload();">Close</button>
@@ -100,7 +107,7 @@
                     <div id="candidateEmployees">
                         <h3>Candidates</h3>
                     </div>
-                    @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
+                @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
                     <button type="button" class="btn btn-primary" onclick="assignResponsibleEngineer()">Assign</button>
                 </div>
                 <div class="modal-footer">
@@ -114,19 +121,7 @@
     <script>
         let currentWorkPackage = "";
         let bottomLevelWorkPackage = "";
-        let div;
-        let name;
-        let re;
-        let ec;
-        let closed;
-        let splitButton;
-        let employeeButton;
-        let respEngButton;
-        let parent;
-        let item;
-        let headerDiv;
-        let header;
-        let collapse;
+
 
         // assigned emp list
         let ul;
@@ -134,84 +129,91 @@
         // assigned resp engineer
         let assignedRespEng;
 
-        @foreach(var wp in Model.wps) {
+    @foreach (var wp in Model.wps)
+    {
+        <text>
+            var firstname = null;
+            var lastname = null;
+        </text>
+        if (wp.ResponsibleUser != null)
+        {
             <text>
-            item = document.createElement("div");
+                firstname = @wp.ResponsibleUser.FirstName;
+                lastname = @wp.ResponsibleUser.LastName;
+            </text>
+        }
+        <text>
+            addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" === "True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.ParentWorkPackageProjectId)
+        </text>
+    }
+
+        function addWP(WorkPackageId, Title, ResponsibleUserFN, ResponsibleUserLN, IsClosed, IsBottomLevel, ParentWorkPackageId, ParentWorkPackageProjectId){
+            let item = document.createElement("div");
             item.className = "accordion-item";
 
-            headerDiv = document.createElement("h2");
+            let headerDiv = document.createElement("h2");
             headerDiv.className = "accordion-header";
-            headerDiv.id = "dropdownID" + "@wp.WorkPackageId";
+            headerDiv.id = "dropdownID" + WorkPackageId;
 
-            header = document.createElement("button");
-            header.className = "accordion-button";
+            let header = document.createElement("button");
+            header.className = "accordion-button collapsed";
             header.type = "button";
             header.setAttribute("data-bs-toggle", "collapse");
-            header.setAttribute("data-bs-target", "#Panel" + "@wp.WorkPackageId");
+            header.setAttribute("data-bs-target", "#Panel" + WorkPackageId);
             header.setAttribute("aria-expanded", false);
-            header.setAttribute("aria-controls", "Panel" + "@wp.WorkPackageId");
-            header.innerHTML = "@wp.WorkPackageId";
+            header.setAttribute("aria-controls", "Panel" + WorkPackageId);
+            header.innerHTML = WorkPackageId + ": " + Title;
 
             headerDiv.appendChild(header);
             item.appendChild(headerDiv);
 
-            collapse = document.createElement("div");
-            collapse.id = "Panel" + "@wp.WorkPackageId";
-            collapse.className = "accordion-collapse collapse show";
-            collapse.setAttribute("aria-labelledby", "dropdownID" + "@wp.WorkPackageId");
+            let collapse = document.createElement("div");
+            collapse.id = "Panel" + WorkPackageId;
+            collapse.className = "accordion-collapse collapse";
+            collapse.setAttribute("aria-labelledby", "dropdownID" + WorkPackageId);
 
-            div = document.createElement("div");
+            let div = document.createElement("div");
             div.className = "accordion-body";
-            div.id = "WP" + "@wp.WorkPackageId";
-            name = document.createElement("span");
-            name.innerHTML = "Work Package Name: @wp.WorkPackageId";
+            div.id = "WP" + WorkPackageId;
+            let name = document.createElement("span");
+            name.innerHTML = "Work Package Name: " + WorkPackageId;
             name.className = "label";
-            div.appendChild(name); 
-            </text>
-            @if(wp.ResponsibleUser != null) {
-                    <text> 
-                        re = document.createElement("span");
-                        re.className = "label";
-                        re.innerHTML =
-                            "Responsible Engineer: @wp.ResponsibleUser.FirstName @wp.ResponsibleUser.LastName;
-                        div.appendChild(re); 
-                    </text>
-                } 
-            <text>
-            @* this button should be disabled if 
-            there's any employee to the work package *@
-            closed = document.createElement("span");
+            div.appendChild(name);
+            if(ResponsibleUserFN !== null) {
+                    let re = document.createElement("span");
+                    re.className = "label";
+                    re.innerHTML =
+                        "Responsible Engineer: " + ResponsibleUserFN + " " + ResponsibleUserLN;
+                    div.appendChild(re);
+                }
+            let closed = document.createElement("span");
             closed.className = "label";
-            closed.innerHTML = "Closed: @wp.IsClosed";
+            closed.innerHTML = "Closed: " + IsClosed;
             div.appendChild(closed);
 
-            splitButton = document.createElement("button");
-            splitButton.value = "@wp.WorkPackageId";
+            let splitButton = document.createElement("button");
+            splitButton.value = WorkPackageId;
             splitButton.name = "name";
             splitButton.className = "label";
             splitButton.addEventListener('click', async function callSplit(info) {
                 currentWorkPackage = info.srcElement.value;
-                document.querySelector("#parentWPID").value = @wp.WorkPackageId;
+                document.querySelector("#parentWPID").value = WorkPackageId;
                 $("#splitModal").modal("show");
             }, false);
             splitButton.type = "button";
             splitButton.innerHTML = "Create Subpackage";
             div.appendChild(splitButton);
-
-            </text>
-            @* add two buttons: assign emp & assign resp eng *@
-            @if (wp.IsBottomLevel) {
-                <text>
-                    @* add assign emp button *@
-                    employeeButton = document.createElement("button");
+    @* add two buttons: assign emp & assign resp eng *@
+            if (IsBottomLevel) {
+                    let employeeButton = document.createElement("button");
                     employeeButton.type = "button";
                     employeeButton.innerHTML = "Assign Employee";
                     div.appendChild(employeeButton);
-                    employeeButton.value = "@wp.WorkPackageId";
+                    employeeButton.value = WorkPackageId;
                     employeeButton.name = "name";
                     employeeButton.className = "label";
                     employeeButton.addEventListener('click', async function getAvailableEmployees(info) {
-                    @* currentWorkPackage = info.srcElement.value; *@
+    @* currentWorkPackage = info.srcElement.value; *@
                     const avaialbleEmpEle = document.querySelector("#availableEmployees");
                     await fetch("/Project/GetAvailableEmployees", {
                             method: "POST",
@@ -247,16 +249,16 @@
                         });
 
                 }, false);
-                    @* add assign respEng button *@
-                    respEngButton = document.createElement("button");
+    @* add assign respEng button *@
+                    let respEngButton = document.createElement("button");
                     respEngButton.type = "button";
                     respEngButton.innerHTML = "Add Responsible Engineer";
                     div.appendChild(respEngButton);
-                    respEngButton.value = "@wp.WorkPackageId";
+                    respEngButton.value = WorkPackageId;
                     respEngButton.name = "name";
                     respEngButton.className = "label";
                     respEngButton.addEventListener('click', async function getCandidateEmployees(info) {
-                    @* currentWorkPackage = info.srcElement.value; *@
+    @* currentWorkPackage = info.srcElement.value; *@
                     const candidateEmpEle = document.querySelector("#candidateEmployees");
                     await fetch("/Project/GetCandidateEmployees", {
                             method: "POST",
@@ -295,7 +297,7 @@
 
                 }, false);
 
-            @* updates list of assigned employees *@
+    @* updates list of assigned employees *@
             ul = document.createElement("ul");
             ul.innerHTML = "<h3>Employees Assigned to this wp</h3>"
             assignedRespEng = document.createElement("div");
@@ -316,9 +318,9 @@
             })
             .then(res => {
                 if (res.length !== 0) {
-                    // if any emp assigned to btmLvlwpkg, hide the split workpkg btn 
+                    // if any emp assigned to btmLvlwpkg, hide the split workpkg btn
                     $(`#${employeeButton.value} button`).first().hide();
-                        
+
                     res.forEach(e=> {
                     let element = document.createElement("li");
                     element.innerHTML = e.firstName +" " + e.lastName;
@@ -349,46 +351,36 @@
                 assignedRespEng.innerHTML += assignedRespEngText;
                 div.appendChild(assignedRespEng);
             })
-
-            
-                </text>
             }
-            @if (wp.ParentWorkPackageId != null && wp.ParentWorkPackageProjectId != null) {
-                <text>
+            let parent = null;
+            if (ParentWorkPackageId !== null && ParentWorkPackageProjectId !== null && ParentWorkPackageId !== "" && ParentWorkPackageProjectId !== "") {
                 collapse.appendChild(div);
                 item.appendChild(collapse);
-                parent = document.querySelector("#WP" + "@wp.ParentWorkPackageId");
+                parent = document.querySelector("#WP" + ParentWorkPackageId);
                 parent.appendChild(item);
-                </text>
             } else {
-                <text>
                 collapse.appendChild(div);
                 item.appendChild(collapse);
                 parent = document.querySelector("#WorkPackages");
                 parent.appendChild(item);
-                </text>
             }
         }
 
-        async function splitPackage() {
+        document.querySelector("#newWPForm").addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
             await fetch("/Project/Split", {
                 method: "POST",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    ParentWorkPackageId: currentWorkPackage,
-                    WorkPackageId: document.querySelector("#newWorkPackageName").value
-                }),
+                body: formData,
             }).then(c => {
                 return c.json();
             }).then(c => {
-                let element = document.createElement("p");
-                element.innerHTML = c;
-                document.querySelector("#childWorkPackages").appendChild(element);
+                addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName, c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId);
+                var myModalEl = document.getElementById('splitModal');
+                var modal = bootstrap.Modal.getInstance(myModalEl)
+                modal.hide();
             });
-        }
+        });
 
         async function assignEmployeeToWp() {
             // creates an array of employees to add to this wp
@@ -397,7 +389,7 @@
                 if (e.children[0].checked == true) {
                     return { WorkPackageProjectId: "@Model.wps[0].ProjectId", WorkPackageId : employeeButton.value ,UserId : e.children[2].innerHTML};
                 }
-                
+
             });
             await fetch("/Project/AssignEmployees", {
                 method: "POST",
@@ -411,24 +403,24 @@
             }).then(res => {
                 if (res.length !== 0) {
                     console.log(`${res.length} employee(s) added`);
-@* 
-                    attempting to add a notification Pop-up
-                    const toast = document.createElement("div");
-                    toast.innerHTML = `
-                    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-                        <div class="toast-header">
-                            <img src="..." class="rounded mr-2" alt="...">
-                            <strong class="mr-auto">Bootstrap</strong>
-                            <small class="text-muted">just now</small>
-                            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="toast-body">
-                            See? Just like this.
-                        </div>
-                        </div>`;
-                    document.querySelector("#WorkPackages").appendChild(toast); *@
+    @*
+        attempting to add a notification Pop-up
+        const toast = document.createElement("div");
+        toast.innerHTML = `
+        <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+        <img src="..." class="rounded mr-2" alt="...">
+        <strong class="mr-auto">Bootstrap</strong>
+        <small class="text-muted">just now</small>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+        </button>
+        </div>
+        <div class="toast-body">
+        See? Just like this.
+        </div>
+        </div>`;
+        document.querySelector("#WorkPackages").appendChild(toast); *@
                 } else {
                     console.log("no one added")
                 }
@@ -463,5 +455,39 @@
                 }
             });
 
+        }
+
+        function setTotal(labourCode, rate, total, remain){
+            var element = document.querySelector("#" + labourCode);
+            element.innerHTML = " $" + (total * rate);
+            element = document.querySelector("#R" + labourCode);
+            element.innerHTML = "Remaining: $" + (remain - (total * rate));
+        }
+
+        function search(input){
+            find(document.querySelector("#WorkPackages"), input);
+        }
+
+        function find(head, input){
+            let items = head.querySelectorAll(':scope > .accordion-item');
+            let matchFound = false;
+            if(items.length == 0) return;
+            items.forEach((wp) => {
+                var title = wp.querySelector(':scope > .accordion-header').querySelector(':scope > .accordion-button');
+                const collapse = document.querySelector(title.getAttribute('data-bs-target'));
+                if(find(wp.querySelector(':scope > .accordion-collapse').querySelector(':scope > .accordion-body'), input)){
+                    collapse.classList.toggle('show', true);
+                    title.classList.toggle('collapsed', false);
+                    matchFound = true;
+                } else if(title.innerHTML.includes(input) && input.length != 0) {
+                    collapse.classList.toggle('show', true);
+                    title.classList.toggle('collapsed', false);
+                    matchFound = true;
+                } else {
+                    collapse.classList.toggle('show', false);
+                    title.classList.toggle('collapsed', true);
+                }
+            });
+            return matchFound;
         }
     </script>

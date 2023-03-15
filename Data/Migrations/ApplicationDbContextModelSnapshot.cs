@@ -304,6 +304,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("LabourCode")
                         .HasColumnType("varchar(2)");
 
+                    b.Property<double>("Remaining")
+                        .HasColumnType("double");
+
                     b.Property<string>("WPProjectId")
                         .HasColumnType("longtext");
 
