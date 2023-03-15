@@ -39,14 +39,14 @@
                     @for (int i = 0; i < Model.budgets!.Count; i++)
                     {
                         <div class="form-group">
-                            <input type="hidden" asp-for="budgets[i]!.LabourCode" value="@Model!.budgets[i]!.LabourCode" />
+                            <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
                             <span>@Model.budgets[i].LabourCode</span>
                             <div style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-                                <input asp-for="budgets[i]!.BudgetAmount!" style="width: 20%;" class="form-control" onchange="setTotal('@Model.budgets[i].LabourCode', @Model.budgets[i].Rate, this.value, @Model.budgets[i].Remaining)"/> x $@Model!.budgets[i]!.Rate/hour = <span id="@Model.budgets[i].LabourCode"> $0</span>
+                                <input asp-for="budgets![i].BudgetAmount!" style="width: 20%;" class="form-control" onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, @Model.budgets![i].Remaining)"/> x $@Model.budgets![i]!.Rate/hour = <span id="@Model.budgets![i].LabourCode"> $0</span>
                                 &nbsp;&nbsp;
-                                <span id='@(String.Format("R{0}", Model.budgets[i].LabourCode))'>Remaining: $@Model.budgets[i].Remaining</span>
+                                <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Remaining: $@Model.budgets![i].Remaining</span>
                             </div>
-                            <span asp-validation-for="budgets[i]!.BudgetAmount" class="text-danger"></span>
+                            <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
                         </div>
                         <br/>
                     }
@@ -211,9 +211,8 @@
                     div.appendChild(employeeButton);
                     employeeButton.value = WorkPackageId;
                     employeeButton.name = "name";
-                    employeeButton.className = "label";
+                    employeeButton.className = "label bottomLevel";
                     employeeButton.addEventListener('click', async function getAvailableEmployees(info) {
-    @* currentWorkPackage = info.srcElement.value; *@
                     const avaialbleEmpEle = document.querySelector("#availableEmployees");
                     await fetch("/Project/GetAvailableEmployees", {
                             method: "POST",
@@ -256,7 +255,7 @@
                     div.appendChild(respEngButton);
                     respEngButton.value = WorkPackageId;
                     respEngButton.name = "name";
-                    respEngButton.className = "label";
+                    respEngButton.className = "label bottomLevel";
                     respEngButton.addEventListener('click', async function getCandidateEmployees(info) {
     @* currentWorkPackage = info.srcElement.value; *@
                     const candidateEmpEle = document.querySelector("#candidateEmployees");
@@ -299,8 +298,10 @@
 
     @* updates list of assigned employees *@
             ul = document.createElement("ul");
+            ul.className = "bottomLevel";
             ul.innerHTML = "<h3>Employees Assigned to this wp</h3>"
             assignedRespEng = document.createElement("div");
+            assignedRespEng.className = "bottomLevel";
             assignedRespEng.innerHTML = "<h3>Responsible Engineer</h3>"
 
             fetch("/Project/GetAssignedEmployees", {
@@ -366,6 +367,7 @@
             }
         }
 
+        //submit creation of sub work package
         document.querySelector("#newWPForm").addEventListener('submit', async function(event) {
             event.preventDefault();
             const formData = new FormData(event.target);
@@ -375,6 +377,10 @@
             }).then(c => {
                 return c.json();
             }).then(c => {
+                let body = document.querySelector("#WP" + c.parentWorkPackageId);
+                body.querySelectorAll(":scope > .bottomLevel").forEach((del) => {
+                    body.removeChild(del);
+                });
                 addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName, c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId);
                 var myModalEl = document.getElementById('splitModal');
                 var modal = bootstrap.Modal.getInstance(myModalEl)
@@ -464,10 +470,11 @@
             element.innerHTML = "Remaining: $" + (remain - (total * rate));
         }
 
+        //these 2 functions recursivly search through the wps to find matches in the search bar
         function search(input){
             find(document.querySelector("#WorkPackages"), input);
         }
-
+        //helper for search
         function find(head, input){
             let items = head.querySelectorAll(':scope > .accordion-item');
             let matchFound = false;

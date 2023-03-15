@@ -154,7 +154,10 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult> DeleteConfirmed(string id)
         {
             var employeeProject = await _context.EmployeeProjects.FindAsync(id);
-            _context.EmployeeProjects.Remove(employeeProject);
+            if (employeeProject != null)
+            {
+                _context.EmployeeProjects.Remove(employeeProject);
+            }
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }

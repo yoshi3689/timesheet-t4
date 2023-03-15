@@ -1,10 +1,12 @@
 @model IEnumerable<TimesheetApp.Models.TimesheetModels.Project>
 
 @{
-    if (User.Identity!.IsAuthenticated && (User.IsInRole("HR")|| User.IsInRole("Admin")))
+    if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
     {
         ViewData["Title"] = "All Projects";
-    } else {
+    }
+    else
+    {
         ViewData["Title"] = "My Projects";
     }
 }
@@ -27,6 +29,9 @@
                 @Html.DisplayNameFor(model => model.ProjectId)
             </th>
             <th>
+                @Html.DisplayNameFor(model => model.ProjectTitle)
+            </th>
+            <th>
                 Project Manager Name
             </th>
             <th>
@@ -39,26 +44,28 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.ProjectId)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ProjectManager!.FirstName) @item.ProjectManager!.LastName
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.TotalBudget)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ActualCost)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.ProjectId">Manage</a> |
-                @* <a asp-action="Details" asp-route-id="@item.SignatureId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.SignatureId">Delete</a> *@
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ProjectId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ProjectTitle)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ProjectManager!.FirstName) @item.ProjectManager!.LastName
+                </td>
+                <td>
+                    $@Html.DisplayFor(modelItem => item.TotalBudget)
+                </td>
+                <td>
+                    $@Html.DisplayFor(modelItem => item.ActualCost)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.ProjectId">Manage</a> |
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

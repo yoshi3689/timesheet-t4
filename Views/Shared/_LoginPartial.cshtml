@@ -1,42 +1,42 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
+    @inject UserManager<ApplicationUser> UserManager
 
-  <!-- Collapsible content -->
-  <div class="collapse navbar-collapse" id="navbarSupportedContent15">
+        <!-- Collapsible content -->
+        <div class="collapse navbar-collapse" id="navbarSupportedContent15">
 
-    <ul class="navbar-nav">
-@if (SignInManager.IsSignedIn(User))
-{
-    @if(User.IsInRole("Admin")){
-        <li class="nav-item">
-            <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Add Employee</a>
-        </li>
-    }
-    @if(User.IsInRole("Admin") || User.IsInRole("HR")) {
+            <ul class="navbar-nav">
+                @if (SignInManager.IsSignedIn(User))
+                {
+                @if(User.IsInRole("Admin")){
+                <li class="nav-item">
+                    <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Add Employee</a>
+                </li>
+                }
+                <!-- @if(User.IsInRole("Admin") || User.IsInRole("HR")) {
             <li class="nav-item">
                 <a class="nav-link text-dark" asp-area="" asp-controller="LabourGrade"
                     asp-action="Index">Change LG</a>
             </li>
-    }
+    } -->
 
-    <li class="nav-item">
-        <a  class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">@User.Identity?.Name</a>
-    </li>
-    <li class="nav-item">
-        <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button  type="submit" class="nav-link btn btn-link text-dark">Logout</button>
-        </form>
-    </li>
-}
-else
-{
-    <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
-    </li>
-}
-</ul>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index"
+                        title="Manage">@User.Identity?.Name</a>
+                </li>
+                <li class="nav-item">
+                    <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout"
+                        asp-route-returnUrl="@Url.Action(" Index", "Home" , new { area="" })">
+                        <button type="submit" class="nav-link btn btn-link text-dark">Logout</button>
+                    </form>
+                </li>
+                }
+                else
+                {
+                <li class="nav-item">
+                    <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
+                </li>
+                }
+            </ul>
 
-  </div>
-
-
+        </div>

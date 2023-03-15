@@ -16,14 +16,14 @@ namespace TimesheetApp.Models.TimesheetModels
     {
         [Key]
         [Required]
-        [Display(Name = "Project Id")]
+        [Display(Name = "Id")]
         public int ProjectId { get; set; }
-        [Display(Name = "Project Title")]
+        [Display(Name = "Name")]
         public string? ProjectTitle { get; set; }
         [Required]
-        [Display(Name = "Project Manager")]
+        [Display(Name = "Manager")]
         public string? ProjectManagerId { get; set; }
-        [Display(Name = "Asst. Project Manager")]
+        [Display(Name = "Asst. Manager")]
         public string? AssistantProjectManagerId { get; set; }
         [Display(Name = "Budget")]
         public double TotalBudget { get; set; }
@@ -31,10 +31,10 @@ namespace TimesheetApp.Models.TimesheetModels
         public double ActualCost { get; set; }
 
         [ForeignKey("ProjectManagerId")]
-        [Display(Name = "Project Manager")]
+        [Display(Name = "Manager")]
         public virtual ApplicationUser? ProjectManager { get; set; }
         [ForeignKey("AssistantProjectManagerId")]
-        [Display(Name = "Asst. Project Manager")]
+        [Display(Name = "Asst. Manager")]
         public virtual ApplicationUser? AssistantProjectManager { get; set; }
 
         [InverseProperty("Project")]

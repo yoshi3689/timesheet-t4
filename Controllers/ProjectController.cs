@@ -100,6 +100,8 @@ namespace TimesheetApp.Controllers
                     Title = input.project.ProjectTitle
                 };
                 _context.WorkPackages!.Add(newWP);
+                double totalBudget = 0;
+                var grades = _context.LabourGrades;
                 if (input.budgets != null)
                 {
                     foreach (var budget in input.budgets)
@@ -111,9 +113,11 @@ namespace TimesheetApp.Controllers
                             LabourCode = budget.LabourCode,
                             Remaining = budget.BudgetAmount
                         };
+                        totalBudget += budget.BudgetAmount * grades.Where(c => budget.LabourCode == c.LabourCode).First().Rate;
                         _context.Budgets!.Add(newBudget);
                     }
                 }
+                input.project.TotalBudget = totalBudget;
                 _context.SaveChanges();
                 return RedirectToAction("Index");
 
@@ -287,7 +291,7 @@ namespace TimesheetApp.Controllers
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
         [Authorize(Roles = "HR,Admin")]
-        public async Task<IActionResult> GetCandidateEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
+        public IActionResult GetCandidateEmployees([FromBody] WorkPackage LowestLevelWp)
         {
 
             // get empIds assigned to the lowest level wp and not a responsible engineer

@@ -22,15 +22,15 @@
             @for (int i = 0; i < Model.budgets!.Count; i++)
             {
                 <div class="form-group">
-                    <input type="hidden" asp-for="budgets[i].LabourCode" value="@Model.budgets[i].LabourCode" />
-                    <span>@Model.budgets[i].LabourCode</span>
+                    <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
+                    <span>@Model.budgets![i].LabourCode</span>
                     <div style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-                        <input asp-for="budgets[i].BudgetAmount" class="form-control" style="width: 50%;"
-                        onchange="setTotal('@Model.budgets[i].LabourCode', @Model.budgets[i].Rate, this.value, @Model.budgets[i].Remaining)" />
+                        <input asp-for="budgets![i].BudgetAmount" class="form-control" style="width: 50%;"
+                            onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, @Model.budgets![i].Remaining)" />
                         x $@Model!.budgets[i]!.Rate/hour =
-                        <span id="@Model.budgets[i].LabourCode"> $0</span>
+                        <span id="@Model.budgets![i].LabourCode"> $0</span>
                     </div>
-                    <span asp-validation-for="budgets[i].BudgetAmount" class="text-danger"></span>
+                    <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
                 </div>
             }
             <div class="form-group">
@@ -48,7 +48,5 @@
     function setTotal(labourCode, rate, total, remain) {
         var element = document.querySelector("#" + labourCode);
         element.innerHTML = " $" + (total * rate);
-        element = document.querySelector("#R" + labourCode);
-        element.innerHTML = "Remaining: $" + (remain - (total * rate));
     }
 </script>
