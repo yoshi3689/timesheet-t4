@@ -13,7 +13,7 @@
     <h2>Manage Work Packages</h2>
     <input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)"/>
     <div id="WorkPackages" class="accordian"></div>
-
+    <input type="hidden" id="currentWP"/>
     <div class="modal" tabindex="-1" role="dialog" id="splitModal">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -88,8 +88,7 @@
             </div>
             }
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-                        onClick="window.location.reload();">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -109,8 +108,7 @@
                     <button type="button" class="btn btn-primary" onclick="assignResponsibleEngineer()">Assign</button>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-                        onClick="window.location.reload();">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -132,19 +130,50 @@
             var firstname = null;
             var lastname = null;
         </text>
-        if (wp.ResponsibleUser != null)
+        @if (wp.ResponsibleUser != null)
         {
             <text>
-                firstname = @wp.ResponsibleUser.FirstName;
-                lastname = @wp.ResponsibleUser.LastName;
+                firstname = "@wp.ResponsibleUser.FirstName";
+                lastname = "@wp.ResponsibleUser.LastName";
             </text>
         }
         <text>
-            addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" === "True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.ParentWorkPackageProjectId)
+            (async function() {
+                await addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" === "True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.ParentWorkPackageProjectId);
+            })();
         </text>
     }
 
-        function addWP(WorkPackageId, Title, ResponsibleUserFN, ResponsibleUserLN, IsClosed, IsBottomLevel, ParentWorkPackageId, ParentWorkPackageProjectId){
+        function createRow(caption, object, caption2, object2, hidden){
+            let row = document.createElement('tr');
+            let data1 = document.createElement('td');
+            let data2 = document.createElement('td');
+            let data3 = document.createElement('td');
+            let data4 = document.createElement('td');
+            let captionObj = document.createElement('span');
+            let captionObj2 = document.createElement('span');
+            captionObj.innerHTML = caption;
+            data1.appendChild(captionObj);
+            data2.appendChild(object);
+            data2.style = "width: 35%; text-align: left;"
+            row.appendChild(data1);
+            row.appendChild(data2);
+
+            if(caption2 !== null){
+                captionObj2.innerHTML = caption2;
+                data3.appendChild(captionObj2);
+                data4.appendChild(object2);
+                row.appendChild(data3);
+                row.appendChild(data4);
+            }
+            if(hidden){
+                row.style = "display: none;";
+            }
+            return row;
+        }
+
+        async function addWP(WorkPackageId, Title, ResponsibleUserFN, ResponsibleUserLN, IsClosed, IsBottomLevel, ParentWorkPackageId, ParentWorkPackageProjectId){
+            let employeeButton = null;
             let item = document.createElement("div");
             item.className = "accordion-item";
 
@@ -172,21 +201,6 @@
             let div = document.createElement("div");
             div.className = "accordion-body";
             div.id = "WP" + WorkPackageId;
-            let name = document.createElement("span");
-            name.innerHTML = "Work Package Name: " + WorkPackageId;
-            name.className = "label";
-            div.appendChild(name);
-            if(ResponsibleUserFN !== null) {
-                    let re = document.createElement("span");
-                    re.className = "label";
-                    re.innerHTML =
-                        "Responsible Engineer: " + ResponsibleUserFN + " " + ResponsibleUserLN;
-                    div.appendChild(re);
-                }
-            let closed = document.createElement("span");
-            closed.className = "label";
-            closed.innerHTML = "Closed: " + IsClosed;
-            div.appendChild(closed);
 
             let splitButton = document.createElement("button");
             splitButton.value = WorkPackageId;
@@ -200,157 +214,163 @@
             splitButton.type = "button";
             splitButton.innerHTML = "Create Subpackage";
             div.appendChild(splitButton);
-    @* add two buttons: assign emp & assign resp eng *@
+
+
             if (IsBottomLevel) {
-                    let employeeButton = document.createElement("button");
-                    employeeButton.type = "button";
-                    employeeButton.innerHTML = "Assign Employee";
-                    div.appendChild(employeeButton);
-                    employeeButton.value = WorkPackageId;
-                    employeeButton.name = "name";
-                    employeeButton.className = "label bottomLevel";
-                    employeeButton.addEventListener('click', async function getAvailableEmployees(info) {
+                employeeButton = document.createElement("button");
+                employeeButton.type = "button";
+                employeeButton.innerHTML = "Assign Employee";
+                div.appendChild(employeeButton);
+                employeeButton.value = WorkPackageId;
+                employeeButton.name = "name";
+                employeeButton.className = "label bottomLevel";
+                employeeButton.addEventListener('click', async function(info) {
                     const avaialbleEmpEle = document.querySelector("#availableEmployees");
                     await fetch("/Project/GetAvailableEmployees", {
-                            method: "POST",
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                workPackageId: employeeButton.value
-                            }),
-                        })
-                        .then((response) => {
-                            return response.json();
-                        })
-                        .then((response) => {
-                            $("#employeeModal").modal("show");
-                            response.forEach((c,index) => {
-                                var a = document.createElement("div");
-                                a.classList.add(`emp_${index}`);
-                                a.classList.add(`emp-name-avialable`);
-                                a.innerHTML = `
-                                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault${index}">
-                                    <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
-                                    <span style="display:none;" >${c.id}</span>
-                                    `;
-                                avaialbleEmpEle.appendChild(a);
-                            });
-                            if (response.length == 0) {
-                                var a = document.createElement("p");
-                                a.innerHTML = "No avaialble employees";
-                                avaialbleEmpEle.appendChild(a);
-                            }
+                        method: "POST",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            workPackageId: employeeButton.value
+                        }),
+                    })
+                    .then((response) => {
+                        return response.json();
+                    })
+                    .then((response) => {
+                        $("#employeeModal").modal("show");
+                        document.querySelector("#currentWP").value = info.srcElement.value;
+                        response.forEach((c,index) => {
+                            var a = document.createElement("div");
+                            a.classList.add(`emp_${index}`);
+                            a.classList.add(`emp-name-avialable`);
+                            a.innerHTML = `
+                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault${index}">
+                                <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
+                                <span style="display:none;" >${c.id}</span>
+                                `;
+                            avaialbleEmpEle.appendChild(a);
                         });
-
+                        if (response.length == 0) {
+                            var a = document.createElement("p");
+                            a.innerHTML = "No avaialble employees";
+                            avaialbleEmpEle.appendChild(a);
+                        }
+                    });
                 }, false);
-    @* add assign respEng button *@
-                    let respEngButton = document.createElement("button");
-                    respEngButton.type = "button";
-                    respEngButton.innerHTML = "Add Responsible Engineer";
-                    div.appendChild(respEngButton);
-                    respEngButton.value = WorkPackageId;
-                    respEngButton.name = "name";
-                    respEngButton.className = "label bottomLevel";
-                    respEngButton.addEventListener('click', async function getCandidateEmployees(info) {
-    @* currentWorkPackage = info.srcElement.value; *@
+                let respEngButton = document.createElement("button");
+                respEngButton.type = "button";
+                respEngButton.innerHTML = "Set Responsible Engineer";
+                div.appendChild(respEngButton);
+                respEngButton.value = WorkPackageId;
+                respEngButton.name = "name";
+                respEngButton.className = "label bottomLevel";
+                respEngButton.addEventListener('click', async function getCandidateEmployees(info) {
+                    document.querySelector("#currentWP").value = info.srcElement.value;
                     const candidateEmpEle = document.querySelector("#candidateEmployees");
                     await fetch("/Project/GetCandidateEmployees", {
-                            method: "POST",
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                workPackageId: respEngButton.value
-                                }),
-                        })
-                        .then((response) => {
-                            return response.json();
-                        })
-                        .then((response) => {
-                            console.log(response)
-                            $("#RespEngModal").modal("show");
-                            response.forEach((c,index) => {
-                                var a = document.createElement("div");
-                                a.classList.add(`emp_${index}`);
-                                a.classList.add(`emp-name-candidate`);
-                                a.innerHTML = `
-                                    <input class="form-check-input" type="radio" value="" id="flexCheckDefault${index}">
-                                    <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
-                                    <span style="display:none;" >${c.id}</span>
-                                    `;
-                                candidateEmpEle.appendChild(a);
-                            });
-                            if (response.length == 0) {
-                                var a = document.createElement("p");
-                                a.innerHTML = "No candidate employees.";
-                                candidateEmpEle.appendChild(a);
-                                respEngButton.disabled = true;
-                            }
+                        method: "POST",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            workPackageId: respEngButton.value
+                            }),
+                    })
+                    .then((response) => {
+                        return response.json();
+                    })
+                    .then((response) => {
+                        console.log(response)
+                        $("#RespEngModal").modal("show");
+                        candidateEmpEle.innerHTML = "";
+                        response.forEach((c,index) => {
+                            var a = document.createElement("div");
+                            a.classList.add(`emp_${index}`);
+                            a.classList.add(`emp-name-candidate`);
+                            a.innerHTML = `
+                                <input class="form-check-input" type="radio" value="" id="flexCheckDefault${index}" name="${WorkPackageId}">
+                                <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
+                                <span style="display:none;" >${c.id}</span>
+                                `;
+                            candidateEmpEle.appendChild(a);
                         });
-
+                        if (response.length == 0) {
+                            var a = document.createElement("p");
+                            a.innerHTML = "No candidate employees.";
+                            candidateEmpEle.appendChild(a);
+                            respEngButton.disabled = true;
+                        }
+                    });
                 }, false);
+            }
 
-    @* updates list of assigned employees *@
-            ul = document.createElement("ul");
-            ul.className = "bottomLevel";
-            ul.innerHTML = "<h3>Employees Assigned to this wp</h3>"
-            assignedRespEng = document.createElement("div");
-            assignedRespEng.className = "bottomLevel";
-            assignedRespEng.innerHTML = "<h3>Responsible Engineer</h3>"
+            let table = document.createElement("table");
 
-            fetch("/Project/GetAssignedEmployees", {
-            method: "POST",
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                WorkPackageId: employeeButton.value
-                }),
-            })
-            .then((response) => {
-                return response.json();
-            })
-            .then(res => {
-                if (res.length !== 0) {
-                    // if any emp assigned to btmLvlwpkg, hide the split workpkg btn
-                    $(`#${employeeButton.value} button`).first().hide();
+            let name = document.createElement("span");
+            name.innerHTML =  WorkPackageId;
+            name.className = "label";
 
-                    res.forEach(e=> {
-                    let element = document.createElement("li");
-                    element.innerHTML = e.firstName +" " + e.lastName;
-                    ul.appendChild(element);
+            let closed = document.createElement("span");
+            closed.className = "label";
+            closed.innerHTML = IsClosed;
+
+            table.appendChild(createRow("Work Package ID: ", name, "Closed: ", closed, false));
+
+            let re = document.createElement("span");
+            re.id = WorkPackageId + "ResponsibleEngineer";
+            re.className = "label";
+            if(ResponsibleUserFN !== null) {
+                re.innerHTML = ResponsibleUserFN + " " + ResponsibleUserLN;
+            }
+            table.appendChild(createRow("Responsible Engineer: ", re, null, null, !re.innerHTML));
+            div.append(table);
+
+            if (IsBottomLevel) {
+                await fetch("/Project/GetAssignedEmployees", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        WorkPackageId: WorkPackageId
+                    }),
+                })
+                .then((response) => {
+                    return response.json();
+                })
+                .then(res => {
+                    let list = document.createElement("span");
+                    list.innerHTML =  "Employees:";
+                    div.appendChild(list);
+                    var ul = document.createElement('ul');
+                    ul.id = WorkPackageId + "UL";
+                    ul.className = "bottomLevel employeeList";
+                    let element = null;
+                    if (res.length !== 0) {
+                        // if any emp assigned to btmLvlwpkg, hide the split workpkg btn
+                        $(`#${employeeButton.value} button`).first().hide();
+                        var loopNum = 0;
+                        res.forEach(e=> {
+                            loopNum++;
+                            element = document.createElement("li");
+                            element.innerHTML = e.firstName +" " + e.lastName;
+                            ul.appendChild(element);
+                        });
+                    } else {
+                        ul.innerHTML += "<p>No one is asssigned</p>"
+                    }
+                    div.appendChild(ul);
                 });
-                } else {
-                    ul.innerHTML += "<p>No one is asssigned</p>"
-                }
-                div.appendChild(ul);
-            });
-
-            fetch("/Project/GetResponsibleEngineer", {
-            method: "POST",
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                WorkPackageId: employeeButton.value
-                }),
-            })
-            .then((response) => {
-                return response.json();
-            })
-            .then((res) => {
-                console.log(res);
-                let assignedRespEngText = res == null ? "<p>No RE assigned</p>" : `${res.result.responsibleUserId}`
-                assignedRespEng.innerHTML += assignedRespEngText;
-                div.appendChild(assignedRespEng);
-            })
             }
             let parent = null;
+            let subp = document.createElement("p");
+            subp.innerHTML =  "";
+            div.appendChild(subp);
             if (ParentWorkPackageId !== null && ParentWorkPackageProjectId !== null && ParentWorkPackageId !== "" && ParentWorkPackageProjectId !== "") {
                 collapse.appendChild(div);
                 item.appendChild(collapse);
@@ -390,9 +410,8 @@
             const empList = document.querySelectorAll(".emp-name-avialable");
             let employeesToBeAdded = Array.from(empList).map(e => {
                 if (e.children[0].checked == true) {
-                    return { WorkPackageProjectId: "@Model.wps[0].ProjectId", WorkPackageId : employeeButton.value ,UserId : e.children[2].innerHTML};
+                    return { WorkPackageProjectId: "@Model.wps[0].ProjectId", WorkPackageId : document.querySelector("#currentWP").value ,UserId : e.children[2].innerHTML};
                 }
-
             });
             await fetch("/Project/AssignEmployees", {
                 method: "POST",
@@ -435,12 +454,10 @@
             // select a candidate emp to add to this wp
             const empList = document.querySelectorAll(".emp-name-candidate");
             let responsibleEngineer = Array.from(empList).map(e => {
-                console.log(e.children[0]);
-                console.log(e.children[0].checked);
                 if (e.children[0].checked == true) {
-                    return { WorkPackageProjectId: "@Model.wps[0].ProjectId", WorkPackageId : employeeButton.value ,UserId : e.children[2].innerHTML};
+                    return { WorkPackageProjectId: "@Model.wps[0].ProjectId", WorkPackageId: document.querySelector("#currentWP").value ,UserId : e.children[2].innerHTML};
                 }
-            })[0];
+            }).find((item) => typeof item !== 'undefined');
             await fetch("/Project/AssignResponsibleEngineer", {
                 method: "POST",
                 headers: {
@@ -449,15 +466,18 @@
                 },
                 body: JSON.stringify(responsibleEngineer),
             }).then(res => {
-                return res.json();
+                if(res.status == 200){
+                    return res.json();
+                }
             }).then(res => {
-                if (res.length !== 0) {
-                    console.log(`${res.length} employee(s) added`);
+                if (res) {
+                    var id = "#" + document.querySelector("#currentWP").value + "ResponsibleEngineer";
+                    document.querySelector(id).style = "";
+                    document.querySelector(id).innerHTML = "Responsible Engineer: " + res;
                 } else {
-                    console.log("no one added")
+                    console.log("failed")
                 }
             });
-
         }
 
         function setTotal(labourCode, rate, total, remain){

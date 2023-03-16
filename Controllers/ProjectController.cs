@@ -153,10 +153,11 @@ namespace TimesheetApp.Controllers
                     Remaining = projectBudget.Where(c => c.LabourCode == item.LabourCode).First().Remaining
                 });
             }
+
             WorkPackageViewModel model = new WorkPackageViewModel
             {
                 wps = findAllChildren(top),
-                budgets = emptyBudgets
+                budgets = emptyBudgets,
             };
             return View(model);
         }
@@ -167,7 +168,7 @@ namespace TimesheetApp.Controllers
             wps.Add(top);
             if (top.ChildWorkPackages == null || top.ChildWorkPackages.Count() == 0)
             {
-                top = _context.WorkPackages!.Include(c => c.ChildWorkPackages).FirstOrDefault(c => c.ProjectId == top.ProjectId && c.WorkPackageId == top.WorkPackageId)!;
+                top = _context.WorkPackages!.Include(c => c.ChildWorkPackages).Include(c => c.ResponsibleUser).FirstOrDefault(c => c.ProjectId == top.ProjectId && c.WorkPackageId == top.WorkPackageId)!;
             }
             if (top.ChildWorkPackages != null && top.ChildWorkPackages.Count() != 0)
             {
@@ -200,16 +201,12 @@ namespace TimesheetApp.Controllers
         [Authorize(Roles = "HR,Admin")]
         public async Task<IActionResult> AssignResponsibleEngineerAsync([FromBody] EmployeeWorkPackage ewp)
         {
-            var LLWP = await _context.WorkPackages!.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
+            var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
             Console.WriteLine(LLWP.ResponsibleUserId);
-            // var PrevRespEng = await _context.Users!.FindAsync(LLWP!.ResponsibleUserId);
-            // var NewRespEng = await _context.Users!.FindAsync(ewp.UserId);
             LLWP.ResponsibleUserId = ewp.UserId;
+            var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
             _context.SaveChanges();
-            // var ResponseArr = new List<ApplicationUser>();
-            // ResponseArr.Add(PrevRespEng);
-            // ResponseArr.Add(NewRespEng);
-            return new JsonResult("Success");
+            return new JsonResult(user.FirstName + " " + user.LastName);
         }
 
         [Authorize(Roles = "HR,Admin")]
@@ -286,7 +283,7 @@ namespace TimesheetApp.Controllers
         {
             // get empIds assigned to the lowest level wp
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName }));
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
@@ -297,7 +294,7 @@ namespace TimesheetApp.Controllers
             // get empIds assigned to the lowest level wp and not a responsible engineer
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && (ewp.WorkPackage!.ResponsibleUserId == null)).Select(filtered => filtered.UserId);
             // just in case, check if the work package is in this project too
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User));
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
         // get employees with the project id
@@ -308,20 +305,8 @@ namespace TimesheetApp.Controllers
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
 
             // return
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User));
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
-
-        // get an employee assigned as a resp engineer
-        [Authorize(Roles = "HR,Admin")]
-        public IActionResult GetResponsibleEngineer([FromBody] WorkPackage LowestLevelWp)
-        {
-            // get userIds of the users assigned to the lowest level wp
-            // Console.WriteLine(LowestLevelWp.WorkPackageId);
-            // var responsibleEngineer = _context.WorkPackages!.Where(wp => wp.WorkPackageId == LowestLevelWp.WorkPackageId).Include(c => c.ResponsibleUser);
-            var responsibleEngineer = _context.WorkPackages!.FindAsync(LowestLevelWp.WorkPackageId, HttpContext.Session.GetInt32("CurrentProject"));
-            return new JsonResult(responsibleEngineer);
-        }
-
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
