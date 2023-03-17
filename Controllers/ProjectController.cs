@@ -26,6 +26,9 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace TimesheetApp.Controllers
 {
+    /// <summary>
+    /// Deals with creating and managing projects, which includes creating and updating work packages.
+    /// </summary>
     [Authorize]
     public class ProjectController : Controller
     {
@@ -40,6 +43,10 @@ namespace TimesheetApp.Controllers
             _context = context;
         }
 
+        /// <summary>
+        /// Used to get the main projects list. If you are an admin or HR, you can see all of them.
+        /// </summary>
+        /// <returns>project list page</returns>
         public IActionResult Index()
         {
             if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
@@ -55,6 +62,10 @@ namespace TimesheetApp.Controllers
             }
         }
 
+        /// <summary>
+        /// Gets the page for creating a new project.
+        /// </summary>
+        /// <returns>new project page.</returns>
         [Authorize(Roles = "HR,Admin")]
         public IActionResult Create()
         {
@@ -82,6 +93,11 @@ namespace TimesheetApp.Controllers
             return View(proj);
         }
 
+        /// <summary>
+        /// For dealing with submitting the creation of a new project.
+        /// </summary>
+        /// <param name="input">View model that contains the new project</param>
+        /// <returns>Same page if errors, home page if not.</returns>
         [HttpPost]
         [Authorize(Roles = "HR,Admin")]
         [ValidateAntiForgeryToken]
@@ -103,6 +119,8 @@ namespace TimesheetApp.Controllers
                 _context.WorkPackages!.Add(newWP);
                 double totalBudget = 0;
                 var grades = _context.LabourGrades;
+
+                //create the budget in the db, one row per labour code.
                 if (input.budgets != null)
                 {
                     foreach (var budget in input.budgets)
@@ -123,6 +141,7 @@ namespace TimesheetApp.Controllers
                 return RedirectToAction("Index");
 
             }
+            //if there are mistakes, re load list of employees and send the view back again
             var users = _context.Users.Select(s => new
             {
                 Id = s.Id,
@@ -132,10 +151,16 @@ namespace TimesheetApp.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Returns the page which is used to manage the project, including creation of work packages.
+        /// </summary>
+        /// <param name="id">the id of the project</param>
+        /// <returns>The project manage page</returns>
         [Authorize]
         public IActionResult Edit(int? id)
         {
             CurrentProject = id;
+            //store the current project into the session for use later.
             HttpContext.Session.SetInt32("CurrentProject", id ?? 0);
             //find all work packages for the project and include the children so a tree can be made
             var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser).Include(c => c.ParentWorkPackage).Include(c => c.ChildWorkPackages);
@@ -145,6 +170,8 @@ namespace TimesheetApp.Controllers
             {
                 wps = findAllChildren(top)
             };
+
+            //calculate the total budget amount for each work package.
             List<Budget> budgets = _context.Budgets.Where(c => c.WPProjectId.StartsWith(CurrentProject + "~")).ToList();
             List<LabourGrade> lgs = _context.LabourGrades.ToList();
             foreach (var wp in model.wps)
@@ -159,6 +186,11 @@ namespace TimesheetApp.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Uses DFS to create a list of WPs that can be created from the top down. The parents need to come first so the children can be inserted as children.
+        /// </summary>
+        /// <param name="top">top of the "tree" or highest level WP</param>
+        /// <returns>a list in usable order</returns>
         private List<WorkPackage> findAllChildren(WorkPackage top)
         {
             List<WorkPackage> wps = new List<WorkPackage>();
@@ -180,7 +212,11 @@ namespace TimesheetApp.Controllers
             return wps;
         }
 
-
+        /// <summary>
+        /// Used to assign employees to work packages.
+        /// </summary>
+        /// <param name="ewps">A list of employee WP relationships.</param>
+        /// <returns>A list of the added users.</returns>
         [Authorize(Roles = "HR,Admin")]
         public IActionResult AssignEmployees([FromBody] List<EmployeeWorkPackage> ewps)
         {
@@ -198,6 +234,11 @@ namespace TimesheetApp.Controllers
             return new JsonResult(_context.Users.Where(c => users.Contains(c.Id)).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
+        /// <summary>
+        /// Used to assign REs to a WP
+        /// </summary>
+        /// <param name="ewp">Takes the Employee-WP relationship of the RE</param>
+        /// <returns>RE's full name</returns>
         [HttpPost]
         [Authorize(Roles = "HR,Admin")]
         public async Task<IActionResult> AssignResponsibleEngineerAsync([FromBody] EmployeeWorkPackage ewp)
@@ -209,6 +250,10 @@ namespace TimesheetApp.Controllers
             return new JsonResult(user.FirstName + " " + user.LastName);
         }
 
+        /// <summary>
+        /// Creates and send the partial view which contains the work package creation form. Done this way to allow field validation.
+        /// </summary>
+        /// <returns>WP creation partial view</returns>
         public IActionResult ShowSplit()
         {
             string projectId = Convert.ToString(HttpContext.Session.GetInt32("CurrentProject") ?? 0);
@@ -232,9 +277,15 @@ namespace TimesheetApp.Controllers
             return PartialView("_CreateWorkPackagePartial", model);
         }
 
+        /// <summary>
+        /// used to create a new WP from a parent WP.
+        /// </summary>
+        /// <param name="p">View model which contains new WP</param>
+        /// <returns>the new WP, or the partial view with errors.</returns>
         [Authorize(Roles = "HR,Admin")]
         public IActionResult Split(WorkPackageViewModel p)
         {
+            //check if the fields are valid
             if (ModelState.GetFieldValidationState("WorkPackage.ParentWorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.WorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.Title") != ModelValidationState.Valid)
             {
                 Response.StatusCode = 400;
@@ -262,63 +313,47 @@ namespace TimesheetApp.Controllers
                 IsClosed = false,
                 Title = p.WorkPackage.Title
             };
-
-            if (_context.WorkPackages!.Where(c => c.ProjectId == CurrentProject && c.WorkPackageId == newChild.WorkPackageId).Count() != 0)
+            //create budget for the new WP, one row per labour code.
+            if (p.budgets != null)
             {
-                return Json("Work Package must be unique for a project.");
-            }
-            else if (newChild.WorkPackageId!.Contains("~"))
-            {
-                return Json("Reserved character '~'");
-            }
-            else
-            {
-                if (p.budgets != null)
+                List<Budget> parentBudgets = _context.Budgets.Where(c => c.WPProjectId == CurrentProject + "~" + newChild.ParentWorkPackageId).ToList();
+                foreach (var budget in p.budgets)
                 {
-                    List<Budget> parentBudgets = _context.Budgets.Where(c => c.WPProjectId == CurrentProject + "~" + newChild.ParentWorkPackageId).ToList();
-                    foreach (var budget in p.budgets)
+                    Budget newBudget = new Budget
                     {
-                        Budget newBudget = new Budget
-                        {
-                            WPProjectId = CurrentProject + "~" + newChild.WorkPackageId,
-                            BudgetAmount = budget.BudgetAmount,
-                            LabourCode = budget.LabourCode,
-                            Remaining = budget.BudgetAmount
-                        };
-                        _context.Budgets!.Add(newBudget);
-                        parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First().Remaining -= newBudget.BudgetAmount;
-                    }
-                }
-                _context.WorkPackages!.Add(newChild);
-                _context.SaveChanges();
-                newChild.ParentWorkPackage = null;
-                if (newChild.ResponsibleUser == null)
-                {
-                    newChild.ResponsibleUser = new ApplicationUser
-                    {
-                        FirstName = null,
-                        LastName = null
+                        WPProjectId = CurrentProject + "~" + newChild.WorkPackageId,
+                        BudgetAmount = budget.BudgetAmount,
+                        LabourCode = budget.LabourCode,
+                        Remaining = budget.BudgetAmount
                     };
+                    _context.Budgets!.Add(newBudget);
+                    parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First().Remaining -= newBudget.BudgetAmount;
                 }
-                List<Budget> budgets = _context.Budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId)).ToList();
-                List<LabourGrade> lgs = _context.LabourGrades.ToList();
-                double total = 0;
-                foreach (var lg in lgs)
-                {
-                    total += budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId) && c.LabourCode == lg.LabourCode).First().BudgetAmount * lg.Rate;
-                }
-                newChild.TotalBudget = total;
-
-                return Json(newChild);
             }
-        }
+            _context.WorkPackages!.Add(newChild);
+            _context.SaveChanges();
+            newChild.ParentWorkPackage = null;
+            //create an empty RE if there isn't one, just to make it easier to display
+            if (newChild.ResponsibleUser == null)
+            {
+                newChild.ResponsibleUser = new ApplicationUser
+                {
+                    FirstName = null,
+                    LastName = null
+                };
+            }
+            //find the total budget
+            List<Budget> budgets = _context.Budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId)).ToList();
+            List<LabourGrade> lgs = _context.LabourGrades.ToList();
+            double total = 0;
+            foreach (var lg in lgs)
+            {
+                total += budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId) && c.LabourCode == lg.LabourCode).First().BudgetAmount * lg.Rate;
+            }
+            newChild.TotalBudget = total;
 
+            return Json(newChild);
 
-        [Authorize(Roles = "HR,Admin")]
-        public IActionResult GetDirectChildren([FromBody] WorkPackage parent)
-        {
-            CurrentProject = HttpContext.Session.GetInt32("CurrentProject");
-            return new JsonResult(_context.WorkPackages!.Where(c => c.ProjectId == CurrentProject && c.ParentWorkPackageId == parent.WorkPackageId));
         }
 
         //get employees for a wp, and say if they are already assigned or not.
@@ -374,10 +409,11 @@ namespace TimesheetApp.Controllers
         {
             return View("Error!");
         }
-
-
-
-        //not sure if this is working right now
+        /// <summary>
+        /// used to check if a WP id is unique for this project
+        /// </summary>
+        /// <param name="WorkPackageId"></param>
+        /// <returns></returns>
         private bool checkWorkPackage(string WorkPackageId)
         {
             int? project = HttpContext.Session.GetInt32("CurrentProject");
@@ -497,28 +533,4 @@ namespace TimesheetApp.Controllers
             return table;
         }
     }
-
-    public class WPFormat : ValidationAttribute
-    {
-        public string GetErrorMessage() =>
-            $"Work Package ID must be in format [Letter][4xNumber] and cannot contain \"~\"";
-
-        protected override ValidationResult? IsValid(
-            object? value, ValidationContext validationContext)
-        {
-            string name = Convert.ToString(value)!;
-
-            if (Regex.IsMatch(name, "[a-zA-z]{1}[0-9]{4}") && !name.Contains("~"))
-            {
-                return ValidationResult.Success;
-            }
-            else
-            {
-                return new ValidationResult(GetErrorMessage());
-            }
-        }
-
-
-    }
-
 }

@@ -11,6 +11,9 @@ using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Controllers
 {
+    /// <summary>
+    /// HR can set the labour grade rates, but after further talk with bruce, it may be wise to remove this.
+    /// </summary>
     [Authorize(Roles = "HR,Admin")]
     public class LabourGradeController : Controller
     {

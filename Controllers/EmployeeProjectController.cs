@@ -11,6 +11,9 @@ using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Controllers
 {
+    /// <summary>
+    /// This class is used as a way to assign employees to projects. This can be done by supervisors.
+    /// </summary>
     public class EmployeeProjectController : Controller
     {
         private readonly ApplicationDbContext _context;

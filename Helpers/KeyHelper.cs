@@ -6,17 +6,18 @@ using System.Text;
 
 namespace TimesheetApp.Helpers
 {
+    /// <summary>
+    /// This class is used to manage keys that are stored in the database. We can't just store the private key as plain text, so we password encrypt it. pass is text bytes and password to either encrypted or decrypt.
+    /// </summary>
     public static class KeyHelper
     {
-
         private const int Keysize = 128;
-
         private const int DerivationIterations = 1000;
 
         public static byte[] Encrypt(byte[] plainText, string passPhrase)
         {
-            var saltStringBytes = Generate256BitsOfRandomEntropy();
-            var ivStringBytes = Generate256BitsOfRandomEntropy();
+            var saltStringBytes = RandomBits();
+            var ivStringBytes = RandomBits();
             using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations, HashAlgorithmName.SHA256))
             {
                 var keyBytes = password.GetBytes(Keysize / 8);
@@ -83,7 +84,7 @@ namespace TimesheetApp.Helpers
             }
         }
 
-        private static byte[] Generate256BitsOfRandomEntropy()
+        private static byte[] RandomBits()
         {
             var randomBytes = new byte[16];
             using (var rngCsp = RandomNumberGenerator.Create())

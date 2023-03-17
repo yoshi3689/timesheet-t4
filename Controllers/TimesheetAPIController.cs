@@ -14,6 +14,9 @@ using TimesheetApp.Helpers;
 
 namespace TimesheetApp.Controllers
 {
+    /// <summary>
+    /// Class that is used to manage Timesheets, and timesheet rows.
+    /// </summary>
     [Authorize]
     public class TimesheetAPIController : Controller
     {

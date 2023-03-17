@@ -18,7 +18,9 @@ namespace TimesheetApp.Controllers
         }
     }
 
-
+    /// <summary>
+    /// This class is used to verify that an employee has a unique employee num. It is used as an annotation in the ApplicationUser class.
+    /// </summary>
     public class UniqueEmployeeNum : ValidationAttribute
     {
         public string GetErrorMessage() =>

@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using TimesheetApp.Models;
 
 namespace TimesheetApp.Controllers;
+/// <summary>
+/// This is the page that deals with the employee dashboard.
+/// </summary>
 [Authorize]
 public class HomeController : Controller
 {
