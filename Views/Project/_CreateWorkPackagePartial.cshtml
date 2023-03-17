@@ -1,0 +1,50 @@
+@model TimesheetApp.Models.WorkPackageViewModel
+
+<div class="modal" tabindex="-1" role="dialog" id="splitModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form id="newWPForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Subpackage</h5>
+                </div>
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="WorkPackage.ParentWorkPackageId" id="parentWPID" />
+                    <div class="form-group">
+                        <label asp-for="WorkPackage.WorkPackageId" class="control-label"></label>
+                        <input asp-for="WorkPackage.WorkPackageId" class="form-control" />
+                        <span asp-validation-for="WorkPackage.WorkPackageId" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="WorkPackage.Title" class="control-label"></label>
+                        <input asp-for="WorkPackage.Title" class="form-control" />
+                        <span asp-validation-for="WorkPackage.Title" class="text-danger"></span>
+                    </div>
+                    <h1>Work Package Budget</h1>
+                    <h3>Hours per Labour Grade</h3>
+                    @for (int i = 0; i < Model.budgets!.Count; i++)
+                    {
+                        <div class="form-group">
+                            <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
+                            <span>@Model.budgets[i].LabourCode</span>
+                            <div style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+                                <input asp-for="budgets![i].BudgetAmount!" style="width: 20%;" class="form-control"
+                                    onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, @Model.budgets![i].Remaining)" />
+                                x $@Model.budgets![i]!.Rate/hour = <span id="@Model.budgets![i].LabourCode"> $0</span>
+                                &nbsp;&nbsp;
+                                <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Remaining:
+                                    $@Model.budgets![i].Remaining</span>
+                            </div>
+                            <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
+                        </div>
+                        <br />
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <input type="submit" value="Create" class="btn btn-primary" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

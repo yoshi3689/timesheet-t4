@@ -22,6 +22,7 @@ using System.Text.Json;
 using TimesheetApp.Data;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace TimesheetApp.Controllers
 {
@@ -140,24 +141,9 @@ namespace TimesheetApp.Controllers
             var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser).Include(c => c.ParentWorkPackage).Include(c => c.ChildWorkPackages);
             var top = workpackages.FirstOrDefault(c => c.ParentWorkPackage == null)!;
 
-            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == Convert.ToString(CurrentProject)).ToList();
-            List<Budget> emptyBudgets = new List<Budget>();
-            foreach (var item in _context.LabourGrades!.ToList())
-            {
-                emptyBudgets.Add(new Budget
-                {
-                    LabourCode = item.LabourCode,
-                    LabourGrade = item,
-                    isREBudget = false,
-                    Rate = item.Rate,
-                    Remaining = projectBudget.Where(c => c.LabourCode == item.LabourCode).First().Remaining
-                });
-            }
-
             WorkPackageViewModel model = new WorkPackageViewModel
             {
-                wps = findAllChildren(top),
-                budgets = emptyBudgets,
+                wps = findAllChildren(top)
             };
             return View(model);
         }
@@ -187,14 +173,18 @@ namespace TimesheetApp.Controllers
         [Authorize(Roles = "HR,Admin")]
         public IActionResult AssignEmployees([FromBody] List<EmployeeWorkPackage> ewps)
         {
-            // string a = ewps[0].WorkPackageId!;
+            _context.EmployeeWorkPackages.RemoveRange(_context.EmployeeWorkPackages.Where(c => c.WorkPackageId == ewps[0].WorkPackageId && c.WorkPackageProjectId == ewps[0].WorkPackageProjectId));
+            List<String> users = new List<String>();
             foreach (var e in ewps)
             {
-                _context.EmployeeWorkPackages!.Add(e);
+                if (e.UserId != null)
+                {
+                    _context.EmployeeWorkPackages!.Add(e);
+                    users.Add(e.UserId);
+                }
             }
             _context.SaveChanges();
-            // var userIdsInWp = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == a).Select(f => f.UserId);
-            return new JsonResult(_context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == ewps[0].WorkPackageId));
+            return new JsonResult(_context.Users.Where(c => users.Contains(c.Id)).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
         [HttpPost]
@@ -202,16 +192,48 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult> AssignResponsibleEngineerAsync([FromBody] EmployeeWorkPackage ewp)
         {
             var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
-            Console.WriteLine(LLWP.ResponsibleUserId);
             LLWP.ResponsibleUserId = ewp.UserId;
             var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
             _context.SaveChanges();
             return new JsonResult(user.FirstName + " " + user.LastName);
         }
 
+        public IActionResult ShowSplit()
+        {
+            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == Convert.ToString(HttpContext.Session.GetInt32("CurrentProject"))).ToList();
+            List<Budget> emptyBudgets = new List<Budget>();
+            foreach (var item in _context.LabourGrades!.ToList())
+            {
+                emptyBudgets.Add(new Budget
+                {
+                    LabourCode = item.LabourCode,
+                    LabourGrade = item,
+                    isREBudget = false,
+                    Rate = item.Rate,
+                    Remaining = projectBudget.Where(c => c.LabourCode == item.LabourCode).First().Remaining
+                });
+            }
+            var model = new WorkPackageViewModel
+            {
+                budgets = emptyBudgets
+            };
+            return PartialView("_CreateWorkPackagePartial", model);
+        }
+
         [Authorize(Roles = "HR,Admin")]
         public IActionResult Split(WorkPackageViewModel p)
         {
+            if (ModelState.GetFieldValidationState("WorkPackage.ParentWorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.WorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.Title") != ModelValidationState.Valid)
+            {
+                Response.StatusCode = 400;
+                return PartialView("_CreateWorkPackagePartial", p);
+            }
+            if (p.WorkPackage != null && checkWorkPackage(p.WorkPackage.WorkPackageId))
+            {
+                ModelState.AddModelError("WorkPackage.WorkPackageId", "Work Package ID must be unique for this project");
+                Response.StatusCode = 400;
+                return PartialView("_CreateWorkPackagePartial", p);
+            }
             CurrentProject = HttpContext.Session.GetInt32("CurrentProject");
             var parent = _context.WorkPackages!.FirstOrDefault(c => c.ProjectId == CurrentProject && c.WorkPackageId == p.WorkPackage.ParentWorkPackageId);
             if (parent != null)
@@ -276,14 +298,30 @@ namespace TimesheetApp.Controllers
             return new JsonResult(_context.WorkPackages!.Where(c => c.ProjectId == CurrentProject && c.ParentWorkPackageId == parent.WorkPackageId));
         }
 
-
-        // get employees with the project id who are not assigned to the bottm lvl wpkg yet
+        //get employees for a wp, and say if they are already assigned or not.
         [Authorize(Roles = "HR,Admin")]
-        public IActionResult GetAvailableEmployees([FromBody] WorkPackage LowestLevelWp)
+        public IActionResult GetWPEmployees([FromBody] WorkPackage LowestLevelWp)
         {
+            List<EmployeeWorkPackageViewModel> emp = new List<EmployeeWorkPackageViewModel>();
             // get empIds assigned to the lowest level wp
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
+            foreach (var notIn in _context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User))
+            {
+                emp.Add(new EmployeeWorkPackageViewModel
+                {
+                    Employee = notIn,
+                    Assigned = false
+                });
+            }
+            foreach (var inWP in _context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User))
+            {
+                emp.Add(new EmployeeWorkPackageViewModel
+                {
+                    Employee = inWP,
+                    Assigned = true
+                });
+            }
+            return new JsonResult(emp.Select(e => new { e.Employee.Id, e.Employee.FirstName, e.Employee.LastName, e.Employee.JobTitle, e.Assigned }));
         }
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
@@ -292,7 +330,7 @@ namespace TimesheetApp.Controllers
         {
 
             // get empIds assigned to the lowest level wp and not a responsible engineer
-            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && (ewp.WorkPackage!.ResponsibleUserId == null)).Select(filtered => filtered.UserId);
+            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
             // just in case, check if the work package is in this project too
             return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
@@ -317,21 +355,15 @@ namespace TimesheetApp.Controllers
 
 
         //not sure if this is working right now
-        [AcceptVerbs("Get", "Post")]
-        public IActionResult CheckWorkPackage(string WorkPackageId)
+        private bool checkWorkPackage(string WorkPackageId)
         {
-            Console.WriteLine(WorkPackageId);
             int? project = HttpContext.Session.GetInt32("CurrentProject");
             var wp = _context.WorkPackages!.Where(c => c.ProjectId == project && c.WorkPackageId == WorkPackageId);
             if (wp != null && wp.Count() > 0)
             {
-                // return Json("true");
-                return Json("false");
+                return true;
             }
-            else
-            {
-                return Json("false");
-            }
+            return false;
         }
 
         public async Task<IActionResult> Report()
@@ -355,13 +387,11 @@ namespace TimesheetApp.Controllers
 
             Project? prj = await _context.Projects!.FindAsync(HttpContext.Session.GetInt32("CurrentProject"));
             ApplicationUser? mgr = await _context.Users.FindAsync(prj!.ProjectManagerId);
-            Console.WriteLine(prj.ProjectId);
             if (prj != null)
             {
                 document.Add(new Paragraph($"Project Name: {prj!.ProjectId}").SetFontSize(fontSizeSH));
                 document.Add(new Paragraph($"Manager Name: {mgr!.FirstName} {mgr!.LastName}").SetFontSize(fontSizeSH));
                 // document.Add(new Paragraph($"Manager Name: {prj!.ProjectManagerId}").SetFontSize(fontSizeSH));
-
             }
 
             // empty line

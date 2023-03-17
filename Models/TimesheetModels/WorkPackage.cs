@@ -19,8 +19,8 @@ namespace TimesheetApp.Models.TimesheetModels
     {
         [Required]
         [Display(Name = "Work Package ID")]
-        [Remote(action: "CheckWorkPackage", controller: "Project", ErrorMessage = "Work Package must be unique for this project")]
-        public string? WorkPackageId { get; set; }
+        [RegularExpression("^[a-zA-Z0-9]*$", ErrorMessage = "Only letters and numbers are allowed.")]
+        public string WorkPackageId { get; set; } = "";
         [Required]
         public int? ProjectId { get; set; }
         [Display(Name = "Work Package Title")]

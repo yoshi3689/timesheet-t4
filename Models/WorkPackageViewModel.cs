@@ -19,4 +19,11 @@ namespace TimesheetApp.Models
             budgets = new List<Budget>();
         }
     }
+
+    public class EmployeeWorkPackageViewModel
+    {
+        public ApplicationUser Employee { get; set; } = new ApplicationUser();
+        public bool Assigned { get; set; }
+
+    }
 }
