@@ -12,7 +12,7 @@ namespace TimesheetApp.Models.TimesheetModels
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int BudgetId { get; set; }
-        public string? WPProjectId { get; set; }
+        public string WPProjectId { get; set; } = "";
         [Display(Name = "Effort in Hours")]
         public double BudgetAmount { get; set; }
         [Display(Name = "Labour Grade")]

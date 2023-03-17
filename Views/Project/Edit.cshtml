@@ -76,7 +76,7 @@ ViewData["Title"] = "Manage Project";
             }
             <text>
             (async function () {
-                await addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" ==="True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.ParentWorkPackageProjectId);
+                await addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" ==="True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.ParentWorkPackageProjectId, @wp.TotalBudget);
             })();
             </text>
     }
@@ -114,7 +114,7 @@ ViewData["Title"] = "Manage Project";
     }
 
     async function addWP(WorkPackageId, Title, ResponsibleUserFN, ResponsibleUserLN, IsClosed, IsBottomLevel,
-        ParentWorkPackageId, ParentWorkPackageProjectId) {
+        ParentWorkPackageId, ParentWorkPackageProjectId, totalBudget) {
         let employeeButton = null;
         let item = document.createElement("div");
         item.className = "accordion-item";
@@ -160,7 +160,7 @@ ViewData["Title"] = "Manage Project";
                 var modal = new bootstrap.Modal(myModalEl);
                 modal.show();
                 //submit creation of sub work package
-                document.querySelector("#newWPForm").addEventListener('submit', async function (event) {
+                document.querySelector("#newWPForm").addEventListener('submit', async function submitForm (event) {
                     event.preventDefault();
                     const formData = new FormData(document.querySelector("#newWPForm"));
                     await fetch("/Project/Split", {
@@ -169,11 +169,15 @@ ViewData["Title"] = "Manage Project";
                     }).then(async c => {
                         if(c.status == 400){
                             var text = await c.text();
+                            var myModalEl = document.getElementById('splitModal');
+                            var modal = bootstrap.Modal.getInstance(myModalEl)
+                            modal.hide();
                             document.querySelector("#modal-placeholder").innerHTML = text;
                             document.querySelector("#parentWPID").value = WorkPackageId;
-                            var myModalEl = document.getElementById('splitModal');
-                            var modal = new bootstrap.Modal(myModalEl);
+                            myModalEl = document.getElementById('splitModal');
+                            modal = new bootstrap.Modal(myModalEl);
                             modal.show();
+                            document.querySelector("#newWPForm").addEventListener('submit', submitForm);
                             return;
                         }
                         return await c.json();
@@ -186,7 +190,7 @@ ViewData["Title"] = "Manage Project";
                             body.removeChild(del);
                         });
                         addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName,
-                            c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId);
+                            c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget);
                         var myModalEl = document.getElementById('splitModal');
                         var modal = bootstrap.Modal.getInstance(myModalEl)
                         modal.hide();
@@ -311,6 +315,11 @@ ViewData["Title"] = "Manage Project";
             re.innerHTML = ResponsibleUserFN + " " + ResponsibleUserLN;
         }
         table.appendChild(createRow("Responsible Engineer: ", re, null, null, !re.innerHTML));
+
+        let tb = document.createElement("span");
+        tb.innerHTML = "$"+totalBudget;
+        table.appendChild(createRow("Total Budget:", tb, null, null, false));
+
         div.append(table);
 
         if (IsBottomLevel) {
@@ -449,7 +458,7 @@ ViewData["Title"] = "Manage Project";
         var element = document.querySelector("#" + labourCode);
         element.innerHTML = " $" + (total * rate);
         element = document.querySelector("#R" + labourCode);
-        element.innerHTML = "Remaining: $" + (remain - (total * rate));
+        element.innerHTML = "Remaining: $" + ((remain * rate) - (total * rate)) + " (" + (remain - total) + " hours )";
     }
 
     //these 2 functions recursivly search through the wps to find matches in the search bar

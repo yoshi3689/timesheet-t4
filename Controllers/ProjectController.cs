@@ -109,7 +109,7 @@ namespace TimesheetApp.Controllers
                     {
                         Budget newBudget = new Budget
                         {
-                            WPProjectId = input.project.ProjectId + "",
+                            WPProjectId = input.project.ProjectId + "~" + input.project.ProjectId,
                             BudgetAmount = budget.BudgetAmount,
                             LabourCode = budget.LabourCode,
                             Remaining = budget.BudgetAmount
@@ -145,6 +145,17 @@ namespace TimesheetApp.Controllers
             {
                 wps = findAllChildren(top)
             };
+            List<Budget> budgets = _context.Budgets.Where(c => c.WPProjectId.StartsWith(CurrentProject + "~")).ToList();
+            List<LabourGrade> lgs = _context.LabourGrades.ToList();
+            foreach (var wp in model.wps)
+            {
+                double total = 0;
+                foreach (var lg in lgs)
+                {
+                    total += budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First().BudgetAmount * lg.Rate;
+                }
+                wp.TotalBudget = total;
+            }
             return View(model);
         }
 
@@ -200,7 +211,8 @@ namespace TimesheetApp.Controllers
 
         public IActionResult ShowSplit()
         {
-            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == Convert.ToString(HttpContext.Session.GetInt32("CurrentProject"))).ToList();
+            string projectId = Convert.ToString(HttpContext.Session.GetInt32("CurrentProject") ?? 0);
+            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~" + projectId).ToList();
             List<Budget> emptyBudgets = new List<Budget>();
             foreach (var item in _context.LabourGrades!.ToList())
             {
@@ -235,17 +247,17 @@ namespace TimesheetApp.Controllers
                 return PartialView("_CreateWorkPackagePartial", p);
             }
             CurrentProject = HttpContext.Session.GetInt32("CurrentProject");
-            var parent = _context.WorkPackages!.FirstOrDefault(c => c.ProjectId == CurrentProject && c.WorkPackageId == p.WorkPackage.ParentWorkPackageId);
+            var parent = _context.WorkPackages!.FirstOrDefault(c => c.ProjectId == CurrentProject && c.WorkPackageId == p.WorkPackage!.ParentWorkPackageId);
             if (parent != null)
             {
                 parent.IsBottomLevel = false;
             }
             var newChild = new WorkPackage
             {
-                WorkPackageId = p.WorkPackage.WorkPackageId,
+                WorkPackageId = p.WorkPackage!.WorkPackageId,
                 ProjectId = CurrentProject,
                 ParentWorkPackageId = p.WorkPackage.ParentWorkPackageId,
-                ParentWorkPackageProjectId = CurrentProject,
+                ParentWorkPackageProjectId = CurrentProject ?? 0,
                 IsBottomLevel = true,
                 IsClosed = false,
                 Title = p.WorkPackage.Title
@@ -263,6 +275,7 @@ namespace TimesheetApp.Controllers
             {
                 if (p.budgets != null)
                 {
+                    List<Budget> parentBudgets = _context.Budgets.Where(c => c.WPProjectId == CurrentProject + "~" + newChild.ParentWorkPackageId).ToList();
                     foreach (var budget in p.budgets)
                     {
                         Budget newBudget = new Budget
@@ -273,6 +286,7 @@ namespace TimesheetApp.Controllers
                             Remaining = budget.BudgetAmount
                         };
                         _context.Budgets!.Add(newBudget);
+                        parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First().Remaining -= newBudget.BudgetAmount;
                     }
                 }
                 _context.WorkPackages!.Add(newChild);
@@ -286,6 +300,15 @@ namespace TimesheetApp.Controllers
                         LastName = null
                     };
                 }
+                List<Budget> budgets = _context.Budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId)).ToList();
+                List<LabourGrade> lgs = _context.LabourGrades.ToList();
+                double total = 0;
+                foreach (var lg in lgs)
+                {
+                    total += budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId) && c.LabourCode == lg.LabourCode).First().BudgetAmount * lg.Rate;
+                }
+                newChild.TotalBudget = total;
+
                 return Json(newChild);
             }
         }

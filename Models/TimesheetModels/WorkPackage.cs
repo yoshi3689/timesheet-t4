@@ -27,7 +27,7 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? Title { get; set; }
         public string? ResponsibleUserId { get; set; }
         public string? ParentWorkPackageId { get; set; }
-        public int? ParentWorkPackageProjectId { get; set; }
+        public int ParentWorkPackageProjectId { get; set; } = 0;
         public bool IsBottomLevel { get; set; }
         public double ActualCost { get; set; }
         public bool IsClosed { get; set; }
@@ -45,5 +45,7 @@ namespace TimesheetApp.Models.TimesheetModels
         public virtual ICollection<EmployeeWorkPackage>? EmployeeWorkPackages { get; set; }
         public virtual ICollection<TimesheetRow>? TimesheetRows { get; set; }
 
+        [NotMapped]
+        public double TotalBudget { get; set; }
     }
 }

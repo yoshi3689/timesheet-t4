@@ -32,8 +32,11 @@
                                     onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, @Model.budgets![i].Remaining)" />
                                 x $@Model.budgets![i]!.Rate/hour = <span id="@Model.budgets![i].LabourCode"> $0</span>
                                 &nbsp;&nbsp;
+                                @{
+                                    double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
+                                }
                                 <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Remaining:
-                                    $@Model.budgets![i].Remaining</span>
+                                    $@remain (@Model.budgets[i].Remaining hours)</span>
                             </div>
                             <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
                         </div>
