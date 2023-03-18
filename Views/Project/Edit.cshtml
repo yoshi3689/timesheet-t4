@@ -76,7 +76,7 @@ ViewData["Title"] = "Manage Project";
             }
             <text>
             (async function () {
-                await addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" ==="True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.ParentWorkPackageProjectId, @wp.TotalBudget);
+                await addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" ==="True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.ParentWorkPackageProjectId, @wp.TotalBudget, @wp.TotalRemaining);
             })();
             </text>
     }
@@ -104,9 +104,9 @@ ViewData["Title"] = "Manage Project";
             captionObj2.innerHTML = caption2;
             data3.appendChild(captionObj2);
             data4.appendChild(object2);
-            row.appendChild(data3);
-            row.appendChild(data4);
         }
+        row.appendChild(data3);
+        row.appendChild(data4);
         if (hidden) {
             row.style = "display: none;";
         }
@@ -114,7 +114,7 @@ ViewData["Title"] = "Manage Project";
     }
 
     async function addWP(WorkPackageId, Title, ResponsibleUserFN, ResponsibleUserLN, IsClosed, IsBottomLevel,
-        ParentWorkPackageId, ParentWorkPackageProjectId, totalBudget) {
+        ParentWorkPackageId, ParentWorkPackageProjectId, totalBudget, remainingBudget) {
         let employeeButton = null;
         let item = document.createElement("div");
         item.className = "accordion-item";
@@ -189,8 +189,15 @@ ViewData["Title"] = "Manage Project";
                         body.querySelectorAll(":scope > .bottomLevel").forEach((del) => {
                             body.removeChild(del);
                         });
+
+                        let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
+                        let tremain = document.createElement("span");
+                        tremain.innerHTML = "$" + (parseInt(budgetRow[1].innerHTML.replace(/\D/g, '')) - c.totalBudget);
+                        budgetRow[2].innerHTML = "Remaining Budget:";
+                        budgetRow[3].innerHTML = tremain.outerHTML;
+
                         addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName,
-                            c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget);
+                            c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget, c.remainingBudget);
                         var myModalEl = document.getElementById('splitModal');
                         var modal = bootstrap.Modal.getInstance(myModalEl)
                         modal.hide();
@@ -316,9 +323,22 @@ ViewData["Title"] = "Manage Project";
         }
         table.appendChild(createRow("Responsible Engineer: ", re, null, null, !re.innerHTML));
 
-        let tb = document.createElement("span");
-        tb.innerHTML = "$"+totalBudget;
-        table.appendChild(createRow("Total Budget:", tb, null, null, false));
+        let tbudget = document.createElement("span");
+        tbudget.innerHTML = "$"+totalBudget;
+        let tremain = document.createElement("span");
+        tremain.innerHTML = "$"+remainingBudget;
+        tremain.className = "totalRemaining";
+        var budgetRow;
+        if(IsBottomLevel){
+            //this shoudl have total spent so far in the second slot (eventually)
+            budgetRow = createRow("Total Budget:", tbudget, null, null, false);
+        } else if (remainingBudget != 0){
+            budgetRow = createRow("Total Budget:", tbudget, "Remaining Budget:", tremain, false);
+        } else {
+            budgetRow = createRow("Total Budget:", tbudget, null, null, false);
+        }
+        budgetRow.className = "budgetRow";
+        table.appendChild(budgetRow);
 
         div.append(table);
 

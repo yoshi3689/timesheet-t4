@@ -54,16 +54,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .Property(e => e.LastName)
             .HasMaxLength(250);
 
-
-        // TODO: add a foreign key constraint to the Signature table
-        // modelBuilder.Entity<Timesheet>(entity =>
-        // {
-        //     entity.ToTable("Signature");
-        //     entity.HasOne(u => u.User).WithOne(p => p.)
-        //         .HasForeignKey(d => d.UserId)
-        //         .OnDelete(DeleteBehavior.ClientSetNull)
-        //         .HasConstraintName("Signatures_ibfk_1");
-        // });
     }
 
 }

@@ -47,5 +47,8 @@ namespace TimesheetApp.Models.TimesheetModels
 
         [NotMapped]
         public double TotalBudget { get; set; }
+
+        [NotMapped]
+        public double TotalRemaining { get; set; }
     }
 }

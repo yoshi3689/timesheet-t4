@@ -63,7 +63,7 @@ namespace TimesheetApp.Controllers
         }
 
         /// <summary>
-        /// Gets the page for creating a new project.
+        /// Gets the page for creating a new project. Only HR or admin may create a project.
         /// </summary>
         /// <returns>new project page.</returns>
         [Authorize(Roles = "HR,Admin")]
@@ -94,7 +94,7 @@ namespace TimesheetApp.Controllers
         }
 
         /// <summary>
-        /// For dealing with submitting the creation of a new project.
+        /// For dealing with submitting the creation of a new project. Only HR or Admin may create a project.
         /// </summary>
         /// <param name="input">View model that contains the new project</param>
         /// <returns>Same page if errors, home page if not.</returns>
@@ -157,11 +157,17 @@ namespace TimesheetApp.Controllers
         /// <param name="id">the id of the project</param>
         /// <returns>The project manage page</returns>
         [Authorize]
-        public IActionResult Edit(int? id)
+        public async Task<IActionResult> Edit(int? id)
         {
-            CurrentProject = id;
             //store the current project into the session for use later.
             HttpContext.Session.SetInt32("CurrentProject", id ?? 0);
+            CurrentProject = id;
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
+
             //find all work packages for the project and include the children so a tree can be made
             var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser).Include(c => c.ParentWorkPackage).Include(c => c.ChildWorkPackages);
             var top = workpackages.FirstOrDefault(c => c.ParentWorkPackage == null)!;
@@ -177,11 +183,15 @@ namespace TimesheetApp.Controllers
             foreach (var wp in model.wps)
             {
                 double total = 0;
+                double remaining = 0;
                 foreach (var lg in lgs)
                 {
-                    total += budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First().BudgetAmount * lg.Rate;
+                    var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
+                    total += budget.BudgetAmount * lg.Rate;
+                    remaining += budget.Remaining * lg.Rate;
                 }
                 wp.TotalBudget = total;
+                wp.TotalRemaining = remaining;
             }
             return View(model);
         }
@@ -217,9 +227,14 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <param name="ewps">A list of employee WP relationships.</param>
         /// <returns>A list of the added users.</returns>
-        [Authorize(Roles = "HR,Admin")]
-        public IActionResult AssignEmployees([FromBody] List<EmployeeWorkPackage> ewps)
+        [Authorize]
+        public async Task<IActionResult> AssignEmployeesAsync([FromBody] List<EmployeeWorkPackage> ewps)
         {
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
             _context.EmployeeWorkPackages.RemoveRange(_context.EmployeeWorkPackages.Where(c => c.WorkPackageId == ewps[0].WorkPackageId && c.WorkPackageProjectId == ewps[0].WorkPackageProjectId));
             List<String> users = new List<String>();
             foreach (var e in ewps)
@@ -240,22 +255,36 @@ namespace TimesheetApp.Controllers
         /// <param name="ewp">Takes the Employee-WP relationship of the RE</param>
         /// <returns>RE's full name</returns>
         [HttpPost]
-        [Authorize(Roles = "HR,Admin")]
+        [Authorize]
         public async Task<IActionResult> AssignResponsibleEngineerAsync([FromBody] EmployeeWorkPackage ewp)
         {
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
             var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
-            LLWP.ResponsibleUserId = ewp.UserId;
-            var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
-            _context.SaveChanges();
-            return new JsonResult(user.FirstName + " " + user.LastName);
+            if (LLWP != null)
+            {
+                LLWP.ResponsibleUserId = ewp.UserId;
+                var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
+                _context.SaveChanges();
+                return new JsonResult(user.FirstName + " " + user.LastName);
+            }
+            return new JsonResult("Error!");
         }
 
         /// <summary>
         /// Creates and send the partial view which contains the work package creation form. Done this way to allow field validation.
         /// </summary>
         /// <returns>WP creation partial view</returns>
-        public IActionResult ShowSplit()
+        public async Task<IActionResult> ShowSplitAsync()
         {
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
             string projectId = Convert.ToString(HttpContext.Session.GetInt32("CurrentProject") ?? 0);
             var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~" + projectId).ToList();
             List<Budget> emptyBudgets = new List<Budget>();
@@ -282,9 +311,14 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <param name="p">View model which contains new WP</param>
         /// <returns>the new WP, or the partial view with errors.</returns>
-        [Authorize(Roles = "HR,Admin")]
-        public IActionResult Split(WorkPackageViewModel p)
+        [Authorize]
+        public async Task<IActionResult> SplitAsync(WorkPackageViewModel p)
         {
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
             //check if the fields are valid
             if (ModelState.GetFieldValidationState("WorkPackage.ParentWorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.WorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.Title") != ModelValidationState.Valid)
             {
@@ -346,20 +380,30 @@ namespace TimesheetApp.Controllers
             List<Budget> budgets = _context.Budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId)).ToList();
             List<LabourGrade> lgs = _context.LabourGrades.ToList();
             double total = 0;
+            double remaining = 0;
             foreach (var lg in lgs)
             {
-                total += budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId) && c.LabourCode == lg.LabourCode).First().BudgetAmount * lg.Rate;
+                var budget = budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
+                total += budget.BudgetAmount * lg.Rate;
+                remaining += budget.BudgetAmount * lg.Rate;
             }
             newChild.TotalBudget = total;
+            newChild.TotalRemaining = remaining;
+            newChild.Project = null;
 
             return Json(newChild);
 
         }
 
         //get employees for a wp, and say if they are already assigned or not.
-        [Authorize(Roles = "HR,Admin")]
-        public IActionResult GetWPEmployees([FromBody] WorkPackage LowestLevelWp)
+        [Authorize]
+        public async Task<IActionResult> GetWPEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
             List<EmployeeWorkPackageViewModel> emp = new List<EmployeeWorkPackageViewModel>();
             // get empIds assigned to the lowest level wp
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
@@ -383,10 +427,14 @@ namespace TimesheetApp.Controllers
         }
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
-        [Authorize(Roles = "HR,Admin")]
-        public IActionResult GetCandidateEmployees([FromBody] WorkPackage LowestLevelWp)
+        [Authorize]
+        public async Task<IActionResult> GetCandidateEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
-
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
             // get empIds assigned to the lowest level wp and not a responsible engineer
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
             // just in case, check if the work package is in this project too
@@ -394,9 +442,14 @@ namespace TimesheetApp.Controllers
         }
 
         // get employees with the project id
-        [Authorize(Roles = "HR,Admin")]
-        public IActionResult GetAssignedEmployees([FromBody] WorkPackage LowestLevelWp)
+        [Authorize]
+        public async Task<IActionResult> GetAssignedEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
             // get userIds of the users assigned to the lowest level wp
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
 
@@ -531,6 +584,27 @@ namespace TimesheetApp.Controllers
             }
 
             return table;
+        }
+
+        /// <summary>
+        /// can be used to make sure the user is the pm or assistant pm for the project.
+        /// </summary>
+        /// <returns></returns>
+        private async Task<IActionResult?> verifyPMAsync()
+        {
+            CurrentProject = HttpContext.Session.GetInt32("CurrentProject");
+            ApplicationUser user = (await _userManager.GetUserAsync(User))!;
+            if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "HR"))
+            {
+                return null;
+            }
+
+            var project = _context.Projects.First(c => c.ProjectId == CurrentProject);
+            if (user.Id != project.ProjectManagerId && user.Id != project.AssistantProjectManagerId)
+            {
+                return Challenge();
+            }
+            return null;
         }
     }
 }
