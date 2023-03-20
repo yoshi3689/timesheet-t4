@@ -21,27 +21,28 @@
             <h1>Project Budget</h1>
             @for (int i = 0; i < Model.budgets!.Count; i++)
             {
-                <div class="form-group">
-                    <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
-                    <span>@Model.budgets![i].LabourCode</span>
-                    <div style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-                        <input asp-for="budgets![i].BudgetAmount" class="form-control" style="width: 50%;"
-                            onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, @Model.budgets![i].Remaining)" />
-                        x $@Model!.budgets[i]!.Rate/hour =
-                        <span id="@Model.budgets![i].LabourCode"> $0</span>
+                    <div class="form-group ">
+                        <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
+                        <span>@Model.budgets![i].LabourCode</span>
+                        <div class="d-flex align-items-center" style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+                            <input asp-for="budgets![i].BudgetAmount" class="form-control" style="width: 50%;"
+                                onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, @Model.budgets![i].Remaining)" />
+                            x $@Model!.budgets[i]!.Rate/hour =
+                            <span id="@Model.budgets![i].LabourCode"> $0</span>
+                        </div>
+                        <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
                     </div>
-                    <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
-                </div>
             }
+            </br>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>
         </form>
     </div>
 </div>
-
+</br>
 <div>
-    <a asp-action="Index">Back to List</a>
+    <a class="btn btn-secondary" asp-action="Index">Back to List</a>
 </div>
 
 <script>
