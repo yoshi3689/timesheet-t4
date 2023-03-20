@@ -22,32 +22,31 @@
                     </div>
                     <h1>Work Package Budget</h1>
                     <h3>Hours per Labour Grade</h3>
-                    @for (int i = 0; i < Model.budgets!.Count; i++)
-                    {
-                        <div class="form-group">
-                            <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
-                            <span>@Model.budgets[i].LabourCode</span>
-                            <div style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-                                <input asp-for="budgets![i].BudgetAmount!" style="width: 20%;" class="form-control"
-                                    onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, @Model.budgets![i].Remaining)" />
-                                x $@Model.budgets![i]!.Rate/hour = <span id="@Model.budgets![i].LabourCode"> $0</span>
-                                &nbsp;&nbsp;
-                                @{
-                                    double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
-                                }
-                                <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Remaining:
-                                    $@remain (@Model.budgets[i].Remaining hours)</span>
-                            </div>
-                            <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
+                    @for (int i = 0; i < Model.budgets!.Count; i++) { <div class="form-group">
+                        <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
+                        <span>@Model.budgets[i].LabourCode</span>
+                        <div class="d-flex align-items-center"
+                            style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+                            <input asp-for="budgets![i].BudgetAmount!" style="width: 20%;" class="form-control"
+                                onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, @Model.budgets![i].Remaining)" />
+                            x $@Model.budgets![i]!.Rate/hour = <span id="@Model.budgets![i].LabourCode"> $0</span>
+                            &nbsp;&nbsp;
+                            @{
+                            double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
+                            }
+                            <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Remaining:
+                                $@remain (@Model.budgets[i].Remaining hours)</span>
                         </div>
-                        <br />
-                    }
+                        <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <input type="submit" value="Create" class="btn btn-primary" />
-                </div>
-            </form>
+                <br />
+                }
         </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <input type="submit" value="Create" class="btn btn-primary" />
+        </div>
+        </form>
     </div>
+</div>
 </div>
