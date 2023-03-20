@@ -179,21 +179,34 @@ namespace TimesheetApp.Controllers
 
             //calculate the total budget amount for each work package.
             List<Budget> budgets = _context.Budgets.Where(c => c.WPProjectId.StartsWith(CurrentProject + "~")).ToList();
-            List<LabourGrade> lgs = _context.LabourGrades.ToList();
-            foreach (var wp in model.wps)
-            {
-                double total = 0;
-                double remaining = 0;
-                foreach (var lg in lgs)
-                {
-                    var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
-                    total += budget.BudgetAmount * lg.Rate;
-                    remaining += budget.Remaining * lg.Rate;
-                }
-                wp.TotalBudget = total;
-                wp.TotalRemaining = remaining;
-            }
+            model.wps = getTotalMoney(model.wps, budgets);
             return View(model);
+        }
+
+        private List<WorkPackage> getTotalMoney(List<WorkPackage> wps, List<Budget> budgets)
+        {
+            List<LabourGrade> lgs = _context.LabourGrades.ToList();
+            foreach (var wp in wps)
+            {
+                if (wp.IsBottomLevel)
+                {
+                    //TODO calculate all rows to get remaining
+                }
+                else
+                {
+                    double total = 0;
+                    double remaining = 0;
+                    foreach (var lg in lgs)
+                    {
+                        var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
+                        total += budget.BudgetAmount * lg.Rate;
+                        remaining += budget.Remaining * lg.Rate;
+                    }
+                    wp.TotalBudget = total;
+                    wp.TotalRemaining = remaining;
+                }
+            }
+            return wps;
         }
 
         /// <summary>
@@ -395,6 +408,25 @@ namespace TimesheetApp.Controllers
 
         }
 
+        [Authorize]
+        public async Task<IActionResult> BudgetDetailsAsync([FromBody] WorkPackage wp)
+        {
+            var isPM = await verifyPMAsync();
+            if (isPM != null)
+            {
+                return isPM;
+            }
+            CurrentProject = HttpContext.Session.GetInt32("CurrentProject");
+            var budgets = _context.Budgets.Where(c => c.WPProjectId == (CurrentProject + "~" + wp.WorkPackageId)).ToList();
+            var lgs = _context.LabourGrades.ToList();
+            foreach (var budget in budgets)
+            {
+                budget.LabourGrade = null;
+                budget.Rate = lgs.Where(c => c.LabourCode == budget.LabourCode).First().Rate;
+            }
+            return Json(budgets);
+        }
+
         //get employees for a wp, and say if they are already assigned or not.
         [Authorize]
         public async Task<IActionResult> GetWPEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
@@ -411,7 +443,7 @@ namespace TimesheetApp.Controllers
             {
                 emp.Add(new EmployeeWorkPackageViewModel
                 {
-                    Employee = notIn,
+                    Employee = notIn!,
                     Assigned = false
                 });
             }
@@ -419,11 +451,11 @@ namespace TimesheetApp.Controllers
             {
                 emp.Add(new EmployeeWorkPackageViewModel
                 {
-                    Employee = inWP,
+                    Employee = inWP!,
                     Assigned = true
                 });
             }
-            return new JsonResult(emp.Select(e => new { e.Employee.Id, e.Employee.FirstName, e.Employee.LastName, e.Employee.JobTitle, e.Assigned }));
+            return new JsonResult(emp.Select(e => new { e.Employee.Id, FirstName = e.Employee.FirstName ?? string.Empty, LastName = e.Employee.LastName ?? string.Empty, JobTitle = e.Employee.JobTitle ?? string.Empty, e.Assigned }));
         }
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
@@ -438,7 +470,7 @@ namespace TimesheetApp.Controllers
             // get empIds assigned to the lowest level wp and not a responsible engineer
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
             // just in case, check if the work package is in this project too
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e!.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
         // get employees with the project id
@@ -454,7 +486,7 @@ namespace TimesheetApp.Controllers
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
 
             // return
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
+            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e!.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

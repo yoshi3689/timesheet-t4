@@ -136,7 +136,8 @@ internal class Program
                 LastName = "admin",
                 JobTitle = "admin",
                 EmailConfirmed = true,
-                LabourGrade = adminGrade
+                LabourGrade = adminGrade,
+                EmployeeNumber = 1000000000
             };
             var adminExist = await UserManager.FindByEmailAsync(user.Email);
             if (adminExist == null)

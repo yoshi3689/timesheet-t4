@@ -80,6 +80,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             [Required]
             [Display(Name = "Employee Number")]
             [UniqueEmployeeNum]
+            [IntLength(5, 10)]
             public int EmployeeNumber { get; set; }
 
             [Required]

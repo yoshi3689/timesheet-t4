@@ -43,5 +43,33 @@ namespace TimesheetApp.Controllers
         }
     }
 
+    public class IntLengthAttribute : ValidationAttribute
+    {
+        public int MinLength { get; set; }
+        public int MaxLength { get; set; }
+
+        public IntLengthAttribute(int minLength, int maxLength)
+        {
+            MinLength = minLength;
+            MaxLength = maxLength;
+        }
+
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+        {
+            if (value != null)
+            {
+                int intValue = (int)value;
+                int numDigits = intValue.ToString().Length;
+
+                if (numDigits < MinLength || numDigits > MaxLength)
+                {
+                    return new ValidationResult($"Must be between {MinLength} and {MaxLength} digits long.");
+                }
+            }
+
+            return ValidationResult.Success;
+        }
+    }
+
 
 }

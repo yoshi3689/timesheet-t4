@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TimesheetApp.Controllers;
 using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Models
@@ -24,7 +25,7 @@ namespace TimesheetApp.Models
         [MaxLength(100), MinLength(2)]
         public string? LastName { get; set; }
         [Required]
-        [MaxLength(100), MinLength(10)]
+        [IntLength(5, 10)]
         public int EmployeeNumber { get; set; }
         public double SickDays { get; set; }
         public double FlexTime { get; set; }

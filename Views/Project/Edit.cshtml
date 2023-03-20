@@ -33,6 +33,21 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
+<div class="modal" tabindex="-1" role="dialog" id="budgetModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Budget Details</h5>
+            </div>
+            <div class="modal-body">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal" tabindex="-1" role="dialog" id="RespEngModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -148,6 +163,7 @@ ViewData["Title"] = "Manage Project";
         splitButton.value = WorkPackageId;
         splitButton.name = "name";
         splitButton.className = "label";
+
         splitButton.addEventListener('click', async function callSplit(info) {
             currentWorkPackage = info.srcElement.value;
             await fetch('/Project/ShowSplit')
@@ -190,6 +206,11 @@ ViewData["Title"] = "Manage Project";
                             body.removeChild(del);
                         });
 
+                        let list = document.querySelector("#WP" + document.querySelector("#currentWP").value);
+                        list.querySelectorAll(":scope > .employeeList").forEach((del) => {
+                            del.style.display = "none";
+                        });
+
                         let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
                         let tremain = document.createElement("span");
                         tremain.innerHTML = "$" + (parseInt(budgetRow[1].innerHTML.replace(/\D/g, '')) - c.totalBudget);
@@ -207,7 +228,99 @@ ViewData["Title"] = "Manage Project";
         }, false);
         splitButton.type = "button";
         splitButton.innerHTML = "Create Subpackage";
+        splitButton.className = "label btn btn-primary";
+        splitButton.id = "SPLIT" + WorkPackageId;
         div.appendChild(splitButton);
+
+        let budgetDetailsButton = document.createElement("button");
+        budgetDetailsButton.value = WorkPackageId;
+        budgetDetailsButton.name = "name";
+        budgetDetailsButton.className = "label";
+        budgetDetailsButton.innerHTML = "Budget Details";
+        budgetDetailsButton.type = "button";
+        budgetDetailsButton.className = "label btn btn-info";
+        budgetDetailsButton.addEventListener('click', async function callSplit(info) {
+            await fetch("/Project/BudgetDetails", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    workPackageId: budgetDetailsButton.value
+                }),
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((response) => {
+                let modal = document.getElementById('budgetModal');
+                let body = modal.querySelector(":scope * .modal-body");
+                body.innerHTML = "";
+                let table = document.createElement("table");
+
+                let headerRow = document.createElement("tr");
+                let labourCodeHeader = document.createElement("th");
+                labourCodeHeader.textContent = "Labour Code";
+                headerRow.appendChild(labourCodeHeader);
+
+                let budgetTotalHeader = document.createElement("th");
+                budgetTotalHeader.textContent = "Total (Hours)";
+                headerRow.appendChild(budgetTotalHeader);
+
+                let remainingBudgetHeader = document.createElement("th");
+                remainingBudgetHeader.textContent = "Remaining (Hours)";
+                headerRow.appendChild(remainingBudgetHeader);
+
+                let budgetTotalHeaderD = document.createElement("th");
+                budgetTotalHeaderD.textContent = "Total";
+                headerRow.appendChild(budgetTotalHeaderD);
+
+                let remainingBudgetHeaderD = document.createElement("th");
+                remainingBudgetHeaderD.textContent = "Remaining";
+                headerRow.appendChild(remainingBudgetHeaderD);
+
+                table.appendChild(headerRow);
+
+                if(response.length !== 0){
+                    response.forEach((res) => {
+                        let row = document.createElement("tr");
+
+                        // Labour Code cell
+                        let labourCodeCell = document.createElement("td");
+                        labourCodeCell.textContent = res.labourCode;
+                        row.appendChild(labourCodeCell);
+
+                        // Budget Total cell
+                        let budgetTotalCell = document.createElement("td");
+                        budgetTotalCell.textContent = res.budgetAmount;
+                        row.appendChild(budgetTotalCell);
+
+                        // Remaining Budget cell
+                        let remainingBudgetCell = document.createElement("td");
+                        remainingBudgetCell.textContent = res.remaining;
+                        row.appendChild(remainingBudgetCell);
+
+                        let budgetTotalCellD = document.createElement("td");
+                        budgetTotalCellD.textContent = "$" + (res.budgetAmount * res.rate);
+                        row.appendChild(budgetTotalCellD);
+
+                        // Remaining Budget cell
+                        let remainingBudgetCellD = document.createElement("td");
+                        remainingBudgetCellD.textContent = "$" + (res.remaining * res.rate);
+                        row.appendChild(remainingBudgetCellD);
+
+                        table.appendChild(row);
+                    });
+                }
+                body.appendChild(table);
+                let modalObj = new bootstrap.Modal(modal);
+                modalObj.show();
+            });
+        });
+        div.appendChild(budgetDetailsButton);
+
+
 
         if (IsBottomLevel) {
             employeeButton = document.createElement("button");
@@ -216,7 +329,7 @@ ViewData["Title"] = "Manage Project";
             div.appendChild(employeeButton);
             employeeButton.value = WorkPackageId;
             employeeButton.name = "name";
-            employeeButton.className = "label bottomLevel";
+            employeeButton.className = "label bottomLevel btn btn-secondary";
             employeeButton.addEventListener('click', async function (info) {
                 const avaialbleEmpEle = document.querySelector("#availableEmployees");
                 await fetch("/Project/GetWPEmployees", {
@@ -250,11 +363,9 @@ ViewData["Title"] = "Manage Project";
                             }
                             avaialbleEmpEle.appendChild(a);
                         });
-                        if (response.length == 0) {
-                            var a = document.createElement("p");
-                            a.innerHTML = "No avaialble employees";
-                            avaialbleEmpEle.appendChild(a);
-                        }
+                        var a = document.createElement("p");
+                        a.innerHTML = "No avaialble employees";
+                        avaialbleEmpEle.appendChild(a);
                     });
             }, false);
             let respEngButton = document.createElement("button");
@@ -263,7 +374,7 @@ ViewData["Title"] = "Manage Project";
             div.appendChild(respEngButton);
             respEngButton.value = WorkPackageId;
             respEngButton.name = "name";
-            respEngButton.className = "label bottomLevel";
+            respEngButton.className = "label bottomLevel btn btn-secondary";
             respEngButton.addEventListener('click', async function getCandidateEmployees(info) {
                 document.querySelector("#currentWP").value = info.srcElement.value;
                 const candidateEmpEle = document.querySelector("#candidateEmployees");
@@ -359,7 +470,7 @@ ViewData["Title"] = "Manage Project";
                 .then(res => {
                     let list = document.createElement("div");
                     list.innerHTML = "Employees:";
-                    list.className = "listLabel";
+                    list.className = "bottomLevel listLabel employeeList" ;
                     div.appendChild(list);
                     var ul = document.createElement('ul');
                     ul.id = WorkPackageId + "UL";
@@ -367,14 +478,14 @@ ViewData["Title"] = "Manage Project";
                     let element = null;
                     if (res.length !== 0) {
                         // if any emp assigned to btmLvlwpkg, hide the split workpkg btn
-                        $(`#${employeeButton.value} button`).first().hide();
+                        div.querySelector("#SPLIT" + WorkPackageId).style.display = "none";
                         res.forEach(e => {
                             element = document.createElement("li");
                             element.innerHTML = e.firstName + " " + e.lastName;
                             ul.appendChild(element);
                         });
                     } else {
-                        ul.innerHTML += "<p>No one is asssigned</p>"
+                        ul.innerHTML += "<p>No one is assigned</p>"
                     }
                     div.appendChild(ul);
                 });
@@ -426,11 +537,18 @@ ViewData["Title"] = "Manage Project";
         }).then(res => {
             let ul = document.querySelector("#" + document.querySelector("#currentWP").value + "UL");
             ul.innerHTML = "";
-             res.forEach(e => {
+            res.forEach(e => {
                 element = document.createElement("li");
                 element.innerHTML = e.firstName + " " + e.lastName;
                 ul.appendChild(element);
             });
+            if(res.length !== 0){
+                document.querySelector("#SPLIT" + document.querySelector("#currentWP").value).style.display = "none";
+            } else {
+                document.querySelector("#SPLIT" + document.querySelector("#currentWP").value).style.display = "inline";
+                ul.innerHTML += "<p>No one is assigned</p>"
+            }
+
             var myModalEl = document.getElementById('employeeModal');
             var modal = bootstrap.Modal.getInstance(myModalEl)
             modal.hide();

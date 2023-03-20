@@ -1,7 +1,7 @@
 @model TimesheetApp.Models.TimesheetModels.EmployeeProject
 
 @{
-    ViewData["Title"] = "Details";
+ViewData["Title"] = "Details";
 }
 
 <h1>Details</h1>
@@ -10,17 +10,17 @@
     <h4>EmployeeProject</h4>
     <hr />
     <dl class="row">
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.User)
         </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.User.Id)
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User!.Id)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.Project)
         </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Project.ProjectId)
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Project!.ProjectId)
         </dd>
     </dl>
 </div>
