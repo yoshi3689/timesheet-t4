@@ -66,9 +66,14 @@ select-caret::after {
 }
 
 .listLabel {
-  padding: 0.3em
+  padding: 0.3em;
 }
 
 .employeeList {
   columns: 2;
 }
+
+/* .table-striped > tbody > tr:nth-child(odd) > td,
+.table-striped > tbody > tr:nth-child(odd) > th {
+  background-color: #969696;
+} */
