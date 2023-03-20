@@ -65,15 +65,16 @@ namespace TimesheetApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("UserId,ProjectId")] EmployeeProject employeeProject)
         {
-            if (ModelState.IsValid)
+            EmployeeProject ep = new EmployeeProject
             {
-                _context.Add(employeeProject);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["ProjectId"] = new SelectList(_context.Projects, "ProjectId", "ProjectId", employeeProject.ProjectId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", employeeProject.UserId);
-            return View(employeeProject);
+                UserId = employeeProject.UserId,
+                ProjectId = employeeProject.ProjectId
+            };
+
+            _context.EmployeeProjects.Add(ep);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+
         }
 
         // GET: EmployeeProject/Edit/5
