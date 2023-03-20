@@ -270,28 +270,6 @@ namespace TimesheetApp.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("TimesheetApp.Models.Signature", b =>
-                {
-                    b.Property<int>("SignatureId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("SignatureImage")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("SignatureId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Signatures");
-                });
-
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Budget", b =>
                 {
                     b.Property<int>("BudgetId")
@@ -308,6 +286,7 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("double");
 
                     b.Property<string>("WPProjectId")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<bool>("isREBudget")
@@ -529,7 +508,7 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("ParentWorkPackageId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<int?>("ParentWorkPackageProjectId")
+                    b.Property<int>("ParentWorkPackageProjectId")
                         .HasColumnType("int");
 
                     b.Property<string>("ResponsibleUserId")
@@ -621,15 +600,6 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("Supervisor");
 
                     b.Navigation("TimesheetApprover");
-                });
-
-            modelBuilder.Entity("TimesheetApp.Models.Signature", b =>
-                {
-                    b.HasOne("TimesheetApp.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Budget", b =>
