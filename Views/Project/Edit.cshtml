@@ -205,9 +205,7 @@ ViewData["Title"] = "Manage Project";
                         body.querySelectorAll(":scope > .bottomLevel").forEach((del) => {
                             body.removeChild(del);
                         });
-
-                        let list = document.querySelector("#WP" + document.querySelector("#currentWP").value);
-                        list.querySelectorAll(":scope > .employeeList").forEach((del) => {
+                        body.querySelectorAll(":scope > .employeeList").forEach((del) => {
                             del.style.display = "none";
                         });
 
@@ -257,8 +255,12 @@ ViewData["Title"] = "Manage Project";
                 let modal = document.getElementById('budgetModal');
                 let body = modal.querySelector(":scope * .modal-body");
                 body.innerHTML = "";
-                let table = document.createElement("table");
 
+                let table = document.createElement("table");
+                table.className = "table table-striped";
+
+                // Create the table header
+                let header = document.createElement("thead");
                 let headerRow = document.createElement("tr");
                 let labourCodeHeader = document.createElement("th");
                 labourCodeHeader.textContent = "Labour Code";
@@ -280,7 +282,11 @@ ViewData["Title"] = "Manage Project";
                 remainingBudgetHeaderD.textContent = "Remaining";
                 headerRow.appendChild(remainingBudgetHeaderD);
 
-                table.appendChild(headerRow);
+                header.appendChild(headerRow);
+                table.appendChild(header);
+
+                // Create the table body
+                let tbody = document.createElement("tbody");
 
                 if(response.length !== 0){
                     response.forEach((res) => {
@@ -310,12 +316,15 @@ ViewData["Title"] = "Manage Project";
                         remainingBudgetCellD.textContent = "$" + (res.remaining * res.rate);
                         row.appendChild(remainingBudgetCellD);
 
-                        table.appendChild(row);
+                        tbody.appendChild(row);
                     });
                 }
+
+                table.appendChild(tbody);
                 body.appendChild(table);
                 let modalObj = new bootstrap.Modal(modal);
                 modalObj.show();
+
             });
         });
         div.appendChild(budgetDetailsButton);
