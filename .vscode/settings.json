@@ -4,6 +4,6 @@
     "aspnetcorerazor": "html"
   },
   "files.associations": {
-    "*.cshtml": "html"
+    "*.cshtml": "aspnetcorerazor"
   }
 }
