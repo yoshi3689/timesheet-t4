@@ -4,93 +4,125 @@ ViewData["Title"] = "Index";
 }
 
 
-<div style="display: flex;">
-    <div style="width: 20%;">
-        @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
-        {
-        <div style="border-style: solid; background-color: grey; margin-bottom: 1em; width: 10em">
-            <p>Sheet @timesheet.TimesheetId</p>
-            <p>Date @timesheet.EndDate</p>
-            <p>Hours @timesheet.TotalHours</p>
-        </div>
-        }
-    </div>
-    <div style="width: 80%;">
-        <table id="rowTable" class="table table-bordered table-responsive table-striped " cellpadding="0"
-            cellspacing="0">
-            <tr>
-                <th>Project</th>
-                <th>WP</th>
-                <th>Total</th>
-                <th>Sat</th>
-                <th>Sun</th>
-                <th>Mon</th>
-                <th>Tue</th>
-                <th>Wed</th>
-                <th>Thu</th>
-                <th>Fri</th>
-                <th>Notes</th>
-            </tr>
-            @foreach (TimesheetApp.Models.TimesheetModels.TimesheetRow row in Model.TimesheetRows!)
+@* List of all the sheets *@
+    <div class="d-flex justify-content-md-between">
+        @* <div style="width: 20%;"> *@
+            @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
             {
-            <tr id="@row.TimesheetRowId">
-                <td class="ProjectId">
-                    <span>@row.ProjectId</span>
-                    <input type="text" value="@row.ProjectId" style="display:none" />
-                </td>
-                <td class="WorkPackageId">
-                    <span>@row.WorkPackageId</span>
-                    <input type="text" value="@row.WorkPackageId" style="display:none" />
-                </td>
-                <td class="TotalHours">
-                    <span>@row.TotalHoursRow</span>
-                </td>
-                <td class="Sat">
-                    <span>@row.Sat</span>
-                    <input type="text" value="@row.Sat" style="display:none" />
-                </td>
-                <td class="Sun">
-                    <span>@row.Sun</span>
-                    <input type="text" value="@row.Sun" style="display:none" />
-                </td>
-                <td class="Mon">
-                    <span>@row.Mon</span>
-                    <input type="text" value="@row.Mon" style="display:none" />
-                </td>
-                <td class="Tue">
-                    <span>@row.Tue</span>
-                    <input type="text" value="@row.Tue" style="display:none" />
-                </td>
-                <td class="Wed">
-                    <span>@row.Wed</span>
-                    <input type="text" value="@row.Wed" style="display:none" />
-                </td>
-                <td class="Thu">
-                    <span>@row.Thu</span>
-                    <input type="text" value="@row.Thu" style="display:none" />
-                </td>
-                <td class="Fri">
-                    <span>@row.Fri</span>
-                    <input type="text" value="@row.Fri" style="display:none" />
-                </td>
-                <td class="Notes">
-                    <span>@row.Notes</span>
-                    <input type="text" value="@row.Notes" style="display:none" />
-                </td>
-                <td>
-                    <a class="Edit" href="javascript:;">Edit</a>
-                    <a class="Update" href="javascript:;" style="display:none">Update</a>
-                    <a class="Cancel" href="javascript:;" style="display:none">Cancel</a>
-                    <a class="Delete" href="javascript:;">Delete</a>
-                </td>
-            </tr>
+            @* Each different Sheet *@
+            @* <div style="border-style: solid; background-color: grey; margin-bottom: 1em; width: 10em">
+                <p>Sheet @timesheet.TimesheetId</p>
+                <p>Date @timesheet.EndDate</p>
+                <p>Hours @timesheet.TotalHours</p>
+            </div> *@
             }
-        </table>
-        <form asp-action="AddRow">
-            <input type="submit" value="AddRow" />
-        </form>
+        @* </div> *@
+
+        <div style="margin: 0 10px;" class="list-group border" >
+            <h1 class="text-center"> Sheets</h1>
+            <br/>
+            <a href="#" class="list-group-item list-group-item-action" aria-current="true">
+                <div >
+                    <p>Sheet 1</p>
+                    <p>Date: 01/01/2002</p>
+                    <p>Hours: 40</p>
+                </div>
+            </a>
+            <br/>
+            <a href="#" class="list-group-item list-group-item-action" aria-current="true">
+                <div >
+                    <p>Sheet 2</p>
+                    <p>Date: 01/01/2002</p>
+                    <p>Hours: 40</p>
+                </div>
+            </a>
+            <br/>
+            <a href="#" class="list-group-item list-group-item-action" aria-current="true">
+                <div >
+                    <p>Sheet 3</p>
+                    <p>Date: 01/01/2002</p>
+                    <p>Hours: 40</p>
+                </div>
+            </a>
+        </div>
+
+        @* Actual current timesheet box *@
+        <div style="width: 80%; margin: 0 10px;">
+            <table id="rowTable" class="table table-bordered table-responsive table-striped " cellpadding="0"
+                cellspacing="0">
+                <tr>
+                    <th>Project</th>
+                    <th>WP</th>
+                    <th>Total</th>
+                    <th>Sat</th>
+                    <th>Sun</th>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Notes</th>
+                </tr>
+                @foreach (TimesheetApp.Models.TimesheetModels.TimesheetRow row in Model.TimesheetRows!)
+                {
+                <tr id="@row.TimesheetRowId">
+                    <td class="ProjectId">
+                        <span>@row.ProjectId</span>
+                        <input type="text" value="@row.ProjectId" style="display:none" />
+                    </td>
+                    <td class="WorkPackageId">
+                        <span>@row.WorkPackageId</span>
+                        <input type="text" value="@row.WorkPackageId" style="display:none" />
+                    </td>
+                    <td class="TotalHours">
+                        <span>@row.TotalHoursRow</span>
+                    </td>
+                    <td class="Sat">
+                        <span>@row.Sat</span>
+                        <input type="text" value="@row.Sat" style="display:none" />
+                    </td>
+                    <td class="Sun">
+                        <span>@row.Sun</span>
+                        <input type="text" value="@row.Sun" style="display:none" />
+                    </td>
+                    <td class="Mon">
+                        <span>@row.Mon</span>
+                        <input type="text" value="@row.Mon" style="display:none" />
+                    </td>
+                    <td class="Tue">
+                        <span>@row.Tue</span>
+                        <input type="text" value="@row.Tue" style="display:none" />
+                    </td>
+                    <td class="Wed">
+                        <span>@row.Wed</span>
+                        <input type="text" value="@row.Wed" style="display:none" />
+                    </td>
+                    <td class="Thu">
+                        <span>@row.Thu</span>
+                        <input type="text" value="@row.Thu" style="display:none" />
+                    </td>
+                    <td class="Fri">
+                        <span>@row.Fri</span>
+                        <input type="text" value="@row.Fri" style="display:none" />
+                    </td>
+                    <td class="Notes">
+                        <span>@row.Notes</span>
+                        <input type="text" value="@row.Notes" style="display:none" />
+                    </td>
+                    <td>
+                        <a class="Edit" href="javascript:;">Edit</a>
+                        <a class="Update" href="javascript:;" style="display:none">Update</a>
+                        <a class="Cancel" href="javascript:;" style="display:none">Cancel</a>
+                        <a class="Delete" href="javascript:;">Delete</a>
+                    </td>
+                </tr>
+                }
+            </table>
+            <form asp-action="AddRow">
+                <input type="submit" value="Add Row" class="w-100 btn btn-lg btn-primary px-4 py-3" />
+            </form>
+        </div>
     </div>
-</div>
 
 
 @section Scripts

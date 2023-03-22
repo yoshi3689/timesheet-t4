@@ -77,3 +77,14 @@ select-caret::after {
 .table-striped > tbody > tr:nth-child(odd) > th {
   background-color: #969696;
 } */
+
+.list-group {
+  padding: 10px 40px 25px;
+}
+
+.list-group-item {
+  width: 240px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
