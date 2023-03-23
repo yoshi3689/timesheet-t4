@@ -617,6 +617,17 @@ namespace TimesheetApp.Controllers
 
             return table;
         }
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetAllEmployees()
+        {
+            int projectId = HttpContext.Session.GetInt32("CurrentProject") ?? 0;
+            var employees = await _context.EmployeeProjects
+                .Where(c => c.ProjectId == projectId)
+                .Select(c => c.User)
+                .ToListAsync();
+            return Json(employees);
+        }
 
         /// <summary>
         /// can be used to make sure the user is the pm or assistant pm for the project.

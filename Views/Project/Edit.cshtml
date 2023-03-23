@@ -15,7 +15,12 @@ ViewData["Title"] = "Manage Project";
 <input type="hidden" id="currentWP" />
 <div id="modal-placeholder"></div>
 
-
+<div class="btn-group">
+    <input type="text" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
+        onkeyup="filterDropdown(event)" />
+    <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
+    </ul>
+</div>
 
 <div class="modal" tabindex="-1" role="dialog" id="employeeModal">
     <div class="modal-dialog" role="document">
@@ -636,5 +641,34 @@ ViewData["Title"] = "Manage Project";
             }
         });
         return matchFound;
+    }
+    fetch('/Project/GetAllEmployees')
+            .then(response => response.json())
+            .then(data => {
+                const employeeMenu = document.getElementById('employeeMenu');
+                data.forEach(employee => {
+                    //need to get rid of PM from the list
+                    const menuItem = document.createElement('li');
+                    menuItem.classList.add('dropdown-item');
+                    menuItem.textContent = `${employee.firstName} ${employee.lastName}`;
+                    employeeMenu.appendChild(menuItem);
+                });
+        })
+        .catch(error => {
+            // Handle any errors here
+            console.error(error);
+        });
+    function filterDropdown(event) {
+        const input = event.target;
+        const dropdown = input.nextElementSibling;
+        const filter = input.value.toUpperCase();
+        const items = dropdown.getElementsByTagName("li");
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const text = item.textContent || item.innerText;
+            const match = text.toUpperCase().indexOf(filter) > -1;
+            item.style.display = match ? "" : "none";
+        }
     }
 </script>
