@@ -1,7 +1,7 @@
 ﻿@page
 @model RegisterModel
 @{
-ViewData["Title"] = "Register";
+    ViewData["Title"] = "Register";
 }
 
 <!-- <h1>@ViewData["Title"]</h1> -->
@@ -22,7 +22,7 @@ ViewData["Title"] = "Register";
                     <label asp-for="Input.FirstName" class="col-sm-3 col-form-label"></label>
                     <div class="col-sm-9">
                         <input asp-for="Input.FirstName" class="form-control" autocomplete="username"
-                            aria-required="true" placeholder="Enter your first name" />
+                            aria-required="true" placeholder="Enter first name"/>
                         <span asp-validation-for="Input.FirstName" class="text-danger"></span>
                     </div>
                 </div>
@@ -31,7 +31,7 @@ ViewData["Title"] = "Register";
                     <label asp-for="Input.LastName" class="col-sm-3 col-form-label"></label>
                     <div class="col-sm-9">
                         <input asp-for="Input.LastName" class="form-control" autocomplete="username"
-                            aria-required="true" placeholder="Enter your last name" />
+                            aria-required="true" placeholder="Enter last name" />
                         <span asp-validation-for="Input.LastName" class="text-danger"></span>
                     </div>
                 </div>
@@ -40,7 +40,7 @@ ViewData["Title"] = "Register";
                     <label asp-for="Input.Email" class="col-sm-3 col-form-label"></label>
                     <div class="col-sm-9">
                         <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true"
-                            placeholder="Enter your email" />
+                            placeholder="Enter email" />
                         <span asp-validation-for="Input.Email" class="text-danger"></span>
                     </div>
                 </div>
@@ -49,7 +49,7 @@ ViewData["Title"] = "Register";
                     <label for="password" class="col-sm-3 col-form-label">Password</label>
                     <div class="col-sm-9">
                         <input asp-for="Input.Password" type="password" class="form-control" autocomplete="new-password"
-                            aria-required="true" placeholder="Enter your password" />
+                            aria-required="true" placeholder="Enter password" />
                         <span asp-validation-for="Input.Password" class="text-danger"></span>
                     </div>
                 </div>
@@ -59,7 +59,7 @@ ViewData["Title"] = "Register";
                     <div class="col-sm-9">
                         <input asp-for="Input.ConfirmPassword" type="password" class="form-control"
                             autocomplete="new-password" aria-required="true"
-                            placeholder="Enter your confirmed password" />
+                            placeholder="Enter confirmed password" />
                         <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
                     </div>
                 </div>
@@ -111,27 +111,6 @@ ViewData["Title"] = "Register";
                     </div>
                 </div>
 
-
-                <!-- <div class="form-group row mt-3">
-                    <label asp-for="Input.LabourGrade" class="col-sm-3 col-form-label">Labour Grade</label>
-                    <div class="col-sm-9">
-                        <select asp-for="Input.LabourGrade" class="form-control select-caret" autocomplete="off"
-                            aria-required="true" asp-items="ViewBag.LabourGrades"
-                            placeholder="Select labour grade"></select>
-                        <span asp-validation-for="Input.LabourGrade" class="text-danger"></span>
-                    </div>
-                </div> -->
-
-                <!-- <div class="form-group row mt-3">
-                    <label asp-for="Input.Supervisor" class="col-sm-3 col-form-label">Supervisor</label>
-                    <div class="col-sm-9">
-                        <select asp-for="Input.Supervisor" class="form-control" autocomplete="off" aria-required="true"
-                            asp-items="ViewBag.Supervisors" placeholder="Select supervisor"></select>
-                        <span asp-validation-for="Input.Supervisor" class="text-danger"></span>
-                    </div>
-                </div> -->
-
-
             </div>
 
             <br />
@@ -144,13 +123,13 @@ ViewData["Title"] = "Register";
                     <div>
                         @foreach (var role in Model.rolesList)
                         {
-                        <div class="form-check mt-2">
-                            <input class="form-check-input" type="checkbox" value="@role" name="Input.AreTypes"
-                                id="role_@role">
-                            <label class="form-check-label" for="role_@role">
-                                @role
-                            </label>
-                        </div>
+                                                                                                            <div class="form-check mt-2">
+                                                                                                                <input class="form-check-input" type="checkbox" value="@role" name="Input.AreTypes"
+                                                                                                                    id="role_@role">
+                                                                                                                <label class="form-check-label" for="role_@role">
+                                    @role
+                                                                                                                </label>
+                                                                                                            </div>
                         }
                     </div>
                 </div>
@@ -168,5 +147,5 @@ ViewData["Title"] = "Register";
 </div>
 
 @section Scripts {
-<partial name="_ValidationScriptsPartial" />
+                                                                                    <partial name="_ValidationScriptsPartial" />
 }

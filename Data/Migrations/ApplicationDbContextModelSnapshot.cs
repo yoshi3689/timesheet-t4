@@ -275,11 +275,14 @@ namespace TimesheetApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<double>("BudgetAmount")
+                    b.Property<double>("Days")
                         .HasColumnType("double");
 
                     b.Property<string>("LabourCode")
                         .HasColumnType("varchar(2)");
+
+                    b.Property<int>("People")
+                        .HasColumnType("int");
 
                     b.Property<double>("Remaining")
                         .HasColumnType("double");
@@ -322,10 +325,9 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<int?>("WorkPackageProjectId")
-                        .IsRequired()
                         .HasColumnType("int");
 
-                    b.HasKey("UserId", "WorkPackageId");
+                    b.HasKey("UserId", "WorkPackageId", "WorkPackageProjectId");
 
                     b.HasIndex("WorkPackageId", "WorkPackageProjectId");
 
@@ -363,6 +365,7 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("ProjectTitle")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<double>("TotalBudget")
@@ -512,6 +515,7 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.HasKey("WorkPackageId", "ProjectId");

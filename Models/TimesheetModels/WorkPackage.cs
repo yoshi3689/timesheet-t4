@@ -24,6 +24,7 @@ namespace TimesheetApp.Models.TimesheetModels
         [Required]
         public int? ProjectId { get; set; }
         [Display(Name = "Work Package Title")]
+        [Required]
         public string? Title { get; set; }
         public string? ResponsibleUserId { get; set; }
         public string? ParentWorkPackageId { get; set; }

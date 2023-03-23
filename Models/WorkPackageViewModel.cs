@@ -8,16 +8,13 @@ namespace TimesheetApp.Models
         public List<TimesheetApp.Models.TimesheetModels.WorkPackage> wps { get; set; } = new List<WorkPackage>();
         public List<Budget>? budgets { get; set; } = new List<Budget>();
         public WorkPackage WorkPackage { get; set; } = new WorkPackage();
+        public List<LabourGrade>? LabourGrades { get; set; }
     }
 
     public class CreateProjectViewModel
     {
         public Project project { get; set; } = new Project();
         public List<Budget>? budgets { get; set; } = new List<Budget>();
-        public CreateProjectViewModel()
-        {
-            budgets = new List<Budget>();
-        }
     }
 
     public class EmployeeWorkPackageViewModel
