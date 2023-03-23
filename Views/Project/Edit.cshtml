@@ -24,9 +24,6 @@ ViewData["Title"] = "Manage Project";
                 <h5 class="modal-title">Assign Employee</h5>
             </div>
             <div class="modal-body">
-                <div id="availableEmployees">
-                    <h3>Available employees</h3>
-                </div>
                 <ul class="nav nav-tabs" id="LGtabs" role="tablist">
                     @{
                         bool isFirst = true;
@@ -34,7 +31,7 @@ ViewData["Title"] = "Manage Project";
                     @foreach (var lg in Model.LabourGrades!)
                     {
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link @((isFirst) ? "active" : "")" id="@lg.LabourCode-tab" data-bs-toggle="tab" data-bs-target="#@lg.LabourCode" type="button"
+                            <button class="nav-link @((isFirst) ? "active" : "")" id="@lg.LabourCode-tab" data-bs-toggle="tab" data-bs-target="#AE@(lg.LabourCode)" type="button"
                                 role="tab" aria-controls="@lg.LabourCode" aria-selected="@((isFirst) ? "true" : "false")">@lg.LabourCode</button>
                         </li>
                         isFirst = false;
@@ -46,7 +43,7 @@ ViewData["Title"] = "Manage Project";
                     }
                     @foreach (var lg in Model.LabourGrades!)
                     {
-                        <div class="tab-pane fade @((isFirst) ? "show active" : "")" id="@lg.LabourCode" role="tabpanel" aria-labelledby="@lg.LabourCode-tab"></div>
+                        <div class="columnList tab-pane fade @((isFirst) ? "show active" : "")" id="AE@(lg.LabourCode)" role="tabpanel" aria-labelledby="@lg.LabourCode-tab"></div>
                         isFirst = false;
                     }
                 </div>
@@ -81,8 +78,7 @@ ViewData["Title"] = "Manage Project";
                 <h5 class="modal-title">Assign Responsible Engineer</h5>
             </div>
             <div class="modal-body">
-                <div id="candidateEmployees">
-                    <h3>Candidates</h3>
+                <div id="candidateEmployees" class="columnList">
                 </div>
             </div>
             <div class="modal-footer">
@@ -386,12 +382,12 @@ ViewData["Title"] = "Manage Project";
                         return response.json();
                     })
                     .then((response) => {
-                        $("#employeeModal").modal("show");
+                        var noneError = "No available employees.";
                         document.querySelector("#currentWP").value = info.srcElement.value;
                         @foreach (var lg in Model.LabourGrades)
                         {
                             <text>
-                                document.querySelector("#@lg.LabourCode").innerHTML = "";
+                                document.querySelector("#AE@(lg.LabourCode)").innerHTML = noneError;
                             </text>
                         }
                         response.forEach((c, index) => {
@@ -406,16 +402,21 @@ ViewData["Title"] = "Manage Project";
                             if(c.assigned){
                                 a.querySelector(".form-check-input").checked = true;
                             }
-                            document.querySelector("#" + c.labourCode).appendChild(a);
+                            var tabbedArea = document.querySelector("#AE" + c.labourCode)
+                            if(tabbedArea.innerHTML == noneError){
+                                tabbedArea.innerHTML = "";
+                            }
+                            tabbedArea.appendChild(a);
+                            $("#employeeModal").modal("show");
+
                         });
                         if(response.length == 0){
-                            avaialbleEmpEle.innerHTML = "No available employees."
                             document.querySelector("#assignEmployeesButton").style.display = "none";
                         } else {
                             document.querySelector("#assignEmployeesButton").style.display = "inline";
                         }
                     });
-            }, false);
+            });
             let respEngButton = document.createElement("button");
             respEngButton.type = "button";
             respEngButton.innerHTML = "Set Responsible Engineer";
@@ -521,11 +522,11 @@ ViewData["Title"] = "Manage Project";
                 .then(res => {
                     let list = document.createElement("div");
                     list.innerHTML = "Employees:";
-                    list.className = "bottomLevel listLabel employeeList" ;
+                    list.className = "bottomLevel listLabel employeeList columnList" ;
                     div.appendChild(list);
                     var ul = document.createElement('ul');
-                    ul.id = WorkPackageId + "UL";
-                    ul.className = "bottomLevel employeeList";
+                    ul.id = "UL" + WorkPackageId;
+                    ul.className = "bottomLevel employeeList columnList";
                     let element = null;
                     if (res.length !== 0) {
                         // if any emp assigned to btmLvlwpkg, hide the split workpkg btn
@@ -589,7 +590,7 @@ ViewData["Title"] = "Manage Project";
         }).then(res => {
             return res.json();
         }).then(res => {
-            let ul = document.querySelector("#" + document.querySelector("#currentWP").value + "UL");
+            let ul = document.querySelector("#UL" + document.querySelector("#currentWP").value);
             ul.innerHTML = "";
             res.forEach(e => {
                 element = document.createElement("li");

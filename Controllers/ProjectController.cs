@@ -75,20 +75,15 @@ namespace TimesheetApp.Controllers
                 Name = s.FirstName + " " + s.LastName
             });
             ViewData["UserId"] = new SelectList(users, "Id", "Name");
-            List<Budget> emptyBudgets = new List<Budget>();
-            foreach (var item in _context.LabourGrades!.ToList())
-            {
-                emptyBudgets.Add(new Budget
-                {
-                    LabourCode = item.LabourCode,
-                    LabourGrade = item,
-                    isREBudget = false,
-                    Rate = item.Rate,
-                });
-            }
             CreateProjectViewModel proj = new CreateProjectViewModel
             {
-                budgets = emptyBudgets
+                budgets = _context.LabourGrades.Select(lg => new Budget
+                {
+                    LabourCode = lg.LabourCode,
+                    LabourGrade = lg,
+                    isREBudget = false,
+                    Rate = lg.Rate,
+                }).ToList()
             };
             return View(proj);
         }
@@ -142,14 +137,13 @@ namespace TimesheetApp.Controllers
                 return RedirectToAction("Index");
 
             }
-            //if there are mistakes, re load list of employees and send the view back again
             var users = _context.Users.Select(s => new
             {
                 Id = s.Id,
                 Name = s.FirstName + " " + s.LastName
             });
             ViewData["UserId"] = new SelectList(users, "Id", "Name");
-            return View();
+            return View(input);
         }
 
         /// <summary>
@@ -443,24 +437,24 @@ namespace TimesheetApp.Controllers
             }
             List<EmployeeWorkPackageViewModel> emp = new List<EmployeeWorkPackageViewModel>();
             // get empIds assigned to the lowest level wp
-            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
-            foreach (var notIn in _context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User))
+            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(filtered => filtered.UserId).ToList();
+            foreach (var notIn in _context.EmployeeProjects!.Where(ep => ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User))
             {
                 emp.Add(new EmployeeWorkPackageViewModel
                 {
                     Employee = notIn!,
-                    Assigned = false
+                    Assigned = userIdsInLLWP.Contains(notIn!.Id)
                 });
             }
-            foreach (var inWP in _context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User))
+            return new JsonResult(emp.Select(e => new
             {
-                emp.Add(new EmployeeWorkPackageViewModel
-                {
-                    Employee = inWP!,
-                    Assigned = true
-                });
-            }
-            return new JsonResult(emp.Select(e => new { e.Employee.Id, FirstName = e.Employee.FirstName ?? string.Empty, LastName = e.Employee.LastName ?? string.Empty, JobTitle = e.Employee.JobTitle ?? string.Empty, e.Assigned, LabourCode = e.Employee.LabourGradeCode ?? String.Empty }));
+                e.Employee.Id,
+                FirstName = e.Employee.FirstName ?? string.Empty,
+                LastName = e.Employee.LastName ?? string.Empty,
+                JobTitle = e.Employee.JobTitle ?? string.Empty,
+                e.Assigned,
+                LabourCode = e.Employee.LabourGradeCode ?? String.Empty
+            }));
         }
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
@@ -487,11 +481,7 @@ namespace TimesheetApp.Controllers
             {
                 return isPM;
             }
-            // get userIds of the users assigned to the lowest level wp
-            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
-
-            // return
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e!.Id, e.FirstName, e.LastName, e.JobTitle }));
+            return new JsonResult(_context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e!.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

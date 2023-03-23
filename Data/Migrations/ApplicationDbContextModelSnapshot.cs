@@ -325,10 +325,9 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<int?>("WorkPackageProjectId")
-                        .IsRequired()
                         .HasColumnType("int");
 
-                    b.HasKey("UserId", "WorkPackageId");
+                    b.HasKey("UserId", "WorkPackageId", "WorkPackageProjectId");
 
                     b.HasIndex("WorkPackageId", "WorkPackageProjectId");
 
@@ -516,6 +515,7 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.HasKey("WorkPackageId", "ProjectId");

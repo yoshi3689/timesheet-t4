@@ -15,10 +15,6 @@ namespace TimesheetApp.Models
     {
         public Project project { get; set; } = new Project();
         public List<Budget>? budgets { get; set; } = new List<Budget>();
-        public CreateProjectViewModel()
-        {
-            budgets = new List<Budget>();
-        }
     }
 
     public class EmployeeWorkPackageViewModel
