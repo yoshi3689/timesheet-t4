@@ -16,7 +16,7 @@ namespace TimesheetApp.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.3")
+                .HasAnnotation("ProductVersion", "7.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -171,7 +171,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.Property<int>("EmployeeNumber")
-                        .HasMaxLength(100)
                         .HasColumnType("int");
 
                     b.Property<string>("FirstName")
@@ -276,11 +275,14 @@ namespace TimesheetApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<double>("BudgetAmount")
+                    b.Property<double>("Days")
                         .HasColumnType("double");
 
                     b.Property<string>("LabourCode")
                         .HasColumnType("varchar(2)");
+
+                    b.Property<int>("People")
+                        .HasColumnType("int");
 
                     b.Property<double>("Remaining")
                         .HasColumnType("double");
@@ -364,6 +366,7 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("ProjectTitle")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<double>("TotalBudget")
@@ -453,7 +456,6 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<int?>("ProjectId")
                         .IsRequired()
-                        .HasMaxLength(255)
                         .HasColumnType("int");
 
                     b.Property<int>("TimesheetId")
@@ -469,7 +471,6 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<int?>("WorkPackageProjectId")
                         .IsRequired()
-                        .HasMaxLength(255)
                         .HasColumnType("int");
 
                     b.Property<long>("packedHours")

@@ -13,8 +13,8 @@ ViewData["Title"] = "Manage Project";
 <input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)" />
 <div id="WorkPackages" class="accordian"></div>
 <input type="hidden" id="currentWP" />
+<input type="hidden" id="currentProject"/>
 <div id="modal-placeholder"></div>
-
 
 
 <div class="modal" tabindex="-1" role="dialog" id="employeeModal">
@@ -27,7 +27,33 @@ ViewData["Title"] = "Manage Project";
                 <div id="availableEmployees">
                     <h3>Available employees</h3>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Update</button>
+                <ul class="nav nav-tabs" id="LGtabs" role="tablist">
+                    @{
+                        bool isFirst = true;
+                    }
+                    @foreach (var lg in Model.LabourGrades!)
+                    {
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @((isFirst) ? "active" : "")" id="@lg.LabourCode-tab" data-bs-toggle="tab" data-bs-target="#@lg.LabourCode" type="button"
+                                role="tab" aria-controls="@lg.LabourCode" aria-selected="@((isFirst) ? "true" : "false")">@lg.LabourCode</button>
+                        </li>
+                        isFirst = false;
+                    }
+                </ul>
+                <div class="tab-content" id="myTabContent">
+                    @{
+                        isFirst = true;
+                    }
+                    @foreach (var lg in Model.LabourGrades!)
+                    {
+                        <div class="tab-pane fade @((isFirst) ? "show active" : "")" id="@lg.LabourCode" role="tabpanel" aria-labelledby="@lg.LabourCode-tab"></div>
+                        isFirst = false;
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="assignEmployeesButton" type="button" class="btn btn-primary" onclick="assignEmployeeToWp()">Update</button>
             </div>
         </div>
     </div>
@@ -58,11 +84,11 @@ ViewData["Title"] = "Manage Project";
                 <div id="candidateEmployees">
                     <h3>Candidates</h3>
                 </div>
-                @* <input type="text" placeholder="Work Package Name..." id="newWorkPackageName"> *@
-                <button type="button" class="btn btn-primary" onclick="assignResponsibleEngineer()">Assign</button>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="assignRE" type="button" class="btn btn-primary" onclick="assignResponsibleEngineer()">Assign</button>
+
             </div>
         </div>
     </div>
@@ -82,6 +108,7 @@ ViewData["Title"] = "Manage Project";
         <text >
             var firstname = null;
         var lastname = null;
+        document.querySelector("#currentProject").value = "@wp.ProjectId";
         </text>
         @if(wp.ResponsibleUser != null) {
                 <text >
@@ -175,6 +202,10 @@ ViewData["Title"] = "Manage Project";
                 var myModalEl = document.getElementById('splitModal');
                 var modal = new bootstrap.Modal(myModalEl);
                 modal.show();
+                //only append to the start if its not right under the project
+                if(WorkPackageId !== "0"){
+                    document.querySelector("#newIdPartial").innerHTML = WorkPackageId;
+                }
                 //submit creation of sub work package
                 document.querySelector("#newWPForm").addEventListener('submit', async function submitForm (event) {
                     event.preventDefault();
@@ -183,6 +214,7 @@ ViewData["Title"] = "Manage Project";
                         method: "POST",
                         body: formData,
                     }).then(async c => {
+                        //if there is a field validation error show it again
                         if(c.status == 400){
                             var text = await c.text();
                             var myModalEl = document.getElementById('splitModal');
@@ -212,11 +244,11 @@ ViewData["Title"] = "Manage Project";
                         let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
                         let tremain = document.createElement("span");
                         tremain.innerHTML = "$" + (parseInt(budgetRow[1].innerHTML.replace(/\D/g, '')) - c.totalBudget);
-                        budgetRow[2].innerHTML = "Remaining Budget:";
                         budgetRow[3].innerHTML = tremain.outerHTML;
+                        budgetRow[2].innerHTML = "Unallocated Budget:"
 
                         addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName,
-                            c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget, c.remainingBudget);
+                            c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget, c.totalRemaining);
                         var myModalEl = document.getElementById('splitModal');
                         var modal = bootstrap.Modal.getInstance(myModalEl)
                         modal.hide();
@@ -267,11 +299,11 @@ ViewData["Title"] = "Manage Project";
                 headerRow.appendChild(labourCodeHeader);
 
                 let budgetTotalHeader = document.createElement("th");
-                budgetTotalHeader.textContent = "Total (Hours)";
+                budgetTotalHeader.textContent = "Total (P.D.)";
                 headerRow.appendChild(budgetTotalHeader);
 
                 let remainingBudgetHeader = document.createElement("th");
-                remainingBudgetHeader.textContent = "Remaining (Hours)";
+                remainingBudgetHeader.textContent = "Unallocated (P.D.)";
                 headerRow.appendChild(remainingBudgetHeader);
 
                 let budgetTotalHeaderD = document.createElement("th");
@@ -279,7 +311,7 @@ ViewData["Title"] = "Manage Project";
                 headerRow.appendChild(budgetTotalHeaderD);
 
                 let remainingBudgetHeaderD = document.createElement("th");
-                remainingBudgetHeaderD.textContent = "Remaining";
+                remainingBudgetHeaderD.textContent = "Unallocated";
                 headerRow.appendChild(remainingBudgetHeaderD);
 
                 header.appendChild(headerRow);
@@ -340,7 +372,6 @@ ViewData["Title"] = "Manage Project";
             employeeButton.name = "name";
             employeeButton.className = "label bottomLevel btn btn-secondary";
             employeeButton.addEventListener('click', async function (info) {
-                const avaialbleEmpEle = document.querySelector("#availableEmployees");
                 await fetch("/Project/GetWPEmployees", {
                         method: "POST",
                         headers: {
@@ -357,7 +388,12 @@ ViewData["Title"] = "Manage Project";
                     .then((response) => {
                         $("#employeeModal").modal("show");
                         document.querySelector("#currentWP").value = info.srcElement.value;
-                        avaialbleEmpEle.innerHTML = "";
+                        @foreach (var lg in Model.LabourGrades)
+                        {
+                            <text>
+                                document.querySelector("#@lg.LabourCode").innerHTML = "";
+                            </text>
+                        }
                         response.forEach((c, index) => {
                             var a = document.createElement("div");
                             a.classList.add(`emp_${index}`);
@@ -370,11 +406,14 @@ ViewData["Title"] = "Manage Project";
                             if(c.assigned){
                                 a.querySelector(".form-check-input").checked = true;
                             }
-                            avaialbleEmpEle.appendChild(a);
+                            document.querySelector("#" + c.labourCode).appendChild(a);
                         });
-                        var a = document.createElement("p");
-                        a.innerHTML = "No avaialble employees";
-                        avaialbleEmpEle.appendChild(a);
+                        if(response.length == 0){
+                            avaialbleEmpEle.innerHTML = "No available employees."
+                            document.querySelector("#assignEmployeesButton").style.display = "none";
+                        } else {
+                            document.querySelector("#assignEmployeesButton").style.display = "inline";
+                        }
                     });
             }, false);
             let respEngButton = document.createElement("button");
@@ -418,6 +457,9 @@ ViewData["Title"] = "Manage Project";
                             var a = document.createElement("p");
                             a.innerHTML = "No candidate employees.";
                             candidateEmpEle.appendChild(a);
+                            document.querySelector("#assignRE").style.display = "none";
+                        } else {
+                            document.querySelector("#assignRE").style.display = "inline";
                         }
                     });
             }, false);
@@ -449,11 +491,11 @@ ViewData["Title"] = "Manage Project";
         tremain.innerHTML = "$"+remainingBudget;
         tremain.className = "totalRemaining";
         var budgetRow;
-        if(IsBottomLevel){
-            //this shoudl have total spent so far in the second slot (eventually)
-            budgetRow = createRow("Total Budget:", tbudget, null, null, false);
-        } else if (remainingBudget != 0){
-            budgetRow = createRow("Total Budget:", tbudget, "Remaining Budget:", tremain, false);
+        if (IsBottomLevel){
+            budgetRow = createRow("Total Budget:", tbudget, "Remaining:", tremain, false);
+        }
+        else if(remainingBudget != 0){
+            budgetRow = createRow("Total Budget:", tbudget, "Unallocated Budget:", tremain, false);
         } else {
             budgetRow = createRow("Total Budget:", tbudget, null, null, false);
         }
@@ -534,6 +576,9 @@ ViewData["Title"] = "Manage Project";
                 };
             }
         });
+        if(employeesToBeAdded.length == 0){
+            employeesToBeAdded = [ {WorkPackageProjectId: "@Model.wps[0].ProjectId", WorkPackageId: document.querySelector("#currentWP").value} ];
+        }
         await fetch("/Project/AssignEmployees", {
             method: "POST",
             headers: {
@@ -557,7 +602,6 @@ ViewData["Title"] = "Manage Project";
                 document.querySelector("#SPLIT" + document.querySelector("#currentWP").value).style.display = "inline";
                 ul.innerHTML += "<p>No one is assigned</p>"
             }
-
             var myModalEl = document.getElementById('employeeModal');
             var modal = bootstrap.Modal.getInstance(myModalEl)
             modal.hide();
@@ -598,14 +642,17 @@ ViewData["Title"] = "Manage Project";
             } else {
                 console.log("failed")
             }
+            var myModalEl = document.getElementById('RespEngModal');
+            var modal = bootstrap.Modal.getInstance(myModalEl)
+            modal.hide();
         });
     }
 
-    function setTotal(labourCode, rate, total, remain) {
+    function setTotal(labourCode, rate, people, days, remain) {
         var element = document.querySelector("#" + labourCode);
-        element.innerHTML = " $" + (total * rate);
+        element.innerHTML = " $" + (people * days * rate);
         element = document.querySelector("#R" + labourCode);
-        element.innerHTML = "Remaining: $" + ((remain * rate) - (total * rate)) + " (" + (remain - total) + " hours )";
+        element.innerHTML = "Remaining: $" + ((remain * rate) - (people * days * rate)) + " (" + (remain - (people * days)) + "  P.D.)";
     }
 
     //these 2 functions recursivly search through the wps to find matches in the search bar

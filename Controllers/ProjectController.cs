@@ -111,7 +111,7 @@ namespace TimesheetApp.Controllers
                 //create a high level work package
                 var newWP = new WorkPackage
                 {
-                    WorkPackageId = Convert.ToString(input.project.ProjectId),
+                    WorkPackageId = "0",
                     ProjectId = input.project.ProjectId,
                     IsBottomLevel = true,
                     Title = input.project.ProjectTitle
@@ -127,8 +127,9 @@ namespace TimesheetApp.Controllers
                     {
                         Budget newBudget = new Budget
                         {
-                            WPProjectId = input.project.ProjectId + "~" + input.project.ProjectId,
-                            BudgetAmount = budget.BudgetAmount,
+                            WPProjectId = input.project.ProjectId + "~0",
+                            People = budget.People,
+                            Days = budget.Days,
                             LabourCode = budget.LabourCode,
                             Remaining = budget.BudgetAmount
                         };
@@ -174,7 +175,8 @@ namespace TimesheetApp.Controllers
 
             WorkPackageViewModel model = new WorkPackageViewModel
             {
-                wps = findAllChildren(top)
+                wps = findAllChildren(top),
+                LabourGrades = _context.LabourGrades.ToList()
             };
 
             //calculate the total budget amount for each work package.
@@ -188,23 +190,16 @@ namespace TimesheetApp.Controllers
             List<LabourGrade> lgs = _context.LabourGrades.ToList();
             foreach (var wp in wps)
             {
-                if (wp.IsBottomLevel)
+                double total = 0;
+                double remaining = 0;
+                foreach (var lg in lgs)
                 {
-                    //TODO calculate all rows to get remaining
+                    var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
+                    total += budget.BudgetAmount * lg.Rate;
+                    remaining += budget.Remaining * lg.Rate;
                 }
-                else
-                {
-                    double total = 0;
-                    double remaining = 0;
-                    foreach (var lg in lgs)
-                    {
-                        var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
-                        total += budget.BudgetAmount * lg.Rate;
-                        remaining += budget.Remaining * lg.Rate;
-                    }
-                    wp.TotalBudget = total;
-                    wp.TotalRemaining = remaining;
-                }
+                wp.TotalBudget = total;
+                wp.TotalRemaining = remaining;
             }
             return wps;
         }
@@ -276,13 +271,16 @@ namespace TimesheetApp.Controllers
             {
                 return isPM;
             }
-            var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
-            if (LLWP != null)
+            if (ewp != null)
             {
-                LLWP.ResponsibleUserId = ewp.UserId;
-                var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
-                _context.SaveChanges();
-                return new JsonResult(user.FirstName + " " + user.LastName);
+                var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
+                if (LLWP != null)
+                {
+                    LLWP.ResponsibleUserId = ewp.UserId;
+                    var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
+                    _context.SaveChanges();
+                    return new JsonResult(user.FirstName + " " + user.LastName);
+                }
             }
             return new JsonResult("Error!");
         }
@@ -299,7 +297,7 @@ namespace TimesheetApp.Controllers
                 return isPM;
             }
             string projectId = Convert.ToString(HttpContext.Session.GetInt32("CurrentProject") ?? 0);
-            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~" + projectId).ToList();
+            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~0").ToList();
             List<Budget> emptyBudgets = new List<Budget>();
             foreach (var item in _context.LabourGrades!.ToList())
             {
@@ -350,9 +348,10 @@ namespace TimesheetApp.Controllers
             {
                 parent.IsBottomLevel = false;
             }
+            string newWPID = (p.WorkPackage!.ParentWorkPackageId == "0") ? p.WorkPackage.WorkPackageId : p.WorkPackage!.ParentWorkPackageId + p.WorkPackage!.WorkPackageId;
             var newChild = new WorkPackage
             {
-                WorkPackageId = p.WorkPackage!.WorkPackageId,
+                WorkPackageId = newWPID,
                 ProjectId = CurrentProject,
                 ParentWorkPackageId = p.WorkPackage.ParentWorkPackageId,
                 ParentWorkPackageProjectId = CurrentProject ?? 0,
@@ -369,7 +368,8 @@ namespace TimesheetApp.Controllers
                     Budget newBudget = new Budget
                     {
                         WPProjectId = CurrentProject + "~" + newChild.WorkPackageId,
-                        BudgetAmount = budget.BudgetAmount,
+                        People = budget.People,
+                        Days = budget.Days,
                         LabourCode = budget.LabourCode,
                         Remaining = budget.BudgetAmount
                     };
@@ -408,6 +408,11 @@ namespace TimesheetApp.Controllers
 
         }
 
+        /// <summary>
+        /// Get the details of the budget for a work package.
+        /// </summary>
+        /// <param name="wp">Work package object that must contain the workpackageid</param>
+        /// <returns></returns>
         [Authorize]
         public async Task<IActionResult> BudgetDetailsAsync([FromBody] WorkPackage wp)
         {
@@ -455,7 +460,7 @@ namespace TimesheetApp.Controllers
                     Assigned = true
                 });
             }
-            return new JsonResult(emp.Select(e => new { e.Employee.Id, FirstName = e.Employee.FirstName ?? string.Empty, LastName = e.Employee.LastName ?? string.Empty, JobTitle = e.Employee.JobTitle ?? string.Empty, e.Assigned }));
+            return new JsonResult(emp.Select(e => new { e.Employee.Id, FirstName = e.Employee.FirstName ?? string.Empty, LastName = e.Employee.LastName ?? string.Empty, JobTitle = e.Employee.JobTitle ?? string.Empty, e.Assigned, LabourCode = e.Employee.LabourGradeCode ?? String.Empty }));
         }
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
