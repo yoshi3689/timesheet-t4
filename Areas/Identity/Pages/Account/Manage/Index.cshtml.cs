@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TimesheetApp.Models;
+using TimesheetApp.Data;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
 {
@@ -18,12 +19,15 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
 
+        private readonly ApplicationDbContext _context;
+
         public IndexModel(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager)
+            SignInManager<ApplicationUser> signInManager, ApplicationDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _context = context;
         }
 
         /// <summary>
@@ -46,6 +50,10 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
         [BindProperty]
         public InputModel Input { get; set; }
 
+        
+
+        
+
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
@@ -59,7 +67,12 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
             [Phone]
             [Display(Name = "Phone number")]
             public string PhoneNumber { get; set; }
+
+            [Display(Name = "Labour Grade")]
+            public string LabourGrade { get; set; }
+
         }
+
 
         private async Task LoadAsync(ApplicationUser user)
         {
@@ -70,13 +83,16 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
 
             Input = new InputModel
             {
-                PhoneNumber = phoneNumber
+                PhoneNumber = phoneNumber,
+                LabourGrade = (await _userManager.GetUserAsync(User)).LabourGradeCode
             };
         }
 
         public async Task<IActionResult> OnGetAsync()
         {
+        
             var user = await _userManager.GetUserAsync(User);
+            Console.WriteLine(user.LabourGradeCode);
             if (user == null)
             {
                 return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
@@ -115,5 +131,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
             StatusMessage = "Your profile has been updated";
             return RedirectToPage();
         }
+
+        
     }
 }
