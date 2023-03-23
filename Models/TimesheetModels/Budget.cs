@@ -14,11 +14,20 @@ namespace TimesheetApp.Models.TimesheetModels
         public int BudgetId { get; set; }
         public string WPProjectId { get; set; } = "";
         [Display(Name = "Effort in Hours")]
-        public double BudgetAmount { get; set; }
+        public double BudgetAmount
+        {
+            get
+            {
+                return Days * People;
+            }
+        }
+        public double Days { get; set; }
+        public int People { get; set; }
         [Display(Name = "Labour Grade")]
         public string? LabourCode { get; set; }
         public double Remaining { get; set; }
         public bool isREBudget { get; set; }
+
         [ForeignKey("LabourCode")]
         public LabourGrade? LabourGrade { get; set; }
 

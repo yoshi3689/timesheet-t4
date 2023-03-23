@@ -75,20 +75,15 @@ namespace TimesheetApp.Controllers
                 Name = s.FirstName + " " + s.LastName
             });
             ViewData["UserId"] = new SelectList(users, "Id", "Name");
-            List<Budget> emptyBudgets = new List<Budget>();
-            foreach (var item in _context.LabourGrades!.ToList())
-            {
-                emptyBudgets.Add(new Budget
-                {
-                    LabourCode = item.LabourCode,
-                    LabourGrade = item,
-                    isREBudget = false,
-                    Rate = item.Rate,
-                });
-            }
             CreateProjectViewModel proj = new CreateProjectViewModel
             {
-                budgets = emptyBudgets
+                budgets = _context.LabourGrades.Select(lg => new Budget
+                {
+                    LabourCode = lg.LabourCode,
+                    LabourGrade = lg,
+                    isREBudget = false,
+                    Rate = lg.Rate,
+                }).ToList()
             };
             return View(proj);
         }
@@ -111,7 +106,7 @@ namespace TimesheetApp.Controllers
                 //create a high level work package
                 var newWP = new WorkPackage
                 {
-                    WorkPackageId = Convert.ToString(input.project.ProjectId),
+                    WorkPackageId = "0",
                     ProjectId = input.project.ProjectId,
                     IsBottomLevel = true,
                     Title = input.project.ProjectTitle
@@ -127,8 +122,9 @@ namespace TimesheetApp.Controllers
                     {
                         Budget newBudget = new Budget
                         {
-                            WPProjectId = input.project.ProjectId + "~" + input.project.ProjectId,
-                            BudgetAmount = budget.BudgetAmount,
+                            WPProjectId = input.project.ProjectId + "~0",
+                            People = budget.People,
+                            Days = budget.Days,
                             LabourCode = budget.LabourCode,
                             Remaining = budget.BudgetAmount
                         };
@@ -141,14 +137,13 @@ namespace TimesheetApp.Controllers
                 return RedirectToAction("Index");
 
             }
-            //if there are mistakes, re load list of employees and send the view back again
             var users = _context.Users.Select(s => new
             {
                 Id = s.Id,
                 Name = s.FirstName + " " + s.LastName
             });
             ViewData["UserId"] = new SelectList(users, "Id", "Name");
-            return View();
+            return View(input);
         }
 
         /// <summary>
@@ -174,7 +169,8 @@ namespace TimesheetApp.Controllers
 
             WorkPackageViewModel model = new WorkPackageViewModel
             {
-                wps = findAllChildren(top)
+                wps = findAllChildren(top),
+                LabourGrades = _context.LabourGrades.ToList()
             };
 
             //calculate the total budget amount for each work package.
@@ -188,23 +184,16 @@ namespace TimesheetApp.Controllers
             List<LabourGrade> lgs = _context.LabourGrades.ToList();
             foreach (var wp in wps)
             {
-                if (wp.IsBottomLevel)
+                double total = 0;
+                double remaining = 0;
+                foreach (var lg in lgs)
                 {
-                    //TODO calculate all rows to get remaining
+                    var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
+                    total += budget.BudgetAmount * lg.Rate;
+                    remaining += budget.Remaining * lg.Rate;
                 }
-                else
-                {
-                    double total = 0;
-                    double remaining = 0;
-                    foreach (var lg in lgs)
-                    {
-                        var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
-                        total += budget.BudgetAmount * lg.Rate;
-                        remaining += budget.Remaining * lg.Rate;
-                    }
-                    wp.TotalBudget = total;
-                    wp.TotalRemaining = remaining;
-                }
+                wp.TotalBudget = total;
+                wp.TotalRemaining = remaining;
             }
             return wps;
         }
@@ -276,13 +265,16 @@ namespace TimesheetApp.Controllers
             {
                 return isPM;
             }
-            var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
-            if (LLWP != null)
+            if (ewp != null)
             {
-                LLWP.ResponsibleUserId = ewp.UserId;
-                var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
-                _context.SaveChanges();
-                return new JsonResult(user.FirstName + " " + user.LastName);
+                var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
+                if (LLWP != null)
+                {
+                    LLWP.ResponsibleUserId = ewp.UserId;
+                    var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
+                    _context.SaveChanges();
+                    return new JsonResult(user.FirstName + " " + user.LastName);
+                }
             }
             return new JsonResult("Error!");
         }
@@ -299,7 +291,7 @@ namespace TimesheetApp.Controllers
                 return isPM;
             }
             string projectId = Convert.ToString(HttpContext.Session.GetInt32("CurrentProject") ?? 0);
-            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~" + projectId).ToList();
+            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~0").ToList();
             List<Budget> emptyBudgets = new List<Budget>();
             foreach (var item in _context.LabourGrades!.ToList())
             {
@@ -350,9 +342,10 @@ namespace TimesheetApp.Controllers
             {
                 parent.IsBottomLevel = false;
             }
+            string newWPID = (p.WorkPackage!.ParentWorkPackageId == "0") ? p.WorkPackage.WorkPackageId : p.WorkPackage!.ParentWorkPackageId + p.WorkPackage!.WorkPackageId;
             var newChild = new WorkPackage
             {
-                WorkPackageId = p.WorkPackage!.WorkPackageId,
+                WorkPackageId = newWPID,
                 ProjectId = CurrentProject,
                 ParentWorkPackageId = p.WorkPackage.ParentWorkPackageId,
                 ParentWorkPackageProjectId = CurrentProject ?? 0,
@@ -369,7 +362,8 @@ namespace TimesheetApp.Controllers
                     Budget newBudget = new Budget
                     {
                         WPProjectId = CurrentProject + "~" + newChild.WorkPackageId,
-                        BudgetAmount = budget.BudgetAmount,
+                        People = budget.People,
+                        Days = budget.Days,
                         LabourCode = budget.LabourCode,
                         Remaining = budget.BudgetAmount
                     };
@@ -408,6 +402,11 @@ namespace TimesheetApp.Controllers
 
         }
 
+        /// <summary>
+        /// Get the details of the budget for a work package.
+        /// </summary>
+        /// <param name="wp">Work package object that must contain the workpackageid</param>
+        /// <returns></returns>
         [Authorize]
         public async Task<IActionResult> BudgetDetailsAsync([FromBody] WorkPackage wp)
         {
@@ -436,27 +435,48 @@ namespace TimesheetApp.Controllers
             {
                 return isPM;
             }
-            List<EmployeeWorkPackageViewModel> emp = new List<EmployeeWorkPackageViewModel>();
-            // get empIds assigned to the lowest level wp
-            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
-            foreach (var notIn in _context.EmployeeProjects!.Where(ep => !userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User))
-            {
-                emp.Add(new EmployeeWorkPackageViewModel
+
+            var userIdsInLLWP = await _context.EmployeeWorkPackages!
+                .Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject"))
+                .Select(filtered => filtered.UserId)
+                .ToListAsync();
+
+            var budgets = await _context.Budgets
+                .Where(c => c.WPProjectId == (HttpContext.Session.GetInt32("CurrentProject") + "~" + LowestLevelWp.WorkPackageId))
+                .ToListAsync();
+
+            var emp = await _context.EmployeeProjects!
+                .Where(ep => ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject"))
+                .Select(e => new EmployeeWorkPackageViewModel
                 {
-                    Employee = notIn!,
-                    Assigned = false
-                });
-            }
-            foreach (var inWP in _context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User))
+                    Employee = e.User!,
+                    Assigned = userIdsInLLWP.Contains(e.UserId)
+                })
+                .ToListAsync();
+
+            foreach (var employee in emp)
             {
-                emp.Add(new EmployeeWorkPackageViewModel
+                var matchingBudget = budgets.FirstOrDefault(b => b.LabourCode == employee.Employee.LabourGradeCode);
+                if (matchingBudget != null)
                 {
-                    Employee = inWP!,
-                    Assigned = true
-                });
+                    matchingBudget.People--;
+                }
             }
-            return new JsonResult(emp.Select(e => new { e.Employee.Id, FirstName = e.Employee.FirstName ?? string.Empty, LastName = e.Employee.LastName ?? string.Empty, JobTitle = e.Employee.JobTitle ?? string.Empty, e.Assigned }));
+
+            var result = new List<object>();
+            result.Add(emp.Select(e => new
+            {
+                e.Employee.Id,
+                FirstName = e.Employee.FirstName ?? string.Empty,
+                LastName = e.Employee.LastName ?? string.Empty,
+                JobTitle = e.Employee.JobTitle ?? string.Empty,
+                e.Assigned,
+                LabourCode = e.Employee.LabourGradeCode ?? String.Empty
+            }));
+            result.Add(budgets.Select(c => new { c.LabourCode, c.People }));
+            return new JsonResult(result);
         }
+
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
         [Authorize]
@@ -482,11 +502,7 @@ namespace TimesheetApp.Controllers
             {
                 return isPM;
             }
-            // get userIds of the users assigned to the lowest level wp
-            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
-
-            // return
-            return new JsonResult(_context.EmployeeProjects!.Where(ep => userIdsInLLWP.Contains(ep.UserId) && ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e!.Id, e.FirstName, e.LastName, e.JobTitle }));
+            return new JsonResult(_context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e!.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

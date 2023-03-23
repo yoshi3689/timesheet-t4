@@ -69,7 +69,7 @@ select-caret::after {
   padding: 0.3em;
 }
 
-.employeeList {
+.columnList {
   columns: 2;
 }
 
@@ -87,4 +87,3 @@ select-caret::after {
   box-sizing: border-box;
   text-align: left;
 }
-

@@ -12,7 +12,7 @@ namespace TimesheetApp.Models.TimesheetModels
     /// Models the relationship between an employee and thier workpackage. used to store inforamtion that is specific to thier workpackage, such as the starting code and if they can approve timesheets in it.
     /// Used for the database.
     /// </summary>
-    [PrimaryKey(nameof(UserId), nameof(WorkPackageId))]
+    [PrimaryKey(nameof(UserId), nameof(WorkPackageId), nameof(WorkPackageProjectId))]
     public class EmployeeWorkPackage
     {
         [Required]
