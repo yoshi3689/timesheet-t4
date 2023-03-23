@@ -1,25 +1,26 @@
 @model IEnumerable<TimesheetApp.Models.TimesheetModels.EmployeeProject>
 
-    @{
+@{
     ViewData["Title"] = "Index";
-    }
+}
 
-    <h1>Index</h1>
+<h1>Index</h1>
 
-    <table class="table table-bordered table-responsive table-striped ">
-        <thead>
-            <tr>
-                <th>
-                    @Html.DisplayNameFor(model => model.User)
-                </th>
-                <th>
-                    @Html.DisplayNameFor(model => model.Project)
-                </th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model) {
+<table class="table table-bordered table-responsive table-striped ">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.User)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Project)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
             <tr>
                 <td>
                     @Html.DisplayFor(modelItem => item.User!.Id)
@@ -28,14 +29,14 @@
                     @Html.DisplayFor(modelItem => item.Project!.ProjectId)
                 </td>
                 <td>
-                    @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
+                    @Html.ActionLink("Edit", "Edit", new { id=item.ProjectId }) |
                     @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
                     @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
                 </td>
             </tr>
-            }
-        </tbody>
-    </table>
-    <p>
-        <a class="btn btn-primary rounded" asp-action="Create">Create New</a>
-    </p>
+        }
+    </tbody>
+</table>
+<p>
+    <a class="btn btn-primary rounded" asp-action="Create">Create New</a>
+</p>

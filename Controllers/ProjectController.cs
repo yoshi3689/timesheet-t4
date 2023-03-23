@@ -54,9 +54,16 @@ namespace TimesheetApp.Controllers
                 var projects = _context.Projects!.Include(s => s.ProjectManager);
                 return View(projects);
             }
+            // else if (User.Identity!.IsAuthenticated) {
+            //     var userId = _userManager.GetUserId(HttpContext.User);
+
+            //     return View(projects);
+            // }
             else
             {
+
                 var userId = _userManager.GetUserId(HttpContext.User);
+
                 var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId).Include(s => s.ProjectManager);
                 return View(project);
             }
