@@ -435,18 +435,36 @@ namespace TimesheetApp.Controllers
             {
                 return isPM;
             }
-            List<EmployeeWorkPackageViewModel> emp = new List<EmployeeWorkPackageViewModel>();
-            // get empIds assigned to the lowest level wp
-            var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(filtered => filtered.UserId).ToList();
-            foreach (var notIn in _context.EmployeeProjects!.Where(ep => ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User))
-            {
-                emp.Add(new EmployeeWorkPackageViewModel
+
+            var userIdsInLLWP = await _context.EmployeeWorkPackages!
+                .Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject"))
+                .Select(filtered => filtered.UserId)
+                .ToListAsync();
+
+            var budgets = await _context.Budgets
+                .Where(c => c.WPProjectId == (HttpContext.Session.GetInt32("CurrentProject") + "~" + LowestLevelWp.WorkPackageId))
+                .ToListAsync();
+
+            var emp = await _context.EmployeeProjects!
+                .Where(ep => ep.ProjectId == HttpContext.Session.GetInt32("CurrentProject"))
+                .Select(e => new EmployeeWorkPackageViewModel
                 {
-                    Employee = notIn!,
-                    Assigned = userIdsInLLWP.Contains(notIn!.Id)
-                });
+                    Employee = e.User!,
+                    Assigned = userIdsInLLWP.Contains(e.UserId)
+                })
+                .ToListAsync();
+
+            foreach (var employee in emp)
+            {
+                var matchingBudget = budgets.FirstOrDefault(b => b.LabourCode == employee.Employee.LabourGradeCode);
+                if (matchingBudget != null)
+                {
+                    matchingBudget.People--;
+                }
             }
-            return new JsonResult(emp.Select(e => new
+
+            var result = new List<object>();
+            result.Add(emp.Select(e => new
             {
                 e.Employee.Id,
                 FirstName = e.Employee.FirstName ?? string.Empty,
@@ -455,7 +473,10 @@ namespace TimesheetApp.Controllers
                 e.Assigned,
                 LabourCode = e.Employee.LabourGradeCode ?? String.Empty
             }));
+            result.Add(budgets.Select(c => new { c.LabourCode, c.People }));
+            return new JsonResult(result);
         }
+
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
         [Authorize]

@@ -43,7 +43,8 @@ ViewData["Title"] = "Manage Project";
                     }
                     @foreach (var lg in Model.LabourGrades!)
                     {
-                        <div class="columnList tab-pane fade @((isFirst) ? "show active" : "")" id="AE@(lg.LabourCode)" role="tabpanel" aria-labelledby="@lg.LabourCode-tab"></div>
+                        <div class="columnList tab-pane fade @((isFirst) ? "show active" : "")" id="AE@(lg.LabourCode)" role="tabpanel" aria-labelledby="@lg.LabourCode-tab">
+                        </div>
                         isFirst = false;
                     }
                 </div>
@@ -384,13 +385,15 @@ ViewData["Title"] = "Manage Project";
                     .then((response) => {
                         var noneError = "No available employees.";
                         document.querySelector("#currentWP").value = info.srcElement.value;
-                        @foreach (var lg in Model.LabourGrades)
-                        {
-                            <text>
-                                document.querySelector("#AE@(lg.LabourCode)").innerHTML = noneError;
-                            </text>
-                        }
-                        response.forEach((c, index) => {
+                        response[1].forEach((c, index) => {
+                                var remainingPeopleDisplay = document.createElement('div');
+                                remainingPeopleDisplay.innerHTML = 'Budgeted Remaining: <span class="personCounter">' + c.people + '</span>';
+                                remainingPeopleDisplay.style.columnSpan = "all";
+                                document.querySelector("#AE" + c.labourCode).innerHTML = "";
+                                document.querySelector("#AE" + c.labourCode).appendChild(remainingPeopleDisplay);
+                                document.querySelector("#AE" + c.labourCode).append(noneError);
+                        });
+                        response[0].forEach((c, index) => {
                             var a = document.createElement("div");
                             a.classList.add(`emp_${index}`);
                             a.classList.add(`emp-name-avialable`);
@@ -402,13 +405,20 @@ ViewData["Title"] = "Manage Project";
                             if(c.assigned){
                                 a.querySelector(".form-check-input").checked = true;
                             }
+                            a.querySelector(".form-check-input").addEventListener('change', function(){
+                                var counter = this.parentNode.parentNode.querySelector(".personCounter");
+                                if(this.checked){
+                                    counter.innerHTML = parseInt(counter.innerHTML) - 1;
+                                } else {
+                                    counter.innerHTML = parseInt(counter.innerHTML) + 1;
+                                }
+                            });
                             var tabbedArea = document.querySelector("#AE" + c.labourCode)
-                            if(tabbedArea.innerHTML == noneError){
-                                tabbedArea.innerHTML = "";
+                            if(tabbedArea.innerHTML.includes(noneError)){
+                                tabbedArea.innerHTML = tabbedArea.innerHTML.replace(noneError, "");
                             }
                             tabbedArea.appendChild(a);
                             $("#employeeModal").modal("show");
-
                         });
                         if(response.length == 0){
                             document.querySelector("#assignEmployeesButton").style.display = "none";
