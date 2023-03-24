@@ -278,6 +278,8 @@ namespace TimesheetApp.Controllers
                 if (LLWP != null)
                 {
                     LLWP.ResponsibleUserId = ewp.UserId;
+
+                    // add rows of estimate for this LLWP
                     var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
                     _context.SaveChanges();
                     return new JsonResult(user.FirstName + " " + user.LastName);
