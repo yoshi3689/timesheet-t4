@@ -18,7 +18,7 @@ public partial class Timesheet
     [Required]
     public DateOnly? EndDate { get; set; }
 
-    public double? TotalHours { get; set; }
+    public double TotalHours { get; set; }
     public double FlexHours { get; set; }
     public double Overtime { get; set; }
     [Required]
@@ -29,4 +29,7 @@ public partial class Timesheet
 
     [ForeignKey("UserId")]
     public ApplicationUser? User { get; set; } = null!;
+
+    [NotMapped]
+    public bool CurrentlySelected { get; set; }
 }

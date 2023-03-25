@@ -1,0 +1,274 @@
+@model TimesheetApp.Models.TimesheetModels.TimesheetViewModel
+@{
+    ViewData["Title"] = "Index";
+}
+<input type="hidden" id="currentTimesheetId">
+<div class="modal" tabindex="-1" role="dialog" id="timesheetErrorModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Error</h5>
+            </div>
+            <div class="modal-body" id="timesheetError">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@* List of all the sheets *@
+<div class="d-flex justify-content-md-between">
+
+    <div style="margin: 0 10px;" class="list-group border">
+        <h1 class="text-center"> Sheets</h1>
+        <br />
+        <div id="timesheets">
+        </div>
+        <div class="d-flex align-items-center"
+            style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap; margin-top: 10%;">
+            <input type="text" id="datepicker" placeholder="Choose date...">
+            <button id="createTimesheet" onclick="createTimesheet()">Create New</button>
+        </div>
+    </div>
+
+    @* Actual current timesheet box *@
+    <div style="width: 80%; margin: 0 10px;">
+        <table id="rowTable" class="table table-bordered table-responsive table-striped " cellpadding="0"
+            cellspacing="0">
+            <tr>
+                <th>Project</th>
+                <th>WP</th>
+                <th>Sat</th>
+                <th>Sun</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Total</th>
+                <th>Notes</th>
+            </tr>
+        </table>
+        <form asp-action="AddRow">
+            <input type="submit" value="Add Row" class="w-100 btn btn-lg btn-primary px-4 py-3" />
+        </form>
+    </div>
+</div>
+
+@section Scripts{
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+        function createTimesheet() {
+            let end = document.querySelector("#datepicker").value;
+            fetch("/Timesheet/CreateTimesheet", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(
+                    end
+                ),
+            }).then(async (response) => {
+                if (response.status != 200) {
+                    document.querySelector("#timesheetError").innerHTML = await response.json();
+                    var myModalEl = document.querySelector("#timesheetErrorModal");
+                    var modal = new bootstrap.Modal(myModalEl);
+                    modal.show();
+                    return;
+                }
+                return await response.json();
+            }).then((response) => {
+                if(response){
+                    addTimesheet(response.endDate, response.totalHours, response.timesheetId, false);
+                }
+            });
+        }
+
+        $(function () {
+            $("#datepicker").datepicker();
+        });
+
+        //Edit event handler.
+       $("body").on("click", "#rowTable .Edit", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    $(this).find("input").css("width", "100%");
+                    $(this).find("input").show();
+                    $(this).find("span").hide();
+                }
+            });
+            row.find(".Update").show();
+            row.find(".Cancel").show();
+            row.find(".Delete").hide();
+            $(this).hide();
+        });
+
+        //Update event handler.
+        $("body").on("click", "#rowTable .Update", function () {
+            var row = $(this).closest("tr");
+            var data = {}; // create an empty object
+            data["TimesheetRowId"] = row.attr('id') + "";
+            $("td", row).each(function () {
+                var key = $(this).attr("class");
+                var value = $(this).find("input").val() || $(this).text();
+                data[key] = value; // add key-value pair to the object
+                if ($(this).find("input").length > 0) {
+                    var span = $(this).find("span");
+                    var input = $(this).find("input");
+                    span.html(input.val());
+                    span.show();
+                    input.hide();
+                }
+            });
+            data["TimesheetId"] = document.querySelector("#currentTimesheetId").value;
+
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            row.find(".Cancel").hide();
+            $(this).hide();
+
+            fetch("/Timesheet/UpdateRow", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data),
+            }).then(async (response) => {
+                if (response.status != 200) {
+                    alert(await response.json());
+                }
+            }).then((response) => {
+                if(response != null){
+
+                }
+            });
+
+        });
+
+        //Cancel event handler.
+        $("body").on("click", "#rowTable .Cancel", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    var span = $(this).find("span");
+                    var input = $(this).find("input");
+                    input.val(span.html());
+                    span.show();
+                    input.hide();
+                }
+            });
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            row.find(".Update").hide();
+            $(this).hide();
+        });
+
+
+        function addTimesheet(endDate, totalHours, timesheetId, active) {
+            let timesheetsDiv = document.getElementById('timesheets');
+            let newTimesheet = document.createElement('a');
+            newTimesheet.href = '#';
+            newTimesheet.className = 'list-group-item list-group-item-action';
+            newTimesheet.value = timesheetId + "";
+            if(active){
+                newTimesheet.classList.add('activeSheet');
+                document.querySelector("#currentTimesheetId").value = timesheetId + "";
+            }
+            newTimesheet.addEventListener('click', function() {
+                let timesheets = document.querySelectorAll('#timesheets a');
+                for (let i = 0; i < timesheets.length; i++) {
+                    timesheets[i].classList.remove('activeSheet');
+                    if (timesheets[i] === newTimesheet) {
+                        timesheets[i].classList.add('activeSheet');
+                    }
+                }
+                document.querySelector("#currentTimesheetId").value = this.value;
+                fetch("/Timesheet/GetTimesheet", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.value),
+                }).then(async (response) => {
+                    if (response.status == 200) {
+                        return await response.json();
+                    }
+                }).then((response) => {
+                    if(response != null){
+                        var table = document.getElementById("rowTable");
+                        for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
+                            table.deleteRow(i); // delete the row at the current index
+                        }
+                        response.forEach((cell) => {
+                            addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId);
+                        });
+                    }
+                });
+            });
+
+            let timesheetDiv = document.createElement('div');
+            let endDateDiv = document.createElement('div');
+            endDateDiv.textContent = 'End Date: ' + endDate;
+            let totalHoursDiv = document.createElement('div');
+            totalHoursDiv.textContent = 'Hours: ' + totalHours;
+            timesheetDiv.appendChild(endDateDiv);
+            timesheetDiv.appendChild(totalHoursDiv);
+            newTimesheet.appendChild(timesheetDiv);
+            timesheetsDiv.appendChild(newTimesheet);
+        }
+
+
+        @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
+        {
+            <text>
+                addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True");
+            </text>
+        }
+
+        function addTableRow(projectId, workPackageId, totalHours, sat, sun, mon, tue, wed, thu, fri, notes, timesheetRowId) {
+            var table = document.getElementById("rowTable");
+            var row = table.insertRow(-1); // add new row at the end
+            row.id = timesheetRowId + "";
+
+            if(notes == undefined){
+                notes = "";
+            }
+
+            // create cells and input fields with values
+            var cells = [
+                "<td class='ProjectId'><span>" + projectId + "</span></td>",
+                "<td class='WorkPackageId'><span>" + workPackageId + "</span></td>",
+                "<td class='Sat'><span>" + sat + "</span><input type='text' value='" + sat + "' style='display:none' /></td>",
+                "<td class='Sun'><span>" + sun + "</span><input type='text' value='" + sun + "' style='display:none' /></td>",
+                "<td class='Mon'><span>" + mon + "</span><input type='text' value='" + mon + "' style='display:none' /></td>",
+                "<td class='Tue'><span>" + tue + "</span><input type='text' value='" + tue + "' style='display:none' /></td>",
+                "<td class='Wed'><span>" + wed + "</span><input type='text' value='" + wed + "' style='display:none' /></td>",
+                "<td class='Thu'><span>" + thu + "</span><input type='text' value='" + thu + "' style='display:none' /></td>",
+                "<td class='Fri'><span>" + fri + "</span><input type='text' value='" + fri + "' style='display:none' /></td>",
+                "<td class='TotalHours'><span>" + totalHours + "</span></td>",
+                "<td class='Notes'><span>" + notes + "</span><input type='text' value='" + notes + "' style='display:none' /></td>",
+                "<td><a class='Edit' href='javascript:;'>Edit</a>&nbsp;<a class='Update' style='display: none;' href='javascript:;'>Update</a>&nbsp;<a style='display: none;' class='Cancel' href='javascript:;'>Cancel</a></td>"
+            ];
+
+            // insert cells into row
+            for (var i = 0; i < cells.length; i++) {
+                row.innerHTML += cells[i];
+            }
+        }
+
+        @foreach (var row in Model.TimesheetRows!)
+        {
+            <text>
+                addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId");
+            </text>
+        }
+
+    </script>
+}

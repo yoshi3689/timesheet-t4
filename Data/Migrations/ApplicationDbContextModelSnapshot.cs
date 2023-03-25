@@ -424,7 +424,7 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<double>("Overtime")
                         .HasColumnType("double");
 
-                    b.Property<double?>("TotalHours")
+                    b.Property<double>("TotalHours")
                         .HasColumnType("double");
 
                     b.Property<string>("UserId")
@@ -454,7 +454,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(2)");
 
                     b.Property<int?>("ProjectId")
-                        .IsRequired()
                         .HasColumnType("int");
 
                     b.Property<int>("TimesheetId")
@@ -695,9 +694,7 @@ namespace TimesheetApp.Data.Migrations
 
                     b.HasOne("TimesheetApp.Models.TimesheetModels.Project", "Project")
                         .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ProjectId");
 
                     b.HasOne("TimesheetApp.Models.TimesheetModels.Timesheet", "Timesheet")
                         .WithMany("TimesheetRows")

@@ -87,3 +87,7 @@ select-caret::after {
   box-sizing: border-box;
   text-align: left;
 }
+
+.activeSheet {
+  border: black solid 3px;
+}
