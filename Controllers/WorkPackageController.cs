@@ -31,7 +31,12 @@ namespace TimesheetApp.Controllers
       // var applicationDbContext = _context.WorkPackages.Include(w => w.ParentWorkPackage).Include(w => w.Project).Include(w => w.ResponsibleUser);
       ViewData["userId"] = user.Id;
       // fetch if the user is assigned to the wp as an novice emp or a RE
-      var applicationDbContext = _context.WorkPackages.Where(wp => (wp!.EmployeeWorkPackages!.Select(ewp => ewp.UserId).Contains(user.Id) || user.Id == wp.ResponsibleUserId) && wp.IsBottomLevel).Include(w => w.Project);
+      var applicationDbContext 
+        = _context.WorkPackages.Where(wp => 
+          (wp!.EmployeeWorkPackages!.Select(ewp => ewp.UserId).Contains(user.Id) 
+          || user.Id == wp.ResponsibleUserId) 
+          && wp.IsBottomLevel).Include(w => w.Project);
+      
       return View(await applicationDbContext.ToListAsync());
     }
 
@@ -55,15 +60,24 @@ namespace TimesheetApp.Controllers
           _context.Budgets!.Add(newBudget);
           parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First().Remaining -= newBudget.BudgetAmount;
         }
-        _context.SaveChanges();
       }
 
-      // foreach (var item in input.estimates)
-      // {
-      //   Console.WriteLine(item.EstimatedCost);
-      // }
-
-      // Console.WriteLine(input);
+      if (input.estimates != null)
+      {
+        foreach (var estimate in input.estimates)
+        {
+          ResponsibleEngineerEstimate re = new ResponsibleEngineerEstimate
+          {
+            WPProjectId = estimate.WPProjectId,
+            LabourCode = estimate.LabourCode,
+            // Date will be set after form submission
+            Date = DateOnly.FromDateTime(DateTime.Now),
+            EstimatedCost = estimate.EstimatedCost,
+          };
+          _context.ResponsibleEngineerEstimates!.Add(re);
+        }
+        _context.SaveChanges();
+      }
       return Json(input);
     }
 
@@ -119,23 +133,43 @@ namespace TimesheetApp.Controllers
     // GET: WorkPackage/Edit/5
     public async Task<IActionResult> Edit(string id1, int id2)
     {
-      // get a project budget
-      // var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~0").ToList();
+      // fetch project budgets for this LWP set by PM
       List<Budget> budgets
-      = _context.Budgets.Where(b => b.WPProjectId == id2 + "~" + id1).ToList();
+      = _context.Budgets.Where(b => b.WPProjectId == id2 + "~" + id1)
+      .AsEnumerable().TakeLast(8).ToList();
+      // fetch REEstimates for this LWP
       List<ResponsibleEngineerEstimate> estimates
-      = _context.ResponsibleEngineerEstimates.Where(ree => ree.WPProjectId == id2 + "~" + id1).ToList();
+      = _context.ResponsibleEngineerEstimates.Where(ree => ree.WPProjectId == id2 + "~" + id1)
+      .AsEnumerable().TakeLast(8).ToList();
 
-      bool isREBudgetAlreadyCreated = budgets.Count > 8;
-      foreach (var item in budgets)
+      // if no estimates made for this LWP or the date of the most recently created
+      // set of estimates is more than 7 days prior to the current date
+      bool shouldMakeWE = estimates.Count == 0
+        || DateOnly.FromDateTime(DateTime.Now).DayNumber
+          - estimates[estimates.Count - 1].Date.GetValueOrDefault().DayNumber >= 7;
+
+      // for now, clear the content of the estimates array
+      // just to send the new set of re objects to the form
+      estimates.Clear();
+      for (int i = 0; i < 8; i++)
       {
-        item.Days = 0;
-        item.People = 0;
+        budgets[i].Days = 0;
+        budgets[i].People = 0;
+        ResponsibleEngineerEstimate re = new ResponsibleEngineerEstimate
+        {
+          WPProjectId = id2 + "~" + id1,
+          LabourCode = budgets[i].LabourCode,
+          // Date will be set after form submission
+          Date = null,
+          EstimatedCost = 0,
+        };
+        estimates.Add(re);
       }
+
       LowestWorkPackageBAndEViewModel model = new LowestWorkPackageBAndEViewModel
       {
-        budgets = isREBudgetAlreadyCreated ? null : budgets,
-        estimates = estimates
+        budgets = budgets,
+        estimates = shouldMakeWE ? estimates : null,
       };
 
       return View(model);

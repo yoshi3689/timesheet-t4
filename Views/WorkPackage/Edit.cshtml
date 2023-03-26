@@ -4,14 +4,16 @@
   ViewData["Title"] = "Edit";
 }
 
-<h1> indicate that the user is RE if so.</h1>
+<h1>@User.Identity.Name</h1>
+<br>
+@if (Model.estimates != null && Model.budgets[0].isREBudget == false)
+{
+  <form id="reBudgetEstimateForm">
 
-<form id="reBudgetEstimateForm">
-  <div class="modal-body">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <h1>Work Package Budget</h1>
-    <h3>Person Days per Labour Grade</h3>
-    @if (Model.budgets != null)
+  <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+  <h1>Work Package Budget</h1>
+  <h3>Person Days per Labour Grade</h3>
+  @if (Model.budgets[0].isREBudget == false)
     {
       @for (int i = 0; i < Model.budgets!.Count; i++)
       {
@@ -20,14 +22,14 @@
           <input type="hidden" asp-for="budgets![i].WPProjectId" value="@Model.budgets![i].WPProjectId" />
           <span>@Model.budgets[i].LabourCode</span>
           <div class="d-flex align-items-center"
-        style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+      style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
             <input asp-for="budgets![i].People!" style="width: 10%;" class="form-control people"
-          onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
+        onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
             &nbsp;
             <label asp-for="budgets![i].People!" class="control-label"></label>
             &nbsp;x&nbsp;
             <input asp-for="budgets![i].Days!" style="width: 10%;" class="form-control days"
-          onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].Remaining)" />
+        onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].Remaining)" />
             &nbsp;
             <label asp-for="budgets![i].Days!" class="control-label"></label>
             &nbsp;
@@ -48,45 +50,50 @@
     {
       <h1>Budget is already set once!</h1>
     }
-  </div>
-  <h1>Weekly Estimates</h1>
-  <h3>Person Days per Labour Grade @Model.estimates!.Count</h3>
-  @for (int i = 0; i < Model.estimates!.Count; i++)
-  {
-    <div class="form-group">
-      <input type="hidden" asp-for="estimates![i].LabourCode" value="@Model.estimates![i].LabourCode" />
-      <span>@Model.budgets[i].LabourCode</span>
-      <div class="d-flex align-items-center"
+    <br>
+    <h1>Weekly Estimates</h1>
+    <h3>Person Days per Labour Grade</h3>
+    @if (Model.estimates != null)
+    {
+      @for (int i = 0; i < Model.estimates!.Count; i++)
+      {
+        <div class="form-group">
+          <input type="hidden" asp-for="estimates![i].LabourCode" value="@Model.estimates![i].LabourCode" />
+          <input type="hidden" asp-for="estimates![i].WPProjectId" value="@Model.estimates![i].WPProjectId" />
+          <span>@Model.estimates[i].LabourCode</span>
+          <div class="d-flex align-items-center"
       style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-        @* <input asp-for="estimates![i].People!" style="width: 10%;" class="form-control people"
-          onchange="setTotal('@Model.estimates![i].LabourCode', @Model.estimates![i].Rate, this.value,
-          this.parentNode.querySelector('.days').value, @Model.estimates![i].Remaining)" />
-          &nbsp;
-          <label asp-for="estimates![i].People!" class="control-label"></label>
-          &nbsp;x&nbsp;
-          <input asp-for="estimates![i].Days!" style="width: 10%;" class="form-control days"
-          onchange="setTotal('@Model.estimates![i].LabourCode', @Model.estimates![i].Rate,
-          this.parentNode.querySelector('.people').value, this.value, @Model.estimates![i].Remaining)" />
-          &nbsp;
-          <label asp-for="estimates![i].Days!" class="control-label"></label>
-          &nbsp;
-          x $@Model.estimates![i]!.Rate/day = <span id="@Model.estimates![i].LabourCode"> $0</span>
-          &nbsp;&nbsp;
-          @{
-          double remain = Model.estimates![i].Remaining * Model.estimates![i].Rate;
-          } *@
-        @* <span id='@(String.Format("R{0}", Model.estimates![i].LabourCode))'>Unallocated:
-          $@remain (@Model.budgets[i].Remaining P.D.)</span> *@
-      </div>
-      <span asp-validation-for="estimates![i].EstimatedCost" class="text-danger"></span>
+            <input asp-for="estimates![i].EstimatedCost!" style="width: 10%;" class="form-control people" onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value,
+          this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
+            &nbsp;
+            <label asp-for="estimates![i].EstimatedCost!" class="control-label"></label>
+            &nbsp;&nbsp;
+            @{
+              double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
+            }
+            <span id='@(String.Format("R{0}", Model.estimates![i].LabourCode))'>After minus estimated cost:
+              $@remain (@Model.budgets[i].Remaining P.D.)</span>
+          </div>
+          <span asp-validation-for="estimates![i].EstimatedCost" class="text-danger"></span>
+        </div>
+        <br />
+      }
+    }
+    else
+    {
+      <h1>Estimates are already set for this week!</h1>
+    }
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <input type="submit" value="Create" class="btn btn-primary" />
     </div>
-    <br />
-  }
-  <div class="modal-footer">
-    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-    <input type="submit" value="Create" class="btn btn-primary" />
-  </div>
-</form>
+  </form>
+}
+else
+{
+  <h1>There's no Resonsible Engineer tasks avaialble for you as of now!!</h1>
+  @* <h1>Last weekly estimate entry is: @Model.estimates[0]!.Date.GetValueOrDefault()</h1> *@
+}
 
 <div>
   <a asp-action="Index">Back to List</a>
@@ -112,46 +119,12 @@
       method: "POST",
       body: formData,
     }).then(async c => {
+      console.log(c);
       //if there is a field validation error show it again
-      if (c.status == 400) {
-  @* var text = await c.text();
-    var myModalEl = document.getElementById('splitModal');
-    var modal = bootstrap.Modal.getInstance(myModalEl)
-    modal.hide();
-    document.querySelector("#modal-placeholder").innerHTML = text;
-    document.querySelector("#parentWPID").value = WorkPackageId;
-    myModalEl = document.getElementById('splitModal');
-    modal = new bootstrap.Modal(myModalEl);
-    modal.show();
-    document.querySelector("#reBudgetEstimateForm").addEventListener('submit', submitForm); *@
-          console.log("submitted successfully");
+      if (c.status == 200) {
+        console.log("submitted successfully");
         return;
       }
-      console.log("submission unsuccessful");
     })
-  @* .then(c => {
-    if (c == null) {
-    return;
-    }
-    let body = document.querySelector("#WP" + c.parentWorkPackageId);
-    body.querySelectorAll(":scope > .bottomLevel").forEach((del) => {
-    body.removeChild(del);
-    });
-    body.querySelectorAll(":scope > .employeeList").forEach((del) => {
-    del.style.display = "none";
-    });
-
-    let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
-    let tremain = document.createElement("span");
-    tremain.innerHTML = "$" + (parseInt(budgetRow[1].innerHTML.replace(/\D/g, '')) - c.totalBudget);
-    budgetRow[3].innerHTML = tremain.outerHTML;
-    budgetRow[2].innerHTML = "Unallocated Budget:"
-
-    addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName,
-    c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget, c.totalRemaining);
-    var myModalEl = document.getElementById('splitModal');
-    var modal = bootstrap.Modal.getInstance(myModalEl)
-    modal.hide();
-    }); *@
-    });
+  });
 </script>
