@@ -20,6 +20,9 @@ public partial class Timesheet
 
     public double TotalHours { get; set; }
     public double FlexHours { get; set; }
+    public byte[]? EmployeeHash { get; set; }
+    public byte[]? ApproverHash { get; set; }
+
     public double Overtime { get; set; }
     [Required]
     public string UserId { get; set; } = null!;

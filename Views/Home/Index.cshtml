@@ -1,7 +1,56 @@
-﻿@{
+﻿@model List<TimesheetApp.Models.TimesheetModels.Notification>
+@{
     ViewData["Title"] = "Dashboard";
 }
 
 <div class="text-center">
     <h1 class="display-4">Dashboard</h1>
+    <div id="notifications"></div>
 </div>
+
+
+
+<script>
+    @foreach (var notification in Model)
+    {
+        <text>
+            createAlertMessage("@notification.Message", @notification.Importance, @notification.Id);
+        </text>
+    }
+    function createAlertMessage(text, importance, id) {
+        let alertClass = '';
+        switch (importance) {
+            case 1:
+                alertClass = 'alert alert-success alert-dismissible fade show';
+                break;
+            case 2:
+                alertClass = 'alert alert-danger alert-dismissible fade show';
+                break;
+            case 3:
+                alertClass = 'alert alert-warning alert-dismissible fade show';
+                break;
+            default:
+                alertClass = 'alert alert-secondary alert-dismissible fade show';
+        }
+
+        const alertMessage = `
+    <div class="${alertClass}" role="alert">
+       ${text}
+      <button value="${id}" onclick="seeNotification(this.value)" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  `;
+        document.querySelector("#notifications").innerHTML += alertMessage;
+    }
+
+    function seeNotification(id){
+        fetch("/Home/SeeNotification", {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(id),
+        });
+    }
+
+</script>
