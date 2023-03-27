@@ -621,9 +621,11 @@ namespace TimesheetApp.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllEmployees()
         {
+            var user = await _userManager.GetUserAsync(User);
+            var userId = await _userManager.GetUserIdAsync(user);
             int projectId = HttpContext.Session.GetInt32("CurrentProject") ?? 0;
             var employees = await _context.EmployeeProjects
-                .Where(c => c.ProjectId == projectId)
+                .Where(c => c.ProjectId == projectId && c.UserId != userId)
                 .Select(c => c.User)
                 .ToListAsync();
             return Json(employees);
