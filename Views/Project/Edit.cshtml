@@ -17,9 +17,32 @@ ViewData["Title"] = "Manage Project";
 
 <div class="btn-group">
     <input type="text" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
-        onkeyup="filterDropdown(event)" />
+        onkeyup="filterDropdown(event)" id=employeeSearchBox placeholder="Search Employee..."/>
     <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
     </ul>
+    <!-- Button trigger modal -->
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="populateModal()">
+    Confirm
+    </button>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Assign Assistant Project Manager</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="innerModalBody"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="assignASM()" data-bs-dismiss="modal">Save changes</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal" tabindex="-1" role="dialog" id="employeeModal">
@@ -642,15 +665,25 @@ ViewData["Title"] = "Manage Project";
         });
         return matchFound;
     }
+
+    /**
+    fetches employees of the project to search
+    */
     fetch('/Project/GetAllEmployees')
             .then(response => response.json())
             .then(data => {
                 const employeeMenu = document.getElementById('employeeMenu');
+                const employeeSearchBox = document.getElementById("employeeSearchBox");
                 data.forEach(employee => {
                     //need to get rid of PM from the list
                     const menuItem = document.createElement('li');
                     menuItem.classList.add('dropdown-item');
                     menuItem.textContent = `${employee.firstName} ${employee.lastName}`;
+                    menuItem.id = employee.firstName + " " + employee.lastName;
+                    menuItem.value = employee.employeeNumber;
+                    menuItem.addEventListener('click', () => {
+                        employeeSearchBox.value = `${employee.firstName} ${employee.lastName}`;
+                    });
                     employeeMenu.appendChild(menuItem);
                 });
         })
@@ -670,5 +703,24 @@ ViewData["Title"] = "Manage Project";
             const match = text.toUpperCase().indexOf(filter) > -1;
             item.style.display = match ? "" : "none";
         }
+    }
+    function populateModal(){
+        const employeeSearchBox = document.getElementById("employeeSearchBox");
+        const innerModalBody = document.getElementById("innerModalBody");
+        innerModalBody.textContent = `Are you sure you want to Assign ${employeeSearchBox.value}`;
+    }
+    function assignASM(){
+        const employeeSearchBox = document.getElementById("employeeSearchBox");
+        const employee = document.getElementById(employeeSearchBox.value);
+        const asm = employee.value + "";
+        //change this condition later
+        fetch("/Project/AssignASM", {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(asm),
+        });
     }
 </script>
