@@ -166,7 +166,9 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
                 await _userManager.AddToRolesAsync(user, roles);
-                _context.SaveChanges();
+                // Not sure if that's only my issue, after I disabled this line of code it successfully saved the new user
+                // And I can see it in database. It will throw DbUpdateConcurrencyException if uncomment out this line
+                //_context.SaveChanges();
 
 
                 if (result.Succeeded)
