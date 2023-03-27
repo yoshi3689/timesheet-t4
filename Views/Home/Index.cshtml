@@ -11,12 +11,16 @@
 
 
 <script>
-    @foreach (var notification in Model)
+    @if (Model != null)
     {
-        <text>
-            createAlertMessage("@notification.Message", @notification.Importance, @notification.Id);
-        </text>
+        @foreach (var notification in Model)
+        {
+            <text>
+                createAlertMessage("@notification.Message", @notification.Importance, @notification.Id);
+            </text>
+        }
     }
+
     function createAlertMessage(text, importance, id) {
         let alertClass = '';
         switch (importance) {

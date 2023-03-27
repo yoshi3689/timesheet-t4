@@ -27,8 +27,17 @@ public class HomeController : Controller
 
     public async Task<IActionResult> IndexAsync()
     {
-        var userId = (await _userManager.GetUserAsync(User))!.Id;
-        return View(_context.Notifications.Where(c => c.UserId == userId).ToList());
+        var user = (await _userManager.GetUserAsync(User));
+        if (user != null)
+        {
+            var userId = user.Id;
+            return View(_context.Notifications.Where(c => c.UserId == userId).ToList());
+        }
+        else
+        {
+            return View();
+        }
+
     }
 
     [HttpPost]
