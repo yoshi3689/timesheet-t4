@@ -54,9 +54,16 @@ namespace TimesheetApp.Controllers
                 var projects = _context.Projects!.Include(s => s.ProjectManager);
                 return View(projects);
             }
+            // else if (User.Identity!.IsAuthenticated) {
+            //     var userId = _userManager.GetUserId(HttpContext.User);
+
+            //     return View(projects);
+            // }
             else
             {
+
                 var userId = _userManager.GetUserId(HttpContext.User);
+
                 var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId).Include(s => s.ProjectManager);
                 return View(project);
             }
@@ -302,6 +309,8 @@ namespace TimesheetApp.Controllers
                 if (LLWP != null)
                 {
                     LLWP.ResponsibleUserId = ewp.UserId;
+
+                    // add rows of estimate for this LLWP
                     var user = _context.Users.Where(c => c.Id == ewp.UserId).First();
                     _context.SaveChanges();
                     return new JsonResult(user.FirstName + " " + user.LastName);

@@ -32,14 +32,14 @@
                             <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
                             <span>@Model.budgets[i].LabourCode</span>
                             <div class="d-flex align-items-center"
-                                style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+                            style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
                                 <input asp-for="budgets![i].People!" style="width: 10%;" class="form-control people"
-                                    onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
+                                onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
                                 &nbsp;
                                 <label asp-for="budgets![i].People!" class="control-label"></label>
                                 &nbsp;x&nbsp;
                                 <input asp-for="budgets![i].Days!" style="width: 10%;" class="form-control days"
-                                    onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].Remaining)" />
+                                onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].Remaining)" />
                                 &nbsp;
                                 <label asp-for="budgets![i].Days!" class="control-label"></label>
                                 &nbsp;
