@@ -9,24 +9,31 @@ ViewData["Title"] = "Manage Project";
 </head>
 <h1>@ViewData["Title"]</h1>
 
+<div class="d-flex justify-content-around mb-3">
+    <div>
+        <h2>Manage Work Packages</h2>
+        <input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)" class="form-control w-100"/>
+    </div>
+    <div id="assignASM">
+        <h2>Assign Assistant Manager</h2>
+        <div class="btn-group form-control w-100 p-0 border-0">
+            <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown" aria-expanded="false"
+                onkeyup="filterDropdown(event)" id=employeeSearchBox placeholder="Search Employee..."/>
+            <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
+            </ul>
+            <div>
 
-<h2>Manage Work Packages</h2>
-<input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)" />
+            <!-- Button trigger modal -->
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="populateModal()">
+            Confirm
+            </button>
+            </div>
+        </div>
+    </div>
+</div>
 <div id="WorkPackages" class="accordian"></div>
 <input type="hidden" id="currentWP" />
 <div id="modal-placeholder"></div>
-
-
-<div class="btn-group" id="assignASM">
-    <input type="text" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
-        onkeyup="filterDropdown(event)" id=employeeSearchBox placeholder="Search Employee..."/>
-    <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
-    </ul>
-    <!-- Button trigger modal -->
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="populateModal()">
-    Confirm
-    </button>
-</div>
 
 <!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
