@@ -91,3 +91,7 @@ select-caret::after {
 .activeSheet {
   border: black solid 3px;
 }
+
+.wideHeader {
+  min-width: 110px;
+}

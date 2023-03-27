@@ -20,36 +20,48 @@ namespace TimesheetApp.Models
     {
         [Required]
         [MaxLength(100), MinLength(2)]
+        [Display(Name = "First Name")]
         public string? FirstName { get; set; }
         [Required]
         [MaxLength(100), MinLength(2)]
+        [Display(Name = "Last Name")]
         public string? LastName { get; set; }
         [Required]
         [IntLength(5, 10)]
+        [Display(Name = "Employee Number")]
         public int EmployeeNumber { get; set; }
+        [Display(Name = "Sick Days")]
         public double SickDays { get; set; }
+        [Display(Name = "Flex Time")]
         public double FlexTime { get; set; }
         [Required]
+        [Display(Name = "Job")]
         public string? JobTitle { get; set; }
         public bool HasTempPassword { get; set; }
+        [Display(Name = "Salary")]
         public double Salary { get; set; }
         public byte[]? PublicKey { get; set; }
         public byte[]? PrivateKey { get; set; }
         [Required]
+        [Display(Name = "Labour Grade")]
+
         public string? LabourGradeCode { get; set; }
         public string? SupervisorId { get; set; }
+        [Display(Name = "Timesheet Approver")]
         public string? TimesheetApproverId { get; set; }
 
         [InverseProperty("User")]
         public virtual ICollection<Timesheet> Timesheets { get; } = new List<Timesheet>();
 
         [ForeignKey("LabourGradeCode")]
+        [Display(Name = "Labour Grade")]
         public virtual LabourGrade? LabourGrade { get; set; }
 
         [ForeignKey("SupervisorId")]
         public ApplicationUser? Supervisor { get; set; }
 
         [ForeignKey("TimesheetApproverId")]
+        [Display(Name = "Timesheet Approver")]
         public ApplicationUser? TimesheetApprover { get; set; }
 
         [InverseProperty("Supervisor")]

@@ -6,58 +6,43 @@
 
 <h1>Employees</h1>
 
-<p>
-    <a asp-area="Identity" asp-page="/Account/Register">Add Employee</a>
-</p>
-<table class="table">
+
+<table class="table table-bordered table-responsive table-striped ">
     <thead>
         <tr>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.FirstName)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.LastName)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.EmployeeNumber)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.SickDays)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.FlexTime)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.JobTitle)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.Salary)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.LabourGrade)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.Supervisor)
             </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.TimesheetApprover)
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.UserName)
-            </th>
-            <th>
+            <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.Email)
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PhoneNumber)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.LockoutEnd)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.LockoutEnabled)
-            </th>
-            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -86,39 +71,27 @@
                     @Html.DisplayFor(modelItem => item.Salary)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.LabourGrade.LabourCode)
+                    @Html.DisplayFor(modelItem => item.LabourGrade!.LabourCode)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Supervisor.FirstName) @Html.DisplayFor(modelItem =>
-                item.Supervisor.LastName)
+                    @Html.DisplayFor(modelItem => item.Supervisor!.FirstName) @Html.DisplayFor(modelItem =>
+                item.Supervisor!.LastName)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.TimesheetApprover.FirstName) @Html.DisplayFor(modelItem =>
-                item.TimesheetApprover.LastName)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.UserName)
+                    @Html.DisplayFor(modelItem => item.TimesheetApprover!.FirstName) @Html.DisplayFor(modelItem =>
+                item.TimesheetApprover!.LastName)
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.Email)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.PhoneNumber)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.LockoutEnd)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.LockoutEnabled)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.AccessFailedCount)
-                </td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                    <a class="btn btn-primary rounded w-100 mb-2 " asp-action="Edit" asp-route-id="@item.Id" role="button">Edit</a>
+                    <a class="btn btn-primary rounded w-100" asp-action="Details" asp-route-id="@item.Id" role="button">Details</a>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+<p>
+    <a class="btn btn-primary rounded" asp-area="Identity" asp-page="/Account/Register">Add Employee</a>
+</p>
