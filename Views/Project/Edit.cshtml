@@ -1,4 +1,5 @@
 @model TimesheetApp.Models.WorkPackageViewModel
+
 @{
 ViewData["Title"] = "Manage Project";
 }
@@ -8,14 +9,51 @@ ViewData["Title"] = "Manage Project";
 </head>
 <h1>@ViewData["Title"]</h1>
 
+<div class="d-flex justify-content-around mb-3">
+    <div>
+        <h2>Manage Work Packages</h2>
+        <input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)" class="form-control w-100"/>
+    </div>
+    <div id="assignASM">
+        <h2>Assign Assistant Manager</h2>
+        <div class="btn-group form-control w-100 p-0 border-0">
+            <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown" aria-expanded="false"
+                onkeyup="filterDropdown(event)" id=employeeSearchBox placeholder="Search Employee..."/>
+            <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
+            </ul>
+            <div>
 
-<h2>Manage Work Packages</h2>
-<input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)" />
+            <!-- Button trigger modal -->
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="populateModal()">
+            Confirm
+            </button>
+            </div>
+        </div>
+    </div>
+</div>
 <div id="WorkPackages" class="accordian"></div>
 <input type="hidden" id="currentWP" />
 <input type="hidden" id="currentProject"/>
 <div id="modal-placeholder"></div>
 
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Assign Assistant Project Manager</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="innerModalBody"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="assignASM()" data-bs-dismiss="modal">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="modal" tabindex="-1" role="dialog" id="employeeModal">
     <div class="modal-dialog" role="document">
@@ -100,6 +138,10 @@ ViewData["Title"] = "Manage Project";
 
     // assigned resp engineer
     let assignedRespEng;
+    window.onload = function(){
+        isPrimaryPM("@Model.wps[0].Project.ProjectManagerId");
+    }
+    
 
     @foreach(var wp in Model.wps) {
         <text >
@@ -694,5 +736,72 @@ ViewData["Title"] = "Manage Project";
             }
         });
         return matchFound;
+    }
+
+    /**
+    fetches employees of the project to search
+    */
+    fetch('/Project/GetAllEmployees')
+            .then(response => response.json())
+            .then(data => {
+                const employeeMenu = document.getElementById('employeeMenu');
+                const employeeSearchBox = document.getElementById("employeeSearchBox");
+                data.forEach(employee => {
+                    //need to get rid of PM from the list
+                    const menuItem = document.createElement('li');
+                    menuItem.classList.add('dropdown-item');
+                    menuItem.textContent = `${employee.firstName} ${employee.lastName}`;
+                    menuItem.id = employee.firstName + " " + employee.lastName;
+                    menuItem.value = employee.employeeNumber;
+                    menuItem.addEventListener('click', () => {
+                        employeeSearchBox.value = `${employee.firstName} ${employee.lastName}`;
+                    });
+                    employeeMenu.appendChild(menuItem);
+                });
+        })
+        .catch(error => {
+            // Handle any errors here
+            console.error(error);
+        });
+    function filterDropdown(event) {
+        const input = event.target;
+        const dropdown = input.nextElementSibling;
+        const filter = input.value.toUpperCase();
+        const items = dropdown.getElementsByTagName("li");
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const text = item.textContent || item.innerText;
+            const match = text.toUpperCase().indexOf(filter) > -1;
+            item.style.display = match ? "" : "none";
+        }
+    }
+    function populateModal(){
+        const employeeSearchBox = document.getElementById("employeeSearchBox");
+        const innerModalBody = document.getElementById("innerModalBody");
+        innerModalBody.textContent = `Are you sure you want to Assign ${employeeSearchBox.value}`;
+    }
+    function assignASM(){
+        const employeeSearchBox = document.getElementById("employeeSearchBox");
+        const employee = document.getElementById(employeeSearchBox.value);
+        const asm = employee.value + "";
+        fetch("/Project/AssignASM", {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(asm),
+        });
+    }
+    function isPrimaryPM(id){
+        const hideAssignAsm = document.getElementById("assignASM");
+        fetch("/Project/FindPM")
+            .then(response => response.json()
+            .then(data =>{
+                if(id != data){
+                    hideAssignAsm.style.display = "none";
+                }
+            }))
     }
 </script>

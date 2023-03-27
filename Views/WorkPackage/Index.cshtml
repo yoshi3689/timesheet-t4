@@ -1,0 +1,53 @@
+@model IEnumerable<TimesheetApp.Models.TimesheetModels.WorkPackage>
+
+@{
+    ViewData["Title"] = "Work Packages";
+}
+
+<h1>@ViewData["Title"]</h1>
+<h1>@ViewData["userId"]</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Title)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ActualCost)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IsClosed)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Title)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ActualCost)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IsClosed)
+                </td>
+                <td>
+                    <a 
+                        class="btn btn-primary rounded" 
+                        asp-action="Edit"
+                        asp-route-id1="@item.WorkPackageId"
+                        asp-route-id2="@item.ProjectId"
+                        role="button">
+                        Set Budget/Weekly Est
+                    </a>
+                    @* @Html.ActionLink("Set Budget/Weekly Est", "Edit", new { id=item.ProjectId+"~"+item.WorkPackageId }) *@
+                    @* @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) | *@
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

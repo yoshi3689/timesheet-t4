@@ -10,6 +10,13 @@ namespace TimesheetApp.Models
         public WorkPackage WorkPackage { get; set; } = new WorkPackage();
         public List<LabourGrade>? LabourGrades { get; set; }
     }
+    public class LowestWorkPackageBAndEViewModel
+    {
+        public List<Budget> budgets { get; set; }
+        public List<ResponsibleEngineerEstimate>? estimates { get; set; }
+        public WorkPackage? WorkPackage { get; set; } = new WorkPackage();
+        public List<LabourGrade>? LabourGrades { get; set; }
+    }
 
     public class CreateProjectViewModel
     {
