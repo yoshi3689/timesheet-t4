@@ -726,7 +726,6 @@ ViewData["Title"] = "Manage Project";
         const employeeSearchBox = document.getElementById("employeeSearchBox");
         const employee = document.getElementById(employeeSearchBox.value);
         const asm = employee.value + "";
-        //change this condition later
         fetch("/Project/AssignASM", {
             method: "POST",
             headers: {

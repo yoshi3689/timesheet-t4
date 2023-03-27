@@ -639,10 +639,14 @@ namespace TimesheetApp.Controllers
             if (proj != null)
             {
                 var user = _context.Users.Where(c => c.EmployeeNumber == int.Parse(asm)).Select(c => c.Id).First();
+                if (user == proj.ProjectManagerId)
+                {
+                    return BadRequest();
+                }
                 proj.AssistantProjectManagerId = user;
                 _context.SaveChanges();
+                return Ok();
             }
-
             return new JsonResult("Error!");
         }
 
