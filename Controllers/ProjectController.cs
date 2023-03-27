@@ -237,6 +237,16 @@ namespace TimesheetApp.Controllers
             {
                 return isPM;
             }
+            //verify wp is bottom level
+            var currentWp = _context.WorkPackages.Where(c => ewps.Select(s => s.WorkPackageId).ToList().Contains(c.WorkPackageId)).ToList();
+            foreach (var item in currentWp)
+            {
+                if (item == null || item.IsBottomLevel == false)
+                {
+                    return Json("Error");
+                }
+            }
+
             _context.EmployeeWorkPackages.RemoveRange(_context.EmployeeWorkPackages.Where(c => c.WorkPackageId == ewps[0].WorkPackageId && c.WorkPackageProjectId == ewps[0].WorkPackageProjectId));
             List<String> users = new List<String>();
             foreach (var e in ewps)
