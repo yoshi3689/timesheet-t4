@@ -37,8 +37,6 @@ public partial class TimesheetRow
     [Required]
     public int? WorkPackageProjectId { get; set; }
 
-    public byte[]? Hash { get; set; }
-
     public string? Notes { get; set; }
     [NotMapped]
     public float Sat

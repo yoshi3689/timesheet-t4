@@ -72,5 +72,8 @@ namespace TimesheetApp.Models
 
         [InverseProperty("User")]
         public virtual ICollection<EmployeeWorkPackage>? WorkPackages { get; set; }
+
+        [InverseProperty("User")]
+        public virtual ICollection<Notification>? Notifications { get; set; }
     }
 }

@@ -348,6 +348,32 @@ namespace TimesheetApp.Data.Migrations
                     b.ToTable("LabourGrades");
                 });
 
+            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("Importance")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Project", b =>
                 {
                     b.Property<int>("ProjectId")
@@ -414,6 +440,12 @@ namespace TimesheetApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    b.Property<byte[]>("ApproverHash")
+                        .HasColumnType("longblob");
+
+                    b.Property<byte[]>("EmployeeHash")
+                        .HasColumnType("longblob");
+
                     b.Property<DateOnly?>("EndDate")
                         .IsRequired()
                         .HasColumnType("date");
@@ -443,9 +475,6 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<int>("TimesheetRowId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    b.Property<byte[]>("Hash")
-                        .HasColumnType("longblob");
 
                     b.Property<string>("Notes")
                         .HasColumnType("longtext");
@@ -649,6 +678,17 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("WorkPackage");
                 });
 
+            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Notification", b =>
+                {
+                    b.HasOne("TimesheetApp.Models.ApplicationUser", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Project", b =>
                 {
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "AssistantProjectManager")
@@ -749,6 +789,8 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("EmployeeProjects");
 
                     b.Navigation("ManagedProjects");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("SupervisedUsers");
 
