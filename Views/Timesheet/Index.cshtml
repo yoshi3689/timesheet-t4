@@ -17,6 +17,24 @@
         </div>
     </div>
 </div>
+<div class="modal" tabindex="-1" role="dialog" id="submitModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submit and Sign Timesheet</h5>
+            </div>
+            <div class="modal-body">
+                <label for="privateKeyPassword">Signature Password</label>
+                <input type="password" id="privateKeyPassword" >
+                <label  id="passwordLabel" for="privateKeyPassword" class="text-danger font-weight-bold"></label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="submitSignature" type="button" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
 @* List of all the sheets *@
 <div class="d-flex justify-content-md-between">
 
@@ -53,6 +71,8 @@
         <form asp-action="AddRow">
             <input type="submit" value="Add Row" class="w-100 btn btn-lg btn-primary px-4 py-3" />
         </form>
+    <input type="button" value="Submit Timesheet" class="btn-secondary" onclick="submitTimesheet()">
+
     </div>
 </div>
 
@@ -268,6 +288,34 @@
             <text>
                 addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId");
             </text>
+        }
+
+        function submitTimesheet(){
+            var myModalEl = document.getElementById('submitModal');
+            var modal = new bootstrap.Modal(myModalEl);
+            modal.show();
+            document.querySelector("#submitSignature").addEventListener("click", () => {
+                 fetch("/Timesheet/SubmitTimesheet", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: document.querySelector("#privateKeyPassword").value,
+                        timesheet: document.querySelector("#currentTimesheetId").value
+                    }),
+                })
+                .then((response) => {
+                    if(response.status == 401){
+                        document.querySelector("#passwordLabel").innerHTML = "Incorrect Password";
+                    } else {
+                        var myModalEl = document.getElementById('submitModal');
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                    }
+                });
+            });
         }
 
     </script>

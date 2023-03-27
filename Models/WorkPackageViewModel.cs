@@ -23,4 +23,10 @@ namespace TimesheetApp.Models
         public bool Assigned { get; set; }
 
     }
+
+    public class SignTimesheetViewModel
+    {
+        public string? Password { get; set; }
+        public int Timesheet { get; set; }
+    }
 }

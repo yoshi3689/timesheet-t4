@@ -12,6 +12,9 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using TimesheetApp.Helpers;
 using System.Text.Json;
+using System.Text;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Identity;
 
 namespace TimesheetApp.Controllers
 {
@@ -22,10 +25,13 @@ namespace TimesheetApp.Controllers
     public class TimesheetController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public TimesheetController(ApplicationDbContext context)
+
+        public TimesheetController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
         public IActionResult Index()
         {
@@ -177,6 +183,27 @@ namespace TimesheetApp.Controllers
         }
 
         [HttpPost]
+        [Authorize]
+        public async Task<IActionResult?> SubmitTimesheetAsync([FromBody] SignTimesheetViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+            if (user == null || timesheet == null || timesheet.UserId != user.Id || model.Password == null || user.PrivateKey == null)
+            {
+                return BadRequest();
+            }
+            byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
+            if (timesheetHash == null)
+            {
+                return Unauthorized();
+            }
+            timesheet.EmployeeHash = timesheetHash;
+            _context.SaveChanges();
+            return Ok();
+        }
+
+
+        [HttpPost]
         public async Task<IActionResult> AddRow()
         {
             TimesheetRow row = new TimesheetRow()
@@ -197,6 +224,49 @@ namespace TimesheetApp.Controllers
             await _context.SaveChangesAsync();
 
             return RedirectToAction("Index");
+        }
+        private byte[]? hashTimesheet(Timesheet timesheet, string password, byte[] encryptedPrivateKey)
+        {
+            using (RSA rsa = RSA.Create())
+            {
+                byte[]? unencrypt = KeyHelper.Decrypt(encryptedPrivateKey, password);
+                if (unencrypt == null)
+                {
+                    return null;
+                }
+                rsa.ImportRSAPrivateKey(unencrypt, out _);
+                string data = createDataString(timesheet);
+                byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+                return rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            }
+        }
+
+        private bool verifySignature(Timesheet timesheet, byte[] publicKey, byte[] hashedSignature)
+        {
+            using (RSA rsa = RSA.Create())
+            {
+                rsa.ImportRSAPublicKey(publicKey, out _);
+                string data = createDataString(timesheet);
+                byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+                return rsa.VerifyData(dataBytes, hashedSignature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            }
+        }
+
+        private string createDataString(Timesheet timesheet)
+        {
+            StringBuilder dataBuilder = new StringBuilder();
+            dataBuilder.Append(timesheet.EndDate);
+            dataBuilder.Append(timesheet.TotalHours);
+            dataBuilder.Append(timesheet.FlexHours);
+            dataBuilder.Append(timesheet.Overtime);
+            foreach (TimesheetRow row in timesheet.TimesheetRows)
+            {
+                dataBuilder.Append(row.WorkPackageId);
+                dataBuilder.Append(row.WorkPackageProjectId);
+                dataBuilder.Append(row.OriginalLabourCode);
+                dataBuilder.Append(row.packedHours);
+            }
+            return dataBuilder.ToString();
         }
     }
 }
