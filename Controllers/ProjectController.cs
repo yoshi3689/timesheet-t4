@@ -664,5 +664,13 @@ namespace TimesheetApp.Controllers
             }
             return null;
         }
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> FindPM()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var userId = await _userManager.GetUserIdAsync(user);
+            return Json(userId);
+        }
     }
 }
