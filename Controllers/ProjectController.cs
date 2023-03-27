@@ -157,11 +157,8 @@ namespace TimesheetApp.Controllers
             //store the current project into the session for use later.
             HttpContext.Session.SetInt32("CurrentProject", id ?? 0);
             CurrentProject = id;
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
-            {
-                return isPM;
-            }
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+
 
             //find all work packages for the project and include the children so a tree can be made
             var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser).Include(c => c.ParentWorkPackage).Include(c => c.ChildWorkPackages);
@@ -232,34 +229,61 @@ namespace TimesheetApp.Controllers
         [Authorize]
         public async Task<IActionResult> AssignEmployeesAsync([FromBody] List<EmployeeWorkPackage> ewps)
         {
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+            if (ewps.Count == 0)
             {
-                return isPM;
+                return BadRequest();
             }
-            //verify wp is bottom level
-            var currentWp = _context.WorkPackages.Where(c => ewps.Select(s => s.WorkPackageId).ToList().Contains(c.WorkPackageId)).ToList();
-            foreach (var item in currentWp)
+            var workPackageId = ewps[0].WorkPackageId;
+            var workPackageProjectId = ewps[0].WorkPackageProjectId;
+
+            //only allow one work package per request
+            for (int i = 1; i < ewps.Count; i++)
             {
-                if (item == null || item.IsBottomLevel == false)
+                if (ewps[i].WorkPackageId != workPackageId || ewps[i].WorkPackageProjectId != workPackageProjectId)
                 {
-                    return Json("Error");
+                    return BadRequest();
                 }
             }
 
-            _context.EmployeeWorkPackages.RemoveRange(_context.EmployeeWorkPackages.Where(c => c.WorkPackageId == ewps[0].WorkPackageId && c.WorkPackageProjectId == ewps[0].WorkPackageProjectId));
-            List<String> users = new List<String>();
-            foreach (var e in ewps)
+            var oldWp = _context.WorkPackages.Where(c => ewps.Select(s => s.WorkPackageId).Contains(c.WorkPackageId) && c.IsBottomLevel == false).ToList();
+            if (oldWp.Any()) return Json("Error");
+
+            var currentWp = _context.WorkPackages.Where(c => c.WorkPackageId == workPackageId).Include(c => c.Project).First();
+
+            var removedEmployeeIds = _context.EmployeeWorkPackages.Where(c => c.WorkPackageId == workPackageId && c.WorkPackageProjectId == workPackageProjectId).Select(c => c.UserId).ToList();
+            _context.EmployeeWorkPackages.RemoveRange(_context.EmployeeWorkPackages.Where(c => c.WorkPackageId == workPackageId && c.WorkPackageProjectId == workPackageProjectId));
+
+            var addedEmployeeIds = ewps.Where(e => e.UserId != null).Select(e => e.UserId).ToList();
+
+            var notifiedAddedEmployeeIds = addedEmployeeIds.Except(removedEmployeeIds).ToList();
+            var notifiedRemovedEmployeeIds = removedEmployeeIds.Except(addedEmployeeIds).ToList();
+
+            _context.EmployeeWorkPackages.AddRange(ewps.Where(e => e.UserId != null));
+
+            var workPackageString = workPackageProjectId + "~" + workPackageId;
+
+            foreach (var notifiedEmployeeId in notifiedAddedEmployeeIds)
             {
-                if (e.UserId != null)
+                if (_context.Users.Any(e => e.Id == notifiedEmployeeId) && !_context.Notifications.Any(n => n.For == workPackageString + " Add"))
                 {
-                    _context.EmployeeWorkPackages!.Add(e);
-                    users.Add(e.UserId);
+                    _context.Notifications.Add(new Notification { UserId = notifiedEmployeeId, Message = "You have been added to the work package " + currentWp.Title + " in the project " + currentWp.Project!.ProjectTitle, For = workPackageString + " Add", Importance = 1 });
                 }
             }
+
+            foreach (var notifiedEmployeeId in notifiedRemovedEmployeeIds)
+            {
+                if (_context.Users.Any(e => e.Id == notifiedEmployeeId) && !_context.Notifications.Any(n => n.For == workPackageString + " Remove"))
+                {
+                    _context.Notifications.Add(new Notification { UserId = notifiedEmployeeId, Message = "You have been removed from the work package " + currentWp.Title + " in the project " + currentWp.Project!.ProjectTitle, For = workPackageString + " Remove", Importance = 2 });
+                }
+            }
+
             _context.SaveChanges();
-            return new JsonResult(_context.Users.Where(c => users.Contains(c.Id)).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }));
+
+            return Json(_context.Users.Where(c => addedEmployeeIds.Contains(c.Id)).Select(e => new { e.Id, e.FirstName, e.LastName, e.JobTitle }!));
         }
+
 
         /// <summary>
         /// Used to assign REs to a WP
@@ -270,11 +294,8 @@ namespace TimesheetApp.Controllers
         [Authorize]
         public async Task<IActionResult> AssignResponsibleEngineerAsync([FromBody] EmployeeWorkPackage ewp)
         {
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
-            {
-                return isPM;
-            }
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+
             if (ewp != null)
             {
                 var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
@@ -295,11 +316,8 @@ namespace TimesheetApp.Controllers
         /// <returns>WP creation partial view</returns>
         public async Task<IActionResult> ShowSplitAsync()
         {
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
-            {
-                return isPM;
-            }
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+
             string projectId = Convert.ToString(HttpContext.Session.GetInt32("CurrentProject") ?? 0);
             var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~0").ToList();
             List<Budget> emptyBudgets = new List<Budget>();
@@ -329,11 +347,8 @@ namespace TimesheetApp.Controllers
         [Authorize]
         public async Task<IActionResult> SplitAsync(WorkPackageViewModel p)
         {
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
-            {
-                return isPM;
-            }
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+
             //check if the fields are valid
             if (ModelState.GetFieldValidationState("WorkPackage.ParentWorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.WorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.Title") != ModelValidationState.Valid)
             {
@@ -420,11 +435,8 @@ namespace TimesheetApp.Controllers
         [Authorize]
         public async Task<IActionResult> BudgetDetailsAsync([FromBody] WorkPackage wp)
         {
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
-            {
-                return isPM;
-            }
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+
             CurrentProject = HttpContext.Session.GetInt32("CurrentProject");
             var budgets = _context.Budgets.Where(c => c.WPProjectId == (CurrentProject + "~" + wp.WorkPackageId)).ToList();
             var lgs = _context.LabourGrades.ToList();
@@ -440,11 +452,8 @@ namespace TimesheetApp.Controllers
         [Authorize]
         public async Task<IActionResult> GetWPEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
-            {
-                return isPM;
-            }
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+
 
             var userIdsInLLWP = await _context.EmployeeWorkPackages!
                 .Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject"))
@@ -492,11 +501,8 @@ namespace TimesheetApp.Controllers
         [Authorize]
         public async Task<IActionResult> GetCandidateEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
-            {
-                return isPM;
-            }
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+
             // get empIds assigned to the lowest level wp and not a responsible engineer
             var userIdsInLLWP = _context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId).Select(filtered => filtered.UserId);
             // just in case, check if the work package is in this project too
@@ -507,11 +513,8 @@ namespace TimesheetApp.Controllers
         [Authorize]
         public async Task<IActionResult> GetAssignedEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
-            var isPM = await verifyPMAsync();
-            if (isPM != null)
-            {
-                return isPM;
-            }
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+
             return new JsonResult(_context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e!.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 

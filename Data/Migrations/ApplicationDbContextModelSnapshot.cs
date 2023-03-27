@@ -354,13 +354,13 @@ namespace TimesheetApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    b.Property<string>("For")
+                        .HasColumnType("longtext");
+
                     b.Property<int>("Importance")
                         .HasColumnType("int");
 
                     b.Property<string>("Message")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Url")
                         .HasColumnType("longtext");
 
                     b.Property<string>("UserId")

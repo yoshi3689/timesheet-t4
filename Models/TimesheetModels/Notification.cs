@@ -16,7 +16,7 @@ namespace TimesheetApp.Models.TimesheetModels
 
         public string? Message { get; set; }
         public int Importance { get; set; }
-        public string? Url { get; set; }
+        public string? For { get; set; }
         [Required]
         public string? UserId { get; set; }
 
