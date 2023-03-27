@@ -63,8 +63,7 @@ namespace TimesheetApp.Controllers
             {
 
                 var userId = _userManager.GetUserId(HttpContext.User);
-
-                var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId).Include(s => s.ProjectManager);
+                var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId || s.AssistantProjectManagerId == userId).Include(s => s.ProjectManager);
                 return View(project);
             }
         }
@@ -655,6 +654,38 @@ namespace TimesheetApp.Controllers
 
             return table;
         }
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetAllEmployees()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var userId = await _userManager.GetUserIdAsync(user);
+            int projectId = HttpContext.Session.GetInt32("CurrentProject") ?? 0;
+            var employees = await _context.EmployeeProjects
+                .Where(c => c.ProjectId == projectId && c.UserId != userId)
+                .Select(c => c.User)
+                .ToListAsync();
+            return Json(employees);
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> AssignASM([FromBody] String? asm)
+        {
+            int projectId = HttpContext.Session.GetInt32("CurrentProject") ?? 0;
+            var proj = await _context.Projects.FindAsync(projectId);
+            if (proj != null)
+            {
+                var user = _context.Users.Where(c => c.EmployeeNumber == int.Parse(asm)).Select(c => c.Id).First();
+                if (user == proj.ProjectManagerId)
+                {
+                    return BadRequest();
+                }
+                proj.AssistantProjectManagerId = user;
+                _context.SaveChanges();
+                return Ok();
+            }
+            return new JsonResult("Error!");
+        }
 
         /// <summary>
         /// can be used to make sure the user is the pm or assistant pm for the project.
@@ -675,6 +706,14 @@ namespace TimesheetApp.Controllers
                 return Challenge();
             }
             return null;
+        }
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> FindPM()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var userId = await _userManager.GetUserIdAsync(user);
+            return Json(userId);
         }
     }
 }
