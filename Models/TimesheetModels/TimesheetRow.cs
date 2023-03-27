@@ -17,8 +17,17 @@ public partial class TimesheetRow
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int TimesheetRowId { get; set; }
 
-    [Required]
-    public int? ProjectId { get; set; }
+    public int? ProjectId
+    {
+        get
+        {
+            return WorkPackageProjectId;
+        }
+        set
+        {
+            WorkPackageProjectId = value;
+        }
+    }
 
     public double TotalHoursRow { get; set; }
     [Required]
