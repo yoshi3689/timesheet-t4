@@ -151,10 +151,20 @@ namespace TimesheetApp.Controllers
         [HttpPost]
         public IActionResult? GetTimesheet([FromBody] string timesheetId)
         {
+            int tid;
+            try
+            {
+                tid = Convert.ToInt32(timesheetId);
+            }
+            catch (System.Exception)
+            {
+                return BadRequest();
+            }
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == Convert.ToInt32(timesheetId)).FirstOrDefault();
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == tid).FirstOrDefault();
             createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
-            return Json(_context.TimesheetRows.Where(c => c.TimesheetId == Convert.ToInt32(timesheetId)).Select(c => new TimesheetRow
+            return Json(_context.TimesheetRows.Where(c => c.TimesheetId == tid).Select(c => new TimesheetRow
             {
                 TimesheetRowId = c.TimesheetRowId,
                 TimesheetId = c.TimesheetId,
