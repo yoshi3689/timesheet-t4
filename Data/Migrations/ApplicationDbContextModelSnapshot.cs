@@ -284,7 +284,10 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<int>("People")
                         .HasColumnType("int");
 
-                    b.Property<double>("Remaining")
+                    b.Property<double>("UnallocatedDays")
+                        .HasColumnType("double");
+
+                    b.Property<double>("UnallocatedPeople")
                         .HasColumnType("double");
 
                     b.Property<string>("WPProjectId")

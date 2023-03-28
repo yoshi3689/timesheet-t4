@@ -126,7 +126,8 @@ namespace TimesheetApp.Controllers
                             People = budget.People,
                             Days = budget.Days,
                             LabourCode = budget.LabourCode,
-                            Remaining = budget.BudgetAmount
+                            UnallocatedDays = budget.Days,
+                            UnallocatedPeople = budget.People
                         };
                         totalBudget += budget.BudgetAmount * grades.Where(c => budget.LabourCode == c.LabourCode).First().Rate;
                         _context.Budgets!.Add(newBudget);
@@ -187,7 +188,7 @@ namespace TimesheetApp.Controllers
                 {
                     var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
                     total += budget.BudgetAmount * lg.Rate;
-                    remaining += budget.Remaining * lg.Rate;
+                    remaining += budget.UnallocatedDays * budget.UnallocatedPeople * lg.Rate;
                 }
                 wp.TotalBudget = total;
                 wp.TotalRemaining = remaining;
@@ -331,7 +332,8 @@ namespace TimesheetApp.Controllers
                     LabourGrade = item,
                     isREBudget = false,
                     Rate = item.Rate,
-                    Remaining = projectBudget.Where(c => c.LabourCode == item.LabourCode).First().Remaining
+                    UnallocatedDays = projectBudget.Where(c => c.LabourCode == item.LabourCode).First().UnallocatedDays,
+                    UnallocatedPeople = projectBudget.Where(c => c.LabourCode == item.LabourCode).First().UnallocatedPeople
                 });
             }
             var model = new WorkPackageViewModel
@@ -357,7 +359,8 @@ namespace TimesheetApp.Controllers
                 Response.StatusCode = 400;
                 return PartialView("_CreateWorkPackagePartial", p);
             }
-            if (p.WorkPackage != null && checkWorkPackage(p.WorkPackage.WorkPackageId))
+            string newWPID = (p.WorkPackage!.ParentWorkPackageId == "0") ? p.WorkPackage.WorkPackageId : p.WorkPackage!.ParentWorkPackageId + p.WorkPackage!.WorkPackageId;
+            if (p.WorkPackage != null && checkWorkPackage(newWPID))
             {
                 ModelState.AddModelError("WorkPackage.WorkPackageId", "Work Package ID must be unique for this project");
                 Response.StatusCode = 400;
@@ -369,12 +372,11 @@ namespace TimesheetApp.Controllers
             {
                 parent.IsBottomLevel = false;
             }
-            string newWPID = (p.WorkPackage!.ParentWorkPackageId == "0") ? p.WorkPackage.WorkPackageId : p.WorkPackage!.ParentWorkPackageId + p.WorkPackage!.WorkPackageId;
             var newChild = new WorkPackage
             {
                 WorkPackageId = newWPID,
                 ProjectId = CurrentProject,
-                ParentWorkPackageId = p.WorkPackage.ParentWorkPackageId,
+                ParentWorkPackageId = p.WorkPackage!.ParentWorkPackageId,
                 ParentWorkPackageProjectId = CurrentProject ?? 0,
                 IsBottomLevel = true,
                 IsClosed = false,
@@ -383,6 +385,7 @@ namespace TimesheetApp.Controllers
             //create budget for the new WP, one row per labour code.
             if (p.budgets != null)
             {
+                Budget? parentB = null;
                 List<Budget> parentBudgets = _context.Budgets.Where(c => c.WPProjectId == CurrentProject + "~" + newChild.ParentWorkPackageId).ToList();
                 foreach (var budget in p.budgets)
                 {
@@ -392,10 +395,16 @@ namespace TimesheetApp.Controllers
                         People = budget.People,
                         Days = budget.Days,
                         LabourCode = budget.LabourCode,
-                        Remaining = budget.BudgetAmount
+                        UnallocatedDays = budget.UnallocatedDays,
+                        UnallocatedPeople = budget.UnallocatedPeople
                     };
                     _context.Budgets!.Add(newBudget);
-                    parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First().Remaining -= newBudget.BudgetAmount;
+                    parentB = parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First();
+                    if (parentB != null)
+                    {
+                        parentB.UnallocatedDays -= newBudget.UnallocatedDays;
+                        parentB.UnallocatedPeople -= newBudget.UnallocatedPeople;
+                    }
                 }
             }
             _context.WorkPackages!.Add(newChild);
@@ -447,7 +456,10 @@ namespace TimesheetApp.Controllers
                 budget.LabourGrade = null;
                 budget.Rate = lgs.Where(c => c.LabourCode == budget.LabourCode).First().Rate;
             }
-            return Json(budgets);
+            List<List<Budget>> result = new List<List<Budget>>();
+            result.Add(budgets.Where(c => c.isREBudget == false).ToList());
+            result.Add(budgets.Where(c => c.isREBudget == true).ToList());
+            return Json(result);
         }
 
         //get employees for a wp, and say if they are already assigned or not.
@@ -478,7 +490,7 @@ namespace TimesheetApp.Controllers
             foreach (var employee in emp)
             {
                 var matchingBudget = budgets.FirstOrDefault(b => b.LabourCode == employee.Employee.LabourGradeCode);
-                if (matchingBudget != null)
+                if (matchingBudget != null && employee.Assigned == true)
                 {
                     matchingBudget.People--;
                 }
