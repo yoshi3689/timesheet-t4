@@ -161,18 +161,20 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 user.EmployeeNumber = Input.EmployeeNumber;
                 user.EmailConfirmed = true;
                 user.SupervisorId = Input.Supervisor;
+                user.TimesheetApproverId = Input.Supervisor;
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
-                await _userManager.AddToRolesAsync(user, roles);
+                Console.WriteLine(result);
                 // Not sure if that's only my issue, after I disabled this line of code it successfully saved the new user
                 // And I can see it in database. It will throw DbUpdateConcurrencyException if uncomment out this line
-                //_context.SaveChanges();
+                // _context.SaveChanges();
 
 
                 if (result.Succeeded)
                 {
+                    await _userManager.AddToRolesAsync(user, roles);
                     return LocalRedirect(returnUrl);
                 }
                 foreach (var error in result.Errors)
@@ -182,7 +184,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             }
             ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
             ViewData["Supervisors"] = getSupervisors();
-
+            rolesList = await roleManager.Roles.ToListAsync();
             // If we got this far, something failed, redisplay form
             return Page();
         }
