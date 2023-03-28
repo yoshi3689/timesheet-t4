@@ -54,14 +54,8 @@ namespace TimesheetApp.Controllers
                 var projects = _context.Projects!.Include(s => s.ProjectManager);
                 return View(projects);
             }
-            // else if (User.Identity!.IsAuthenticated) {
-            //     var userId = _userManager.GetUserId(HttpContext.User);
-
-            //     return View(projects);
-            // }
             else
             {
-
                 var userId = _userManager.GetUserId(HttpContext.User);
                 var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId || s.AssistantProjectManagerId == userId).Include(s => s.ProjectManager);
                 return View(project);
@@ -167,7 +161,7 @@ namespace TimesheetApp.Controllers
 
 
             //find all work packages for the project and include the children so a tree can be made
-            var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser).Include(c => c.ParentWorkPackage).Include(c => c.ChildWorkPackages);
+            var workpackages = _context.WorkPackages!.Where(c => c.ProjectId == id).Include(c => c.ResponsibleUser).Include(c => c.ParentWorkPackage).Include(c => c.ChildWorkPackages).Include(c => c.Project);
             var top = workpackages.FirstOrDefault(c => c.ParentWorkPackage == null)!;
 
             WorkPackageViewModel model = new WorkPackageViewModel
@@ -212,7 +206,7 @@ namespace TimesheetApp.Controllers
             wps.Add(top);
             if (top.ChildWorkPackages == null || top.ChildWorkPackages.Count() == 0)
             {
-                top = _context.WorkPackages!.Include(c => c.ChildWorkPackages).Include(c => c.ResponsibleUser).FirstOrDefault(c => c.ProjectId == top.ProjectId && c.WorkPackageId == top.WorkPackageId)!;
+                top = _context.WorkPackages!.Include(c => c.ChildWorkPackages).Include(c => c.ResponsibleUser).Include(c => c.Project).FirstOrDefault(c => c.ProjectId == top.ProjectId && c.WorkPackageId == top.WorkPackageId)!;
             }
             if (top.ChildWorkPackages != null && top.ChildWorkPackages.Count() != 0)
             {

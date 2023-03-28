@@ -81,6 +81,8 @@
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script>
+        let readonly = false;
+
         function createTimesheet() {
             let end = document.querySelector("#datepicker").value;
             fetch("/Timesheet/CreateTimesheet", {
@@ -103,7 +105,7 @@
                 return await response.json();
             }).then((response) => {
                 if(response){
-                    addTimesheet(response.endDate, response.totalHours, response.timesheetId, false);
+                    addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null);
                 }
             });
         }
@@ -190,15 +192,22 @@
         });
 
 
-        function addTimesheet(endDate, totalHours, timesheetId, active) {
+        function addTimesheet(endDate, totalHours, timesheetId, active, readonly) {
             let timesheetsDiv = document.getElementById('timesheets');
             let newTimesheet = document.createElement('a');
-            newTimesheet.href = '#';
+            newTimesheet.id = "Timesheet" + timesheetId;
             newTimesheet.className = 'list-group-item list-group-item-action';
+            if(readonly) {
+                newTimesheet.classList.add('readonly');
+            }
             newTimesheet.value = timesheetId + "";
             if(active){
                 newTimesheet.classList.add('activeSheet');
                 document.querySelector("#currentTimesheetId").value = timesheetId + "";
+                if(readonly){
+                    console.log("set to true");
+                    readonly = true;
+                }
             }
             newTimesheet.addEventListener('click', function() {
                 let timesheets = document.querySelectorAll('#timesheets a');
@@ -221,13 +230,14 @@
                         return await response.json();
                     }
                 }).then((response) => {
+                    var readonlyRow = !document.querySelector("#Timesheet" + this.value).classList.contains("readonly");
                     if(response != null){
                         var table = document.getElementById("rowTable");
                         for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
                             table.deleteRow(i); // delete the row at the current index
                         }
                         response.forEach((cell) => {
-                            addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId);
+                            addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow);
                         });
                     }
                 });
@@ -248,11 +258,12 @@
         @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
         {
             <text>
-                addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True");
+                addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "");
             </text>
         }
 
-        function addTableRow(projectId, workPackageId, totalHours, sat, sun, mon, tue, wed, thu, fri, notes, timesheetRowId) {
+       function addTableRow(projectId, workPackageId, totalHours, sat, sun, mon, tue, wed, thu, fri, notes, timesheetRowId, readonly) {
+        console.log(readonly);
             var table = document.getElementById("rowTable");
             var row = table.insertRow(-1); // add new row at the end
             row.id = timesheetRowId + "";
@@ -265,17 +276,21 @@
             var cells = [
                 "<td class='ProjectId'><span>" + projectId + "</span></td>",
                 "<td class='WorkPackageId'><span>" + workPackageId + "</span></td>",
-                "<td class='Sat'><span>" + sat + "</span><input type='text' value='" + sat + "' style='display:none' /></td>",
-                "<td class='Sun'><span>" + sun + "</span><input type='text' value='" + sun + "' style='display:none' /></td>",
-                "<td class='Mon'><span>" + mon + "</span><input type='text' value='" + mon + "' style='display:none' /></td>",
-                "<td class='Tue'><span>" + tue + "</span><input type='text' value='" + tue + "' style='display:none' /></td>",
-                "<td class='Wed'><span>" + wed + "</span><input type='text' value='" + wed + "' style='display:none' /></td>",
-                "<td class='Thu'><span>" + thu + "</span><input type='text' value='" + thu + "' style='display:none' /></td>",
-                "<td class='Fri'><span>" + fri + "</span><input type='text' value='" + fri + "' style='display:none' /></td>",
+                "<td class='Sat'>" + (!readonly ? "<span>" + sat + "</span><input style='display: none; width:10%;' type='text' value='" + sat + "' />" : sat) + "</td>",
+                "<td class='Sun'>" + (!readonly ? "<span>" + sun + "</span><input style='display: none; width:10%;' type='text' value='" + sun + "' />" : sun) + "</td>",
+                "<td class='Mon'>" + (!readonly ? "<span>" + mon + "</span><input style='display: none; width:10%;' type='text' value='" + mon + "' />" : mon) + "</td>",
+                "<td class='Tue'>" + (!readonly ? "<span>" + tue + "</span><input style='display: none; width:10%;' type='text' value='" + tue + "' />" : tue) + "</td>",
+                "<td class='Wed'>" + (!readonly ? "<span>" + wed + "</span><input style='display: none; width:10%;' type='text' value='" + wed + "' />" : wed) + "</td>",
+                "<td class='Thu'>" + (!readonly ? "<span>" + thu + "</span><input style='display: none; width:10%;' type='text' value='" + thu + "' />" : thu) + "</td>",
+                "<td class='Fri'>" + (!readonly ? "<span>" + fri + "</span><input style='display: none; width:10%;' type='text' value='" + fri + "' />" : fri) + "</td>",
                 "<td class='TotalHours'><span>" + totalHours + "</span></td>",
-                "<td class='Notes'><span>" + notes + "</span><input type='text' value='" + notes + "' style='display:none' /></td>",
-                "<td><a class='Edit' href='javascript:;'>Edit</a>&nbsp;<a class='Update' style='display: none;' href='javascript:;'>Update</a>&nbsp;<a style='display: none;' class='Cancel' href='javascript:;'>Cancel</a></td>"
+                "<td class='Notes'>" + (!readonly ? "<span>" + notes + "</span><input style='display: none; width:10%;' type='text' value='" + notes + "' />" : notes) + "</td>"
             ];
+
+            // add buttons only if editable is true
+            if (!readonly) {
+                cells.push("<td><a class='Edit' href='javascript:;'>Edit</a>&nbsp;<a class='Update' style='display: none;' href='javascript:;'>Update</a>&nbsp;<a style='display: none;' class='Cancel' href='javascript:;'>Cancel</a></td>");
+            }
 
             // insert cells into row
             for (var i = 0; i < cells.length; i++) {
@@ -286,7 +301,8 @@
         @foreach (var row in Model.TimesheetRows!)
         {
             <text>
-                addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId");
+                console.log(readonly);
+                addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonly);
             </text>
         }
 
@@ -306,13 +322,25 @@
                         timesheet: document.querySelector("#currentTimesheetId").value
                     }),
                 })
-                .then((response) => {
+                .then(async (response) => {
                     if(response.status == 401){
                         document.querySelector("#passwordLabel").innerHTML = "Incorrect Password";
                     } else {
                         var myModalEl = document.getElementById('submitModal');
                         var modal = bootstrap.Modal.getInstance(myModalEl)
                         modal.hide();
+                        return await response.json();
+                    }
+                }).then((response) => {
+                    document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).classList.add("readonly");
+                    if(response != null){
+                        var table = document.getElementById("rowTable");
+                        for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
+                            table.deleteRow(i); // delete the row at the current index
+                        }
+                        response.forEach((cell) => {
+                            addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, true);
+                        });
                     }
                 });
             });

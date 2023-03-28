@@ -65,13 +65,14 @@ namespace TimesheetApp.Controllers
                 Timesheets = userSheets,
                 TimesheetRows = rows,
             };
+
             return View(model);
         }
 
         //update the rows on a timesheet to match thier wps, and create a timesheet if it doesnt exist.
         private Timesheet? createUpdateTimesheetWithRows(DateTime endDate, string userId)
         {
-
+            Timesheet? result = null;
             int offset = (7 - (int)endDate.DayOfWeek + (int)DayOfWeek.Friday) % 7;
             DateTime nextFriday = endDate.AddDays(offset);
             var sheet = _context.Timesheets.Where(c => c.EndDate == DateOnly.FromDateTime(nextFriday) && c.UserId == userId).FirstOrDefault();
@@ -83,6 +84,7 @@ namespace TimesheetApp.Controllers
                     UserId = userId,
                 };
                 _context.Timesheets.Add(sheet);
+                result = sheet;
                 _context.SaveChanges();
             }
             var currentUser = _context.Users.Where(c => c.Id == userId).First();
@@ -103,7 +105,7 @@ namespace TimesheetApp.Controllers
                 }
             }
             _context.SaveChanges();
-            return sheet;
+            return result;
         }
 
 
@@ -132,7 +134,8 @@ namespace TimesheetApp.Controllers
             {
                 TotalHours = createdTimesheet.TotalHours,
                 EndDate = createdTimesheet.EndDate,
-                TimesheetId = createdTimesheet.TimesheetId
+                TimesheetId = createdTimesheet.TimesheetId,
+                EmployeeHash = createdTimesheet.EmployeeHash
             };
             return Json(returnTimesheet);
         }
@@ -178,7 +181,7 @@ namespace TimesheetApp.Controllers
                 WorkPackageId = c.WorkPackageId,
                 Notes = c.Notes,
                 packedHours = c.packedHours,
-                OriginalLabourCode = c.OriginalLabourCode
+                OriginalLabourCode = c.OriginalLabourCode,
             }).ToList());
         }
 
@@ -198,8 +201,9 @@ namespace TimesheetApp.Controllers
                 return Unauthorized();
             }
             timesheet.EmployeeHash = timesheetHash;
+            _context.Update(timesheet);
             _context.SaveChanges();
-            return Ok();
+            return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
         }
 
 
