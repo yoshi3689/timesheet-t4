@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TimesheetApp.Models;
 using TimesheetApp.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
 {
@@ -20,6 +21,19 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
         private readonly SignInManager<ApplicationUser> _signInManager;
 
         private readonly ApplicationDbContext _context;
+
+
+        [Display(Name = "Employee Number")]
+        public int EmployeeNum { get; set; }
+
+        [Display(Name = "Job Title")]
+        public string JobTitle { get; set; }
+
+        [Display(Name = "Labour Grade")]
+        public string LabourGrade { get; set; }
+
+        [Display(Name = "Supervisor")]
+        public string Supervisor { get; set; }
 
         public IndexModel(
             UserManager<ApplicationUser> userManager,
@@ -50,10 +64,6 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
         [BindProperty]
         public InputModel Input { get; set; }
 
-        
-
-        
-
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
@@ -67,10 +77,6 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
             [Phone]
             [Display(Name = "Phone number")]
             public string PhoneNumber { get; set; }
-
-            [Display(Name = "Labour Grade")]
-            public string LabourGrade { get; set; }
-
         }
 
 
@@ -80,19 +86,28 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
 
             Username = userName;
+            EmployeeNum = (await _userManager.GetUserAsync(User)).EmployeeNumber;
+            LabourGrade = (await _userManager.GetUserAsync(User)).LabourGradeCode;
+            JobTitle = (await _userManager.GetUserAsync(User)).JobTitle;
+
+            var supervisorID = (await _userManager.GetUserAsync(User)).SupervisorId;
+            var supervisor = await _userManager.FindByIdAsync(supervisorID);
+
+            if (supervisor != null) {
+                Supervisor = supervisor.FirstName + " " + supervisor.LastName;
+            }
+
+
 
             Input = new InputModel
             {
                 PhoneNumber = phoneNumber,
-                LabourGrade = (await _userManager.GetUserAsync(User)).LabourGradeCode
             };
         }
 
         public async Task<IActionResult> OnGetAsync()
         {
-        
             var user = await _userManager.GetUserAsync(User);
-            Console.WriteLine(user.LabourGradeCode);
             if (user == null)
             {
                 return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
