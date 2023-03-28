@@ -25,7 +25,15 @@ namespace TimesheetApp.Models.TimesheetModels
         public int People { get; set; }
         [Display(Name = "Labour Grade")]
         public string? LabourCode { get; set; }
-        public double Remaining { get; set; }
+        public double UnallocatedDays { get; set; }
+        public double UnallocatedPeople { get; set; }
+        public double RemainingPDs
+        {
+            get
+            {
+                return UnallocatedDays * UnallocatedPeople;
+            }
+        }
         public bool isREBudget { get; set; }
 
         [ForeignKey("LabourCode")]

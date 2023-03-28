@@ -110,6 +110,22 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
+<div class="modal" tabindex="-1" role="dialog" id="warningModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Warning!</h5>
+            </div>
+            <div class="modal-body" id="warningModalBody">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelWarning">Cancel</button>
+                <button type="button" class="btn btn-primary" id="continueWarning">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal" tabindex="-1" role="dialog" id="RespEngModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -245,53 +261,65 @@ ViewData["Title"] = "Manage Project";
                 if(WorkPackageId !== "0"){
                     document.querySelector("#newIdPartial").innerHTML = WorkPackageId;
                 }
+                let errors = "";
                 //submit creation of sub work package
                 document.querySelector("#newWPForm").addEventListener('submit', async function submitForm (event) {
                     event.preventDefault();
                     const formData = new FormData(document.querySelector("#newWPForm"));
-                    await fetch("/Project/Split", {
+                    await fetch("/Project/BudgetDetails", {
                         method: "POST",
-                        body: formData,
-                    }).then(async c => {
-                        //if there is a field validation error show it again
-                        if(c.status == 400){
-                            var text = await c.text();
-                            var myModalEl = document.getElementById('splitModal');
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            workPackageId: formData.get("WorkPackage.ParentWorkPackageId")
+                        }),
+                    })
+                    .then((response) => {
+                        return response.json();
+                    })
+                    .then((response) => {
+                        response.forEach((c) => {
+                            for(var i = 0; i < response.length; i++){
+                                if(formData.get("budgets[" + i + "].LabourCode") == c.labourCode){
+                                    if(parseFloat(formData.get("budgets[" + i + "].Days")) > c.days){
+                                        errors += formData.get("budgets[" + i + "].LabourCode") + " Days<br/>";
+                                    }
+                                    if(parseInt(formData.get("budgets[" + i + "].People")) > c.people){
+                                        errors += formData.get("budgets[" + i + "].LabourCode") + " People<br/>";
+                                    }
+                                }
+                            }
+                        });
+                    });
+
+                    if(errors.length > 0){
+                        document.querySelector("#warningModalBody").innerHTML = "The budget for this work package passes the total budget of the parent work package. Do you want to continue?<br/>Fields that are over:<br/>" + errors;
+                        let modalObj = new bootstrap.Modal(document.querySelector("#warningModal"));
+                        modalObj.show();
+                        document.querySelector("#cancelWarning").addEventListener("click", () => {
+                            var myModalEl = document.querySelector("#warningModal");
                             var modal = bootstrap.Modal.getInstance(myModalEl)
                             modal.hide();
-                            document.querySelector("#modal-placeholder").innerHTML = text;
-                            document.querySelector("#parentWPID").value = WorkPackageId;
-                            myModalEl = document.getElementById('splitModal');
-                            modal = new bootstrap.Modal(myModalEl);
-                            modal.show();
-                            document.querySelector("#newWPForm").addEventListener('submit', submitForm);
-                            return;
-                        }
-                        return await c.json();
-                    }).then(c => {
-                        if(c == null){
-                            return;
-                        }
-                        let body = document.querySelector("#WP" + c.parentWorkPackageId);
-                        body.querySelectorAll(":scope > .bottomLevel").forEach((del) => {
-                            body.removeChild(del);
+                            myModalEl = document.querySelector("#splitModal");
+                            modal = bootstrap.Modal.getInstance(myModalEl)
+                            modal.hide();
                         });
-                        body.querySelectorAll(":scope > .employeeList").forEach((del) => {
-                            del.style.display = "none";
+                        document.querySelector("#continueWarning").addEventListener("click", () => {
+                            executeSplit();
+                            var myModalEl = document.querySelector("#warningModal");
+                            var modal = bootstrap.Modal.getInstance(myModalEl)
+                            modal.hide();
+                            myModalEl = document.querySelector("#splitModal");
+                            modal = bootstrap.Modal.getInstance(myModalEl)
+                            modal.hide();
                         });
+                    } else {
+                        executeSplit();
+                    }
 
-                        let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
-                        let tremain = document.createElement("span");
-                        tremain.innerHTML = "$" + (parseInt(budgetRow[1].innerHTML.replace(/\D/g, '')) - c.totalBudget);
-                        budgetRow[3].innerHTML = tremain.outerHTML;
-                        budgetRow[2].innerHTML = "Unallocated Budget:"
 
-                        addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName,
-                            c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget, c.totalRemaining);
-                        var myModalEl = document.getElementById('splitModal');
-                        var modal = bootstrap.Modal.getInstance(myModalEl)
-                        modal.hide();
-                    });
                 });
             });
         }, false);
@@ -330,69 +358,119 @@ ViewData["Title"] = "Manage Project";
                 let table = document.createElement("table");
                 table.className = "table table-striped";
 
-                // Create the table header
-                let header = document.createElement("thead");
-                let headerRow = document.createElement("tr");
-                let labourCodeHeader = document.createElement("th");
-                labourCodeHeader.textContent = "Labour Code";
-                headerRow.appendChild(labourCodeHeader);
+                let table2 = document.createElement("table");
+                table2.className = "table table-striped";
 
-                let budgetTotalHeader = document.createElement("th");
-                budgetTotalHeader.textContent = "Total (P.D.)";
-                headerRow.appendChild(budgetTotalHeader);
-
-                let remainingBudgetHeader = document.createElement("th");
-                remainingBudgetHeader.textContent = "Unallocated (P.D.)";
-                headerRow.appendChild(remainingBudgetHeader);
-
-                let budgetTotalHeaderD = document.createElement("th");
-                budgetTotalHeaderD.textContent = "Total";
-                headerRow.appendChild(budgetTotalHeaderD);
-
-                let remainingBudgetHeaderD = document.createElement("th");
-                remainingBudgetHeaderD.textContent = "Unallocated";
-                headerRow.appendChild(remainingBudgetHeaderD);
-
-                header.appendChild(headerRow);
-                table.appendChild(header);
-
-                // Create the table body
+               // Create the table body
                 let tbody = document.createElement("tbody");
 
-                if(response.length !== 0){
-                    response.forEach((res) => {
-                        let row = document.createElement("tr");
+                if(response[0].length !== 0){
+                                    // Create the table header
+                    let header = document.createElement("thead");
+                    let headerRow = document.createElement("tr");
+                    let labourCodeHeader = document.createElement("th");
+                    labourCodeHeader.textContent = "Labour Code";
+                    headerRow.appendChild(labourCodeHeader);
+
+                    let budgetTotalHeader = document.createElement("th");
+                    budgetTotalHeader.textContent = "Days ";
+                    headerRow.appendChild(budgetTotalHeader);
+
+                    let remainingBudgetHeader = document.createElement("th");
+                    remainingBudgetHeader.textContent = "People";
+                    headerRow.appendChild(remainingBudgetHeader);
+
+                    let budgetTotalHeaderD = document.createElement("th");
+                    budgetTotalHeaderD.textContent = "P.D. ";
+                    headerRow.appendChild(budgetTotalHeaderD);
+
+                    header.appendChild(headerRow);
+                    table.appendChild(header);
+
+                    response[0].forEach((res) => {
+                        var row = document.createElement("tr");
 
                         // Labour Code cell
-                        let labourCodeCell = document.createElement("td");
+                        var labourCodeCell = document.createElement("td");
                         labourCodeCell.textContent = res.labourCode;
                         row.appendChild(labourCodeCell);
 
                         // Budget Total cell
-                        let budgetTotalCell = document.createElement("td");
-                        budgetTotalCell.textContent = res.budgetAmount;
+                        var budgetTotalCell = document.createElement("td");
+                        budgetTotalCell.textContent = res.days;
                         row.appendChild(budgetTotalCell);
 
                         // Remaining Budget cell
-                        let remainingBudgetCell = document.createElement("td");
-                        remainingBudgetCell.textContent = res.remaining;
+                        var remainingBudgetCell = document.createElement("td");
+                        remainingBudgetCell.textContent = res.people;
                         row.appendChild(remainingBudgetCell);
 
-                        let budgetTotalCellD = document.createElement("td");
-                        budgetTotalCellD.textContent = "$" + (res.budgetAmount * res.rate);
+                        var budgetTotalCellD = document.createElement("td");
+                        budgetTotalCellD.textContent = res.days * res.people;
                         row.appendChild(budgetTotalCellD);
-
-                        // Remaining Budget cell
-                        let remainingBudgetCellD = document.createElement("td");
-                        remainingBudgetCellD.textContent = "$" + (res.remaining * res.rate);
-                        row.appendChild(remainingBudgetCellD);
 
                         tbody.appendChild(row);
                     });
+                    table.appendChild(tbody);
+                    var title = document.createElement("h3");
+                    title.innerHTML = "Project Manager's Budget";
+                    body.appendChild(title);
+                    body.appendChild(table);
                 }
+                let tbody2 = document.createElement("tbody");
 
-                table.appendChild(tbody);
-                body.appendChild(table);
+                if(response[1].length !== 0){
+                    // Create the table header
+                    let header2 = document.createElement("thead");
+                    let headerRow2 = document.createElement("tr");
+                    let labourCodeHeader2 = document.createElement("th");
+                    labourCodeHeader2.textContent = "Labour Code";
+                    headerRow2.appendChild(labourCodeHeader2);
+
+                    let budgetTotalHeader2 = document.createElement("th");
+                    budgetTotalHeader2.textContent = "Days ";
+                    headerRow2.appendChild(budgetTotalHeader2);
+
+                    let remainingBudgetHeader2 = document.createElement("th");
+                    remainingBudgetHeader2.textContent = "People";
+                    headerRow2.appendChild(remainingBudgetHeader2);
+
+                    let budgetTotalHeaderD2 = document.createElement("th");
+                    budgetTotalHeaderD2.textContent = "P.D.";
+                    headerRow2.appendChild(budgetTotalHeaderD2);
+
+                    header2.appendChild(headerRow2);
+                    table2.appendChild(header2);
+                    response[1].forEach((res2) => {
+                        var row2 = document.createElement("tr");
+
+                        // Labour Code cell
+                        var labourCodeCell2 = document.createElement("td");
+                        labourCodeCell2.textContent = res2.labourCode;
+                        row2.appendChild(labourCodeCell2);
+
+                        // Budget Total cell
+                        var budgetTotalCell2 = document.createElement("td");
+                        budgetTotalCell2.textContent = res2.days;
+                        row2.appendChild(budgetTotalCell2);
+
+                        // Remaining Budget cell
+                        var remainingBudgetCell2 = document.createElement("td");
+                        remainingBudgetCell2.textContent = res2.people;
+                        row2.appendChild(remainingBudgetCell2);
+
+                        var budgetTotalCellD2 = document.createElement("td");
+                        budgetTotalCellD2.textContent = res2.days * res2.people;
+                        row2.appendChild(budgetTotalCellD2);
+
+                        tbody2.appendChild(row2);
+                    });
+                    table2.appendChild(tbody2);
+                    var title2 = document.createElement("h3");
+                    title2.innerHTML = "Responsible Engineer's Budget";
+                    body.appendChild(title2);
+                    body.appendChild(table2);
+                }
                 let modalObj = new bootstrap.Modal(modal);
                 modalObj.show();
 
@@ -460,8 +538,8 @@ ViewData["Title"] = "Manage Project";
                                 tabbedArea.innerHTML = tabbedArea.innerHTML.replace(noneError, "");
                             }
                             tabbedArea.appendChild(a);
-                            $("#employeeModal").modal("show");
                         });
+                        $("#employeeModal").modal("show");
                         if(response.length == 0){
                             document.querySelector("#assignEmployeesButton").style.display = "none";
                         } else {
@@ -612,6 +690,53 @@ ViewData["Title"] = "Manage Project";
         }
     }
 
+    function executeSplit(){
+        const formData = new FormData(document.querySelector("#newWPForm"));
+        fetch("/Project/Split", {
+            method: "POST",
+            body: formData,
+        }).then(async c => {
+            //if there is a field validation error show it again
+            if(c.status == 400){
+                var text = await c.text();
+                var myModalEl = document.getElementById('splitModal');
+                var modal = bootstrap.Modal.getInstance(myModalEl)
+                modal.hide();
+                document.querySelector("#modal-placeholder").innerHTML = text;
+                document.querySelector("#parentWPID").value = WorkPackageId;
+                myModalEl = document.getElementById('splitModal');
+                modal = new bootstrap.Modal(myModalEl);
+                modal.show();
+                document.querySelector("#newWPForm").addEventListener('submit', submitForm);
+                return;
+            }
+            return await c.json();
+        }).then(c => {
+            if(c == null){
+                return;
+            }
+            let body = document.querySelector("#WP" + c.parentWorkPackageId);
+            body.querySelectorAll(":scope > .bottomLevel").forEach((del) => {
+                body.removeChild(del);
+            });
+            body.querySelectorAll(":scope > .employeeList").forEach((del) => {
+                del.style.display = "none";
+            });
+
+            let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
+            let tremain = document.createElement("span");
+            tremain.innerHTML = "$" + (parseInt(budgetRow[1].innerHTML.replace(/\D/g, '')) - c.totalBudget);
+            budgetRow[3].innerHTML = tremain.outerHTML;
+            budgetRow[2].innerHTML = "Unallocated Budget:"
+
+            addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName,
+                c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget, c.totalRemaining);
+            var myModalEl = document.getElementById('splitModal');
+            var modal = bootstrap.Modal.getInstance(myModalEl)
+            modal.hide();
+        });
+    }
+
     async function assignEmployeeToWp() {
         // creates an array of employees to add to this wp
         const empList = document.querySelectorAll(".emp-name-avialable");
@@ -701,11 +826,11 @@ ViewData["Title"] = "Manage Project";
         });
     }
 
-    function setTotal(labourCode, rate, people, days, remain) {
+    function setTotal(labourCode, rate, people, days, remainDays, remainPeople) {
         var element = document.querySelector("#" + labourCode);
         element.innerHTML = " $" + (people * days * rate);
         element = document.querySelector("#R" + labourCode);
-        element.innerHTML = "Remaining: $" + ((remain * rate) - (people * days * rate)) + " (" + (remain - (people * days)) + "  P.D.)";
+        element.innerHTML = "&nbsp;&nbsp;Unallocated People: " + remainPeople + "  &nbsp;Days: " + remainDays;
     }
 
     //these 2 functions recursivly search through the wps to find matches in the search bar
