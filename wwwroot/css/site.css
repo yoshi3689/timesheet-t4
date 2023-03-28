@@ -95,3 +95,7 @@ select-caret::after {
 .wideHeader {
   min-width: 110px;
 }
+
+.readonly {
+  background-color: green;
+}
