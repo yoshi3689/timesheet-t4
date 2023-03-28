@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using TimesheetApp.Data;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
+using System.Security.Cryptography;
+using TimesheetApp.Helpers;
+
+
 
 internal class Program
 {
@@ -126,9 +130,9 @@ internal class Program
             {
                 adminGrade = DbContext.LabourGrades!.FirstOrDefault(c => c.LabourCode == "P6") ?? new LabourGrade { LabourCode = "P6", Rate = 99 };
             }
-
+            RSA rsa = RSA.Create();
             //create a default admin
-            ApplicationUser user = new ApplicationUser
+            ApplicationUser admin = new ApplicationUser
             {
                 Email = "admin@admin.com",
                 UserName = "admin@admin.com",
@@ -137,18 +141,54 @@ internal class Program
                 JobTitle = "admin",
                 EmailConfirmed = true,
                 LabourGrade = adminGrade,
-                EmployeeNumber = 1000000000
+                EmployeeNumber = 1000000000,
+                PublicKey = rsa.ExportRSAPublicKey(),
+                PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey(), "Password123!")
             };
-            var adminExist = await UserManager.FindByEmailAsync(user.Email);
+            var adminExist = await UserManager.FindByEmailAsync(admin.Email);
             if (adminExist == null)
             {
-                await UserManager.CreateAsync(user, "Password123!");
+                await UserManager.CreateAsync(admin, "Password123!");
                 var newAdmin = await UserManager.FindByEmailAsync("admin@admin.com");
                 if (newAdmin != null)
                 {
                     await UserManager.AddToRoleAsync(newAdmin, "Admin");
+                    await UserManager.AddToRoleAsync(newAdmin, "Supervisor");
+                    await UserManager.AddToRoleAsync(newAdmin, "HR");
                 }
             }
+
+            RSA rsa2 = RSA.Create();
+            ApplicationUser newHR = new ApplicationUser
+            {
+                Email = "hr@hr.com",
+                UserName = "hr@hr.com",
+                FirstName = "HR",
+                LastName = "Manager",
+                JobTitle = "HR Manager",
+                EmailConfirmed = true,
+                LabourGrade = adminGrade,
+                EmployeeNumber = 1000000001,
+                SupervisorId = admin.Id,
+                TimesheetApproverId = admin.Id,
+                PublicKey = rsa2.ExportRSAPublicKey(),
+                PrivateKey = KeyHelper.Encrypt(rsa2.ExportRSAPrivateKey(), "Password123!")
+            };
+            var hrExists = await UserManager.FindByEmailAsync(newHR.Email);
+            if (hrExists == null)
+            {
+                await UserManager.CreateAsync(newHR, "Password123!");
+                var newHRExists = await UserManager.FindByEmailAsync("hr@hr.com");
+                if (newHRExists != null)
+                {
+                    await UserManager.AddToRoleAsync(newHR, "HR");
+                    await UserManager.AddToRoleAsync(newHR, "Supervisor");
+                }
+            }
+
+            admin.SupervisorId = newHR.Id;
+            admin.TimesheetApproverId = newHR.Id;
+            DbContext.SaveChanges();
 
         }
         app.Run();

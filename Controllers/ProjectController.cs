@@ -653,11 +653,16 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult> GetAllEmployees()
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Challenge();
+            }
             var userId = await _userManager.GetUserIdAsync(user);
             int projectId = HttpContext.Session.GetInt32("CurrentProject") ?? 0;
             var employees = await _context.EmployeeProjects
                 .Where(c => c.ProjectId == projectId && c.UserId != userId)
                 .Select(c => c.User)
+                .Select(c => new { c!.FirstName, c!.LastName, c!.EmployeeNumber })
                 .ToListAsync();
             return Json(employees);
         }
@@ -665,11 +670,16 @@ namespace TimesheetApp.Controllers
         [HttpPost]
         public async Task<IActionResult> AssignASM([FromBody] String? asm)
         {
+            int? asmId = Convert.ToInt32(asm);
+            if (asmId == null)
+            {
+                return BadRequest();
+            }
             int projectId = HttpContext.Session.GetInt32("CurrentProject") ?? 0;
             var proj = await _context.Projects.FindAsync(projectId);
             if (proj != null)
             {
-                var user = _context.Users.Where(c => c.EmployeeNumber == int.Parse(asm)).Select(c => c.Id).First();
+                var user = _context.Users.Where(c => c.EmployeeNumber == asmId).Select(c => c.Id).First();
                 if (user == proj.ProjectManagerId)
                 {
                     return BadRequest();
@@ -706,6 +716,10 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult> FindPM()
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Challenge();
+            }
             var userId = await _userManager.GetUserIdAsync(user);
             return Json(userId);
         }

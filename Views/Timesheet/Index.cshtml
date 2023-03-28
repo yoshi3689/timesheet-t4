@@ -35,6 +35,18 @@
         </div>
     </div>
 </div>
+
+
+
+
+@* HI UI PEOPLE!!! for the list of timesheets, if you want to change the color of the ones that are complete, they have the "readonly" class *@
+
+
+
+
+
+
+
 @* List of all the sheets *@
 <div class="d-flex justify-content-md-between">
 
@@ -81,7 +93,7 @@
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script>
-        let readonly = false;
+        let readonlyExists = false;
 
         function createTimesheet() {
             let end = document.querySelector("#datepicker").value;
@@ -205,8 +217,7 @@
                 newTimesheet.classList.add('activeSheet');
                 document.querySelector("#currentTimesheetId").value = timesheetId + "";
                 if(readonly){
-                    console.log("set to true");
-                    readonly = true;
+                    readonlyExists = true;
                 }
             }
             newTimesheet.addEventListener('click', function() {
@@ -230,7 +241,7 @@
                         return await response.json();
                     }
                 }).then((response) => {
-                    var readonlyRow = !document.querySelector("#Timesheet" + this.value).classList.contains("readonly");
+                    var readonlyRow = document.querySelector("#Timesheet" + this.value).classList.contains("readonly");
                     if(response != null){
                         var table = document.getElementById("rowTable");
                         for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
@@ -263,7 +274,6 @@
         }
 
        function addTableRow(projectId, workPackageId, totalHours, sat, sun, mon, tue, wed, thu, fri, notes, timesheetRowId, readonly) {
-        console.log(readonly);
             var table = document.getElementById("rowTable");
             var row = table.insertRow(-1); // add new row at the end
             row.id = timesheetRowId + "";
@@ -301,8 +311,7 @@
         @foreach (var row in Model.TimesheetRows!)
         {
             <text>
-                console.log(readonly);
-                addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonly);
+                addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonlyExists);
             </text>
         }
 

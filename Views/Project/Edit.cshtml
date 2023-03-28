@@ -139,7 +139,7 @@ ViewData["Title"] = "Manage Project";
     // assigned resp engineer
     let assignedRespEng;
     window.onload = function(){
-        isPrimaryPM("@Model.wps[0].Project.ProjectManagerId");
+        isPrimaryPM("@Model.wps![0]!.Project!.ProjectManagerId");
     }
     
 
@@ -758,10 +758,6 @@ ViewData["Title"] = "Manage Project";
                     });
                     employeeMenu.appendChild(menuItem);
                 });
-        })
-        .catch(error => {
-            // Handle any errors here
-            console.error(error);
         });
     function filterDropdown(event) {
         const input = event.target;
