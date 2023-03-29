@@ -25,6 +25,7 @@ public partial class Timesheet
   public double Overtime { get; set; }
   [Required]
   public string UserId { get; set; } = null!;
+  public string? TimesheetApproverId { get; set; }
   public string? ApproverNotes { get; set; }
 
   [InverseProperty("Timesheet")]
