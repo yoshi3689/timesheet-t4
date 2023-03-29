@@ -36,17 +36,7 @@
     </div>
 </div>
 
-
-
-
 @* HI UI PEOPLE!!! for the list of timesheets, if you want to change the color of the ones that are complete, they have the "readonly" class *@
-
-
-
-
-
-
-
 @* List of all the sheets *@
 <div class="d-flex justify-content-md-between">
 
@@ -81,9 +71,9 @@
             </tr>
         </table>
         <form asp-action="AddRow">
-            <input type="submit" value="Add Row" class="w-100 btn btn-lg btn-secondary px-4 py-2" />
+            <input type="submit" value="Add Row" class="w-100 btn btn-lg btn-secondary px-4 py-2 TSButtons"/>
         </form>
-    <input type="button" value="Submit Timesheet" class="w-100 btn btn-lg btn-primary px-4 py-2 mt-4" onclick="submitTimesheet()">
+    <input type="button" value="Submit Timesheet" class="w-100 btn btn-lg btn-primary px-4 py-2 mt-4 TSButtons" onclick="submitTimesheet()">
 
     </div>
 </div>
@@ -242,6 +232,15 @@
                         }
                     }).then((response) => {
                         var readonlyRow = document.querySelector("#Timesheet" + this.value).classList.contains("readonly");
+                        if(readonlyRow){
+                            document.querySelectorAll(".TSButtons").forEach((c) => {
+                                c.style.display = "none";
+                            });
+                        } else {
+                            document.querySelectorAll(".TSButtons").forEach((c) => {
+                                c.style.display = "inline";
+                            });
+                        }
                         if(response != null){
                             var table = document.getElementById("rowTable");
                             for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
@@ -311,6 +310,11 @@
             @foreach (var row in Model.TimesheetRows!)
             {
                 <text>
+                        if(readonlyExists){
+                            document.querySelectorAll(".TSButtons").forEach((c) => {
+                                c.style.display = "none";
+                            });
+                        }
                         addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonlyExists);
                 </text>
             }

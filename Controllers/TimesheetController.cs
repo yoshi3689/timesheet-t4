@@ -125,7 +125,7 @@ namespace TimesheetApp.Controllers
                 result = sheet;
                 _context.SaveChanges();
             }
-            else if (sheet.ApproverHash != null)
+            else if (sheet.EmployeeHash != null)
             {
                 return sheet;
             }
@@ -218,10 +218,9 @@ namespace TimesheetApp.Controllers
             {
                 return BadRequest();
             }
-            if (timesheet.ApproverHash == null)
-            {
-                createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
-            }
+
+            createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
+
             return Json(_context.TimesheetRows.Where(c => c.TimesheetId == tid).Select(c => new TimesheetRow
             {
                 TimesheetRowId = c.TimesheetRowId,

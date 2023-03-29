@@ -573,11 +573,21 @@ namespace TimesheetApp.Controllers
             document.Add(subheader);
 
             Project? prj = await _context.Projects!.FindAsync(id);
-            ApplicationUser? mgr = await _context.Users.FindAsync(prj!.ProjectManagerId);
-            if (prj == null || mgr == null)
+            if (prj == null)
             {
                 return BadRequest();
             }
+            ApplicationUser? mgr = await _context.Users.FindAsync(prj!.ProjectManagerId);
+            if (mgr == null)
+            {
+                return BadRequest();
+            }
+
+            //get the dates of the previous month
+            var startOfThisMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            var firstDay = DateOnly.FromDateTime(startOfThisMonth.AddMonths(-1));
+            var lastDay = DateOnly.FromDateTime(startOfThisMonth.AddDays(-1));
+
             LineSeparator ls = new LineSeparator(new SolidLine());
 
             Paragraph details = new Paragraph();
@@ -587,9 +597,22 @@ namespace TimesheetApp.Controllers
             details.Add(new Text($"Manager: {mgr.FirstName} {mgr.LastName} ({mgr.EmployeeNumber})"));
             details.SetFontSize(fontSizeSH);
             document.Add(details);
+
+
+            //because fridays don't line up with months, adjust he dates a bit
+            DateTime previousSaturday = startOfThisMonth.AddMonths(-1).AddDays(-(int)startOfThisMonth.AddMonths(-1).DayOfWeek - 1);
+            DateTime previousFriday = startOfThisMonth.AddDays(-1).AddDays(-(int)startOfThisMonth.AddDays(-1).DayOfWeek - 2);
+
+            Paragraph dates = new Paragraph();
+            dates.Add(new Text($"Start Date: {previousSaturday.ToShortDateString()}"));
+            dates.Add(new Tab());
+            dates.Add(new Tab());
+            dates.Add(new Text($"End Date: {previousFriday.ToShortDateString()}"));
+            dates.SetFontSize(fontSizeSH);
+            document.Add(dates);
             document.Add(ls);
 
-            Table wpTable = new Table(5);
+            Table wpTable = new Table(8);
             //headings row
 
             wpTable.AddCell(new Cell()
@@ -622,26 +645,48 @@ namespace TimesheetApp.Controllers
                 .SetFontSize(fontSizeSH)
                 .Add(new Paragraph("Actual to date")));
 
-            wpTable.SetWidth(UnitValue.CreatePercentValue(100));
+            wpTable.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Estimate at Completion")));
 
-            //get the dates of the previous month
-            var startOfThisMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-            var firstDay = startOfThisMonth.AddMonths(-1);
-            var lastDay = startOfThisMonth.AddDays(-1);
+            wpTable.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("% Variance")));
+
+            wpTable.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("% Complete")));
+
+            wpTable.SetWidth(UnitValue.CreatePercentValue(100));
 
             //get all labour grades and budgets in one query so there aren't lots of little ones.
             var labourGrades = _context.LabourGrades.ToList();
             var budgets = _context.Budgets.Where(c => c.WPProjectId.StartsWith(prj.ProjectId + "~")).ToList();
+            var estimates = _context.ResponsibleEngineerEstimates.Where(c => c.WPProjectId!.StartsWith(prj.ProjectId + "~")).ToList();
 
             //get all the approved timesheets of users in a project in the last month.
             var employees = _context.EmployeeProjects.Where(c => c.ProjectId == prj.ProjectId).Select(c => c.UserId).ToList();
-            var timesheets = _context.Timesheets.Where(c => c.ApproverHash != null && Convert.ToDateTime(c.EndDate) >= firstDay && Convert.ToDateTime(c.EndDate) <= lastDay && employees.Contains(c.UserId));
-
+            var timesheets = _context.Timesheets
+                .Where(c => c.TimesheetApproverId != null && c.EndDate >= firstDay && c.EndDate <= lastDay && employees.Contains(c.UserId))
+                .Include(c => c.TimesheetApprover);
             //create a list of timesheet rows after verifying timesheets
             var timesheetRows = new List<TimesheetRow>();
+            TimesheetController tc = new TimesheetController(_context, _userManager);
+
             foreach (var timesheet in timesheets)
             {
-                // if(TimesheetController.verifySignature(timesheet, ))
+                //check if timesheet is legit
+                if (tc.verifySignature(timesheet, timesheet.TimesheetApprover!.PublicKey!, timesheet.ApproverHash!))
+                {
+                    timesheetRows.AddRange(timesheet.TimesheetRows.Where(c => c.ProjectId == prj.ProjectId));
+                }
+
             }
 
 
@@ -681,12 +726,50 @@ namespace TimesheetApp.Controllers
                     .Add(new Paragraph(Convert.ToString(totalPDRE)).SetFontSize(fontSizeSH))
                     .Add(new Paragraph("$" + totalCostRE).SetFontSize(fontSizeSH)));
 
+
+                double totalPDActual = 0;
+                double totalCostActual = 0;
+                foreach (var row in timesheetRows.Where(c => c.WorkPackageId == wp.WorkPackageId))
+                {
+                    totalPDActual += row.TotalHoursRow / 8;
+                    totalCostActual += (row.TotalHoursRow / 8) * labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode).First().Rate;
+                }
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(Convert.ToString(totalPDActual)).SetFontSize(fontSizeSH))
+                    .Add(new Paragraph("$" + totalCostActual).SetFontSize(fontSizeSH)));
+
+
+                double pDEstimate = totalPDActual;
+                double costEstimate = totalCostActual;
+                foreach (var estimate in estimates.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId).ToList())
+                {
+                    pDEstimate += estimate.EstimatedCost;
+                    costEstimate += estimate.EstimatedCost * labourGrades.Where(c => c.LabourCode == estimate.LabourCode).First().Rate;
+                }
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(Convert.ToString(pDEstimate)).SetFontSize(fontSizeSH))
+                    .Add(new Paragraph("$" + costEstimate).SetFontSize(fontSizeSH)));
+
+
+                //find the percent variance
+                double pdVariance = (pDEstimate - totalPDPM) / Math.Max(totalPDPM, pDEstimate) * 100;
+                double costVariance = (costEstimate - totalCostPM) / Math.Max(totalCostPM, costEstimate) * 100;
+
+                pdVariance = double.IsNaN(pdVariance) ? 0 : pdVariance;
+                costVariance = double.IsNaN(costVariance) ? 0 : costVariance;
+
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(Convert.ToString(pdVariance)).SetFontSize(fontSizeSH))
+                    .Add(new Paragraph(Convert.ToString(costVariance)).SetFontSize(fontSizeSH)));
+
+                double percentComplete = totalCostActual / costEstimate * 100;
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(Convert.ToString(double.IsNaN(percentComplete) ? 0 : percentComplete)).SetFontSize(fontSizeSH)));
+
             }
 
             document.Add(wpTable);
 
-            // Add table containing data
-            document.Add(await GetPdfTable());
 
             // Page Numbers
             int n = pdfDoc.GetNumberOfPages();

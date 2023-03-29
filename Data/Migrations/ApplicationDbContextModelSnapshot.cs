@@ -459,6 +459,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<double>("Overtime")
                         .HasColumnType("double");
 
+                    b.Property<string>("TimesheetApproverId")
+                        .HasColumnType("varchar(255)");
+
                     b.Property<double>("TotalHours")
                         .HasColumnType("double");
 
@@ -467,6 +470,8 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("TimesheetId");
+
+                    b.HasIndex("TimesheetApproverId");
 
                     b.HasIndex("UserId");
 
@@ -720,11 +725,17 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Timesheet", b =>
                 {
+                    b.HasOne("TimesheetApp.Models.ApplicationUser", "TimesheetApprover")
+                        .WithMany()
+                        .HasForeignKey("TimesheetApproverId");
+
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "User")
                         .WithMany("Timesheets")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("TimesheetApprover");
 
                     b.Navigation("User");
                 });
