@@ -94,6 +94,7 @@
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script>
+
         $(function () {
             $("#datepicker").datepicker();
         });
@@ -138,7 +139,7 @@
             });
         }
 
-        function addTimesheet(endDate, totalHours, timesheetId, active, readonly) {
+        function addTimesheet(endDate, totalHours, timesheetId, active, readonly, ownerName, ownerId) {
             let timesheetsDiv = document.getElementById('timesheets');
             let newTimesheet = document.createElement('a');
             newTimesheet.id = "Timesheet" + timesheetId;
@@ -193,6 +194,9 @@
             endDateDiv.textContent = 'End Date: ' + endDate;
             let totalHoursDiv = document.createElement('div');
             totalHoursDiv.textContent = 'Hours: ' + totalHours;
+            let timesheetOwnerDiv = document.createElement('div');
+            timesheetOwnerDiv.textContent = 'Owner: ' + ownerName + '\nOwner Id:' + ownerId;
+            timesheetDiv.appendChild(timesheetOwnerDiv);
             timesheetDiv.appendChild(endDateDiv);
             timesheetDiv.appendChild(totalHoursDiv);
             newTimesheet.appendChild(timesheetDiv);
@@ -202,7 +206,7 @@
         @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
         {
             <text>
-                addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "");
+                addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", "@timesheet.User.FirstName" + " " + "@timesheet.User.LastName", "@timesheet.User.EmployeeNumber");
             </text>
         }
     </script>
