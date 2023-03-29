@@ -29,7 +29,7 @@ namespace TimesheetApp.Controllers
             // Console.WriteLine(User.Identity.Name);
             ApplicationUser user = (await _userManager.GetUserAsync(User))!;
             // var applicationDbContext = _context.WorkPackages.Include(w => w.ParentWorkPackage).Include(w => w.Project).Include(w => w.ResponsibleUser);
-            ViewData["userId"] = user.Id;
+            ViewData["name"] = user.FirstName;
             // fetch if the user is assigned to the wp as an novice emp or a RE
             var applicationDbContext
               = _context.WorkPackages.Where(wp =>
