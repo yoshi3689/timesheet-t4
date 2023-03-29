@@ -18,6 +18,8 @@ public partial class Timesheet
     [Required]
     public DateOnly? EndDate { get; set; }
 
+    [ForeignKey("TimesheetApproverId")]
+    public int? TimesheetApproverId { get; set; }
     public double TotalHours { get; set; }
     public double FlexHours { get; set; }
     public byte[]? EmployeeHash { get; set; }
