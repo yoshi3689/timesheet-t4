@@ -26,9 +26,13 @@ public partial class Timesheet
     public double Overtime { get; set; }
     [Required]
     public string UserId { get; set; } = null!;
+    public string? TimesheetApproverId { get; set; }
 
     [InverseProperty("Timesheet")]
     public virtual ICollection<TimesheetRow> TimesheetRows { get; } = new List<TimesheetRow>();
+
+    [ForeignKey("TimesheetApproverId")]
+    public ApplicationUser? TimesheetApprover { get; set; }
 
     [ForeignKey("UserId")]
     public ApplicationUser? User { get; set; } = null!;

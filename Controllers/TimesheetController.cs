@@ -69,6 +69,44 @@ namespace TimesheetApp.Controllers
             return View(model);
         }
 
+        //Sends to page displaying list of timesheets to approve for the current user.
+        public IActionResult ToApprove()
+        {
+            //get the current user
+            var approverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            //get all the employees that the current user is an approver for.
+            var empsApproving = _context.ApplicationUsers!.Where(c => c.TimesheetApproverId == approverId).ToList();
+            //get the timesheets for each employee
+            var approveSheets = new List<Timesheet>();
+            int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
+            DateTime nextFriday = DateTime.Today.AddDays(offset);
+            DateTime currentDate = DateTime.Today;
+
+            //get the timesheets for each employee
+            foreach (var emp in empsApproving)
+            {
+                approveSheets.Add(_context.Timesheets!.Where(t => t.UserId == emp.Id && t.EmployeeHash != null && t.ApproverHash == null).OrderBy(c => c.EndDate).FirstOrDefault() ?? new Timesheet());
+            }
+
+            var timesheet = approveSheets.AsEnumerable()
+                .OrderBy(ts => Math.Abs((DateTime.Parse(ts.EndDate.ToString()!) - currentDate.Date).TotalDays))
+                .FirstOrDefault();
+
+            if (timesheet != null)
+            {
+                timesheet.CurrentlySelected = true;
+            }
+
+            var rows = _context.TimesheetRows.Where(c => c.TimesheetId == timesheet!.TimesheetId).ToList();
+            var model = new TimesheetViewModel()
+            {
+                Timesheets = approveSheets,
+                TimesheetRows = rows,
+            };
+
+            return View(model);
+        }
+
         //update the rows on a timesheet to match thier wps, and create a timesheet if it doesnt exist.
         private Timesheet? createUpdateTimesheetWithRows(DateTime endDate, string userId)
         {
@@ -125,7 +163,7 @@ namespace TimesheetApp.Controllers
             if (Convert.ToDateTime(end) < DateTime.Now)
             {
                 Response.StatusCode = 400;
-                return Json("Date cannot be earlier then the present.");
+                return Json("Date cannot be earlier than the present.");
             }
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             Timesheet? createdTimesheet = createUpdateTimesheetWithRows(Convert.ToDateTime(end), userId!);
@@ -212,6 +250,28 @@ namespace TimesheetApp.Controllers
                 return Unauthorized();
             }
             timesheet.EmployeeHash = timesheetHash;
+            _context.Update(timesheet);
+            _context.SaveChanges();
+            return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult?> ApproveTimesheetAsync([FromBody] SignTimesheetViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+            if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
+            {
+                return BadRequest();
+            }
+            byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
+            if (timesheetHash == null)
+            {
+                return Unauthorized();
+            }
+            timesheet.ApproverHash = timesheetHash;
+            timesheet.TimesheetApproverId = user.Id;
             _context.Update(timesheet);
             _context.SaveChanges();
             return GetTimesheet(Convert.ToString(timesheet.TimesheetId));

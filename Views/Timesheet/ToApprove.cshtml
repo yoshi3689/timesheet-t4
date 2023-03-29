@@ -1,0 +1,209 @@
+@model TimesheetApp.Models.TimesheetModels.TimesheetViewModel
+@{
+    ViewData["Title"] = "Index";
+}
+<input type="hidden" id="currentTimesheetId">
+<div class="modal" tabindex="-1" role="dialog" id="timesheetErrorModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Error</h5>
+            </div>
+            <div class="modal-body" id="timesheetError">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal" tabindex="-1" role="dialog" id="submitModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submit and Sign Timesheet</h5>
+            </div>
+            <div class="modal-body">
+                <label for="privateKeyPassword">Signature Password</label>
+                <input type="password" id="privateKeyPassword" >
+                <label  id="passwordLabel" for="privateKeyPassword" class="text-danger font-weight-bold"></label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="submitSignature" type="button" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@* HI UI PEOPLE!!! for the list of timesheets, if you want to change the color of the ones that are complete, they have the "readonly" class *@
+
+
+
+
+
+
+
+@* List of all the sheets *@
+<div class="d-flex justify-content-md-between">
+
+    <div style="margin: 0 10px;" class="list-group border">
+        <h1 class="text-center">Sheets to Approve</h1>
+        <br />
+        <div id="timesheets">
+        </div>
+        <div class="d-flex align-items-center"
+            style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap; margin-top: 10%;">
+            <input type="text" id="datepicker" placeholder="Choose date...">
+            <button id="createTimesheet" onclick="">Find Timesheets</button>
+        </div>
+    </div>
+
+    @* Actual current timesheet box *@
+    <div style="width: 80%; margin: 0 10px;">
+        <table id="rowTable" class="table table-bordered table-responsive table-striped " cellpadding="0"
+            cellspacing="0">
+            <tr>
+                <th>Project</th>
+                <th>WP</th>
+                <th>Sat</th>
+                <th>Sun</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Total</th>
+                <th>Notes</th>
+            </tr>
+        </table>
+        <form asp-action="AddRow">
+            <input type="submit" value="Add Row" class="w-100 btn btn-lg btn-primary px-4 py-3" />
+        </form>
+
+        @* Check if submitting and signing a timesheet are the same *@
+    <input type="button" value="Approve Timesheet" class="btn-secondary" onclick="approveTimesheet()">
+    </div>
+</div>
+
+@section Scripts{
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+        $(function () {
+            $("#datepicker").datepicker();
+        });
+
+        function approveTimesheet(){
+            var myModalEl = document.getElementById('submitModal');
+            var modal = new bootstrap.Modal(myModalEl);
+            modal.show();
+            document.querySelector("#submitSignature").addEventListener("click", () => {
+                 fetch("/Timesheet/ApproveTimesheet", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: document.querySelector("#privateKeyPassword").value,
+                        timesheet: document.querySelector("#currentTimesheetId").value
+                    }),
+                })
+                .then(async (response) => {
+                    if(response.status == 401){
+                        document.querySelector("#passwordLabel").innerHTML = "Incorrect Password";
+                    } else {
+                        var myModalEl = document.getElementById('submitModal');
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                        return await response.json();
+                    }
+                }).then((response) => {
+                    document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).classList.add("readonly");
+                    if(response != null){
+                        var table = document.getElementById("rowTable");
+                        for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
+                            table.deleteRow(i); // delete the row at the current index
+                        }
+                        response.forEach((cell) => {
+                            addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, true);
+                        });
+                    }
+                });
+            });
+        }
+
+        function addTimesheet(endDate, totalHours, timesheetId, active, readonly) {
+            let timesheetsDiv = document.getElementById('timesheets');
+            let newTimesheet = document.createElement('a');
+            newTimesheet.id = "Timesheet" + timesheetId;
+            newTimesheet.className = 'list-group-item list-group-item-action';
+            if(readonly) {
+                newTimesheet.classList.add('readonly');
+            }
+            newTimesheet.value = timesheetId + "";
+            if(active){
+                newTimesheet.classList.add('activeSheet');
+                document.querySelector("#currentTimesheetId").value = timesheetId + "";
+                if(readonly){
+                    readonlyExists = true;
+                }
+            }
+            newTimesheet.addEventListener('click', function() {
+                let timesheets = document.querySelectorAll('#timesheets a');
+                for (let i = 0; i < timesheets.length; i++) {
+                    timesheets[i].classList.remove('activeSheet');
+                    if (timesheets[i] === newTimesheet) {
+                        timesheets[i].classList.add('activeSheet');
+                    }
+                }
+                document.querySelector("#currentTimesheetId").value = this.value;
+                fetch("/Timesheet/GetTimesheet", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.value),
+                }).then(async (response) => {
+                    if (response.status == 200) {
+                        return await response.json();
+                    }
+                }).then((response) => {
+                    var readonlyRow = document.querySelector("#Timesheet" + this.value).classList.contains("readonly");
+                    if(response != null){
+                        var table = document.getElementById("rowTable");
+                        for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
+                            table.deleteRow(i); // delete the row at the current index
+                        }
+                        response.forEach((cell) => {
+                            addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow);
+                        });
+                    }
+                });
+            });
+
+            let timesheetDiv = document.createElement('div');
+            let endDateDiv = document.createElement('div');
+            endDateDiv.textContent = 'End Date: ' + endDate;
+            let totalHoursDiv = document.createElement('div');
+            totalHoursDiv.textContent = 'Hours: ' + totalHours;
+            timesheetDiv.appendChild(endDateDiv);
+            timesheetDiv.appendChild(totalHoursDiv);
+            newTimesheet.appendChild(timesheetDiv);
+            timesheetsDiv.appendChild(newTimesheet);
+        }
+
+        @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
+        {
+            <text>
+                addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "");
+            </text>
+        }
+    </script>
+}
