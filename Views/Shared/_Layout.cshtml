@@ -32,6 +32,10 @@
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 <a class="dropdown-item  text-dark" asp-area="" asp-controller="Timesheet"
                                     asp-action="Index">Timesheets</a>
+                                @* should only be visible to timesheet approvers. Ask Sam how *@
+                                <a class="dropdown-item text-dark" asp-area="" asp-controller="Timesheet"
+                                    asp-action="ToApprove">Timesheet Approval</a>
+
                                 <a class="dropdown-item text-dark" asp-area="" asp-controller="Project"
                                     asp-action="Index">Projects</a>
                                 <a class="dropdown-item text-dark" asp-area="" asp-controller="EmployeeProject"
