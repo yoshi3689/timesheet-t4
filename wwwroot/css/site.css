@@ -97,7 +97,7 @@ select-caret::after {
 }
 
 .readonly {
-  background-color: green;
+  background-color: #00ff00;
 }
 
 .notiSummary {
