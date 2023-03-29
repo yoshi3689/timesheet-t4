@@ -443,6 +443,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<byte[]>("ApproverHash")
                         .HasColumnType("longblob");
 
+                    b.Property<string>("ApproverNotes")
+                        .HasColumnType("longtext");
+
                     b.Property<byte[]>("EmployeeHash")
                         .HasColumnType("longblob");
 

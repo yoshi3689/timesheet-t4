@@ -11,28 +11,28 @@ namespace TimesheetApp.Models.TimesheetModels;
 /// </summary>
 public partial class Timesheet
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int TimesheetId { get; set; }
+  [Key]
+  [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+  public int TimesheetId { get; set; }
 
-    [Required]
-    public DateOnly? EndDate { get; set; }
+  [Required]
+  public DateOnly? EndDate { get; set; }
 
-    public double TotalHours { get; set; }
-    public double FlexHours { get; set; }
-    public byte[]? EmployeeHash { get; set; }
-    public byte[]? ApproverHash { get; set; }
+  public double TotalHours { get; set; }
+  public double FlexHours { get; set; }
+  public byte[]? EmployeeHash { get; set; }
+  public byte[]? ApproverHash { get; set; }
+  public double Overtime { get; set; }
+  [Required]
+  public string UserId { get; set; } = null!;
+  public string? ApproverNotes { get; set; }
 
-    public double Overtime { get; set; }
-    [Required]
-    public string UserId { get; set; } = null!;
+  [InverseProperty("Timesheet")]
+  public virtual ICollection<TimesheetRow> TimesheetRows { get; } = new List<TimesheetRow>();
 
-    [InverseProperty("Timesheet")]
-    public virtual ICollection<TimesheetRow> TimesheetRows { get; } = new List<TimesheetRow>();
+  [ForeignKey("UserId")]
+  public ApplicationUser? User { get; set; } = null!;
 
-    [ForeignKey("UserId")]
-    public ApplicationUser? User { get; set; } = null!;
-
-    [NotMapped]
-    public bool CurrentlySelected { get; set; }
+  [NotMapped]
+  public bool CurrentlySelected { get; set; }
 }

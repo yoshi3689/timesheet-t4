@@ -83,9 +83,13 @@
         <form asp-action="AddRow">
             <input type="submit" value="Add Row" class="w-100 btn btn-lg btn-primary px-4 py-3" />
         </form>
+        <div>
+            <input id="approverNotes" type="text" value="" class="w-100" />
+        </div>
 
         @* Check if submitting and signing a timesheet are the same *@
     <input type="button" value="Approve Timesheet" class="btn-secondary" onclick="approveTimesheet()">
+    <input type="button" value="Decline Timesheet" class="btn-secondary" onclick="declineTimesheet()">
     </div>
 </div>
 
@@ -112,7 +116,49 @@
                     },
                     body: JSON.stringify({
                         password: document.querySelector("#privateKeyPassword").value,
-                        timesheet: document.querySelector("#currentTimesheetId").value
+                        timesheet: document.querySelector("#currentTimesheetId").value,
+                        approverNotes: document.querySelector("#approverNotes").value
+                    }),
+                })
+                .then(async (response) => {
+                    if(response.status == 401){
+                        document.querySelector("#passwordLabel").innerHTML = "Incorrect Password";
+                    } else {
+                        var myModalEl = document.getElementById('submitModal');
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                        return await response.json();
+                    }
+                }).then((response) => {
+                    document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).classList.add("readonly");
+                    if(response != null){
+                        var table = document.getElementById("rowTable");
+                        for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
+                            table.deleteRow(i); // delete the row at the current index
+                        }
+                        response.forEach((cell) => {
+                            addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, true);
+                        });
+                    }
+                });
+            });
+        }
+
+        function declineTimesheet(){
+            var myModalEl = document.getElementById('submitModal');
+            var modal = new bootstrap.Modal(myModalEl);
+            modal.show();
+            document.querySelector("#submitSignature").addEventListener("click", () => {
+                 fetch("/Timesheet/DeclineTimesheet", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: document.querySelector("#privateKeyPassword").value,
+                        timesheet: document.querySelector("#currentTimesheetId").value,
+                        approverNotes: document.querySelector("#approverNotes").value
                     }),
                 })
                 .then(async (response) => {

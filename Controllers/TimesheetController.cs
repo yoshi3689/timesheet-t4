@@ -265,6 +265,28 @@ namespace TimesheetApp.Controllers
       return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
     }
 
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult?> DeclineTimesheetAsync([FromBody] SignTimesheetViewModel model)
+    {
+      var user = await _userManager.GetUserAsync(User);
+      var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+      if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
+      {
+        return BadRequest();
+      }
+      byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
+      if (timesheetHash == null)
+      {
+        return Unauthorized();
+      }
+
+      timesheet.ApproverNotes = model.ApproverNotes;
+      _context.Update(timesheet);
+      _context.SaveChanges();
+      return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
+    }
+
 
     [HttpPost]
     public async Task<IActionResult> AddRow()
