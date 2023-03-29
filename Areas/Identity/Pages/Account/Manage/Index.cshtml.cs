@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TimesheetApp.Models;
+using TimesheetApp.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
 {
@@ -18,12 +20,28 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
 
+        private readonly ApplicationDbContext _context;
+
+
+        [Display(Name = "Employee Number")]
+        public int EmployeeNum { get; set; }
+
+        [Display(Name = "Job Title")]
+        public string JobTitle { get; set; }
+
+        [Display(Name = "Labour Grade")]
+        public string LabourGrade { get; set; }
+
+        [Display(Name = "Supervisor")]
+        public string Supervisor { get; set; }
+
         public IndexModel(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager)
+            SignInManager<ApplicationUser> signInManager, ApplicationDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _context = context;
         }
 
         /// <summary>
@@ -61,16 +79,29 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
             public string PhoneNumber { get; set; }
         }
 
+
         private async Task LoadAsync(ApplicationUser user)
         {
             var userName = await _userManager.GetUserNameAsync(user);
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
 
             Username = userName;
+            EmployeeNum = (await _userManager.GetUserAsync(User)).EmployeeNumber;
+            LabourGrade = (await _userManager.GetUserAsync(User)).LabourGradeCode;
+            JobTitle = (await _userManager.GetUserAsync(User)).JobTitle;
+
+            var supervisorID = (await _userManager.GetUserAsync(User)).SupervisorId;
+            var supervisor = await _userManager.FindByIdAsync(supervisorID);
+
+            if (supervisor != null) {
+                Supervisor = supervisor.FirstName + " " + supervisor.LastName;
+            }
+
+
 
             Input = new InputModel
             {
-                PhoneNumber = phoneNumber
+                PhoneNumber = phoneNumber,
             };
         }
 
@@ -115,5 +146,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
             StatusMessage = "Your profile has been updated";
             return RedirectToPage();
         }
+
+        
     }
 }
