@@ -120,6 +120,13 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
             ViewData["Supervisors"] = getSupervisors();
             rolesList = await roleManager.Roles.ToListAsync();
+            for(int i = 0; i < rolesList.Count; i++)
+            {
+                if(rolesList[i].Name == "Admin")
+                {
+                    rolesList.RemoveAt(i);
+                }
+            }
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         }
