@@ -99,3 +99,8 @@ select-caret::after {
 .readonly {
   background-color: green;
 }
+
+.notiSummary {
+  border-top: 2px solid black;
+  border-radius: 5%;
+}
