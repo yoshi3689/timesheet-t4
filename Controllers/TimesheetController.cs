@@ -87,6 +87,10 @@ namespace TimesheetApp.Controllers
                 result = sheet;
                 _context.SaveChanges();
             }
+            else if (sheet.ApproverHash != null)
+            {
+                return sheet;
+            }
             var currentUser = _context.Users.Where(c => c.Id == userId).First();
             var myWps = _context.EmployeeWorkPackages.Where(c => c.UserId == userId).Include(c => c.WorkPackage);
             var myExistingRows = _context.TimesheetRows.Where(c => c.Timesheet!.UserId == userId).Select(c => new TimesheetRow { WorkPackageId = c.WorkPackageId, WorkPackageProjectId = c.WorkPackageProjectId, TimesheetId = c.TimesheetId }).ToList();
@@ -172,7 +176,14 @@ namespace TimesheetApp.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var timesheet = _context.Timesheets.Where(c => c.TimesheetId == tid).FirstOrDefault();
-            createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
+            if (timesheet == null)
+            {
+                return BadRequest();
+            }
+            if (timesheet.ApproverHash == null)
+            {
+                createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
+            }
             return Json(_context.TimesheetRows.Where(c => c.TimesheetId == tid).Select(c => new TimesheetRow
             {
                 TimesheetRowId = c.TimesheetRowId,
@@ -229,7 +240,7 @@ namespace TimesheetApp.Controllers
 
             return RedirectToAction("Index");
         }
-        private byte[]? hashTimesheet(Timesheet timesheet, string password, byte[] encryptedPrivateKey)
+        public byte[]? hashTimesheet(Timesheet timesheet, string password, byte[] encryptedPrivateKey)
         {
             using (RSA rsa = RSA.Create())
             {
@@ -245,7 +256,7 @@ namespace TimesheetApp.Controllers
             }
         }
 
-        private bool verifySignature(Timesheet timesheet, byte[] publicKey, byte[] hashedSignature)
+        public bool verifySignature(Timesheet timesheet, byte[] publicKey, byte[] hashedSignature)
         {
             using (RSA rsa = RSA.Create())
             {
