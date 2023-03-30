@@ -36,7 +36,7 @@ namespace TimesheetApp.Controllers
         public IActionResult Index()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userSheets = _context.Timesheets!.Where(t => t.UserId == userId).OrderBy(c => c.EndDate).ToList();
+            var userSheets = _context.Timesheets!.Where(t => t.UserId == userId && t.ApproverHash == null).OrderByDescending(c => c.EndDate).ToList();
             int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
             DateTime nextFriday = DateTime.Today.AddDays(offset);
 
@@ -125,6 +125,10 @@ namespace TimesheetApp.Controllers
                 result = sheet;
                 _context.SaveChanges();
             }
+            else if (sheet.EmployeeHash != null)
+            {
+                return sheet;
+            }
             var currentUser = _context.Users.Where(c => c.Id == userId).First();
             var myWps = _context.EmployeeWorkPackages.Where(c => c.UserId == userId).Include(c => c.WorkPackage);
             var myExistingRows = _context.TimesheetRows.Where(c => c.Timesheet!.UserId == userId).Select(c => new TimesheetRow { WorkPackageId = c.WorkPackageId, WorkPackageProjectId = c.WorkPackageProjectId, TimesheetId = c.TimesheetId }).ToList();
@@ -156,12 +160,20 @@ namespace TimesheetApp.Controllers
                 Response.StatusCode = 400;
                 return Json("Please choose a date.");
             }
-            if (Convert.ToDateTime(end) < DateTime.Now)
+            // if (Convert.ToDateTime(end) < DateTime.Now)
+            // {
+            //     Response.StatusCode = 400;
+            //     return Json("Date cannot be earlier than the present.");
+            // }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int offset = (7 - (int)Convert.ToDateTime(end).DayOfWeek + (int)DayOfWeek.Friday) % 7;
+            DateTime nextFriday = Convert.ToDateTime(end).AddDays(offset);
+            var sheet = _context.Timesheets.Where(c => c.EndDate == DateOnly.FromDateTime(nextFriday) && c.UserId == userId).FirstOrDefault();
+            if (sheet != null)
             {
                 Response.StatusCode = 400;
-                return Json("Date cannot be earlier than the present.");
+                return Json("Timesheet already exists for this week.");
             }
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             Timesheet? createdTimesheet = createUpdateTimesheetWithRows(Convert.ToDateTime(end), userId!);
             if (createdTimesheet == null)
             {
@@ -179,19 +191,18 @@ namespace TimesheetApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult?> UpdateRow([FromBody] TimesheetRow timesheetRow)
+        public IActionResult? UpdateRow([FromBody] TimesheetRow timesheetRow)
         {
-            string json = JsonSerializer.Serialize(timesheetRow);
-            try
+            var oldRow = _context.TimesheetRows.Where(c => c.TimesheetRowId == timesheetRow.TimesheetRowId).Include(c => c.Timesheet).FirstOrDefault();
+            if (oldRow == null || oldRow.Timesheet == null || oldRow.Timesheet.EmployeeHash != null)
             {
-                _context.Update(timesheetRow);
-                await _context.SaveChangesAsync();
+                return BadRequest();
             }
-            catch (DbUpdateConcurrencyException)
-            {
-                return NotFound();
-
-            }
+            oldRow.Timesheet.TotalHours += timesheetRow.TotalHoursRow - oldRow.TotalHoursRow;
+            oldRow.packedHours = timesheetRow.packedHours;
+            oldRow.Notes = timesheetRow.Notes;
+            oldRow.TotalHoursRow = timesheetRow.TotalHoursRow;
+            _context.SaveChanges();
             return Ok();
         }
 
@@ -210,7 +221,13 @@ namespace TimesheetApp.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var timesheet = _context.Timesheets.Where(c => c.TimesheetId == tid).FirstOrDefault();
+            if (timesheet == null)
+            {
+                return BadRequest();
+            }
+
             createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
+
             return Json(_context.TimesheetRows.Where(c => c.TimesheetId == tid).Select(c => new TimesheetRow
             {
                 TimesheetRowId = c.TimesheetRowId,
@@ -228,7 +245,7 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult?> SubmitTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
-            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).Include(c => c.TimesheetRows).FirstOrDefault();
             if (user == null || timesheet == null || timesheet.UserId != user.Id || model.Password == null || user.PrivateKey == null)
             {
                 return BadRequest();
@@ -249,7 +266,7 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult?> ApproveTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
-            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).Include(c => c.TimesheetRows).FirstOrDefault();
             if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
             {
                 return BadRequest();
@@ -266,27 +283,27 @@ namespace TimesheetApp.Controllers
             return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
         }
 
-    [HttpPost]
-    [Authorize]
-    public async Task<IActionResult?> DeclineTimesheetAsync([FromBody] SignTimesheetViewModel model)
-    {
-      var user = await _userManager.GetUserAsync(User);
-      var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
-      if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
-      {
-        return BadRequest();
-      }
-      byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
-      if (timesheetHash == null)
-      {
-        return Unauthorized();
-      }
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult?> DeclineTimesheetAsync([FromBody] SignTimesheetViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+            if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
+            {
+                return BadRequest();
+            }
+            byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
+            if (timesheetHash == null)
+            {
+                return Unauthorized();
+            }
 
-      timesheet.ApproverNotes = model.ApproverNotes;
-      _context.Update(timesheet);
-      _context.SaveChanges();
-      return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
-    }
+            timesheet.ApproverNotes = model.ApproverNotes;
+            _context.Update(timesheet);
+            _context.SaveChanges();
+            return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
+        }
 
 
         [HttpPost]
@@ -311,7 +328,16 @@ namespace TimesheetApp.Controllers
 
             return RedirectToAction("Index");
         }
-        private byte[]? hashTimesheet(Timesheet timesheet, string password, byte[] encryptedPrivateKey)
+
+        [HttpGet]
+        public IActionResult GetAll()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userSheets = _context.Timesheets!.Where(t => t.UserId == userId && t.ApproverHash != null).OrderByDescending(c => c.EndDate).ToList();
+            return Json(userSheets);
+        }
+
+        public byte[]? hashTimesheet(Timesheet timesheet, string password, byte[] encryptedPrivateKey)
         {
             using (RSA rsa = RSA.Create())
             {
@@ -327,7 +353,7 @@ namespace TimesheetApp.Controllers
             }
         }
 
-        private bool verifySignature(Timesheet timesheet, byte[] publicKey, byte[] hashedSignature)
+        public bool verifySignature(Timesheet timesheet, byte[] publicKey, byte[] hashedSignature)
         {
             using (RSA rsa = RSA.Create())
             {

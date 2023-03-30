@@ -17,7 +17,5 @@ namespace TimesheetApp.Models.TimesheetModels
         public double EstimatedCost { get; set; }
         public DateOnly? Date { get; set; }
         public string? LabourCode { get; set; }
-        [ForeignKey("LabourCode")]
-        public LabourGrade? LabourGrade { get; set; }
     }
 }
