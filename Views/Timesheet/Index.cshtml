@@ -35,8 +35,6 @@
         </div>
     </div>
 </div>
-
-@* HI UI PEOPLE!!! for the list of timesheets, if you want to change the color of the ones that are complete, they have the "readonly" class *@
 @* List of all the sheets *@
 <div class="d-flex justify-content-md-between">
 
@@ -45,6 +43,7 @@
         <br />
         <div id="timesheets">
         </div>
+        <button class="btn btn-secondary" onclick="showAll(this)">Show all...</button>
         <div class="d-flex align-items-center "
             style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap; margin-top: 10%;">
             <input type="text" id="datepicker" placeholder="Choose date...">
@@ -107,7 +106,7 @@
                     return await response.json();
                 }).then((response) => {
                     if(response){
-                        addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null);
+                        addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, false, false);
                     }
                 });
             }
@@ -194,13 +193,19 @@
             });
 
 
-            function addTimesheet(endDate, totalHours, timesheetId, active, readonly) {
+            function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, rejected) {
                 let timesheetsDiv = document.getElementById('timesheets');
                 let newTimesheet = document.createElement('a');
                 newTimesheet.id = "Timesheet" + timesheetId;
                 newTimesheet.className = 'list-group-item list-group-item-action';
                 if(readonly) {
-                    newTimesheet.classList.add('readonly');
+                    newTimesheet.className = 'list-group-item list-group-item-secondary readonly';
+                }
+                if (accepted) {
+                    newTimesheet.className = 'list-group-item list-group-item-success readonly';
+                }
+                if (rejected) {
+                    newTimesheet.className = 'list-group-item list-group-item-danger readonly';
                 }
                 newTimesheet.value = timesheetId + "";
                 if(active){
@@ -268,7 +273,7 @@
             @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
             {
                 <text>
-                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "");
+                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, false);
                 </text>
             }
 
@@ -345,8 +350,11 @@
                             return await response.json();
                         }
                     }).then((response) => {
-                        document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).classList.add("readonly");
+                        document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).className = "list-group-item list-group-item-secondary readonly";
                         if(response != null){
+                            document.querySelectorAll(".TSButtons").forEach((c) => {
+                                c.style.display = "none";
+                            });
                             var table = document.getElementById("rowTable");
                             for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
                                 table.deleteRow(i); // delete the row at the current index
@@ -357,6 +365,18 @@
                         }
                     });
                 });
+            }
+
+            function showAll(obj){
+                 fetch("/Timesheet/GetAll")
+                    .then(async (response) => {
+                        return await response.json();
+                    }).then((c) => {
+                        obj.style.display = "none";
+                        c.forEach((response) => {
+                            addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, true, false);
+                        });
+                    });
             }
 
         </script>

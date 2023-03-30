@@ -32,7 +32,7 @@
                 @Html.DisplayNameFor(model => model.Salary)
             </th>
             <th class="text-center text-nowrap">
-                @Html.DisplayNameFor(model => model.LabourGrade)
+                @Html.DisplayNameFor(model => model.LabourGradeCode)
             </th>
             <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.Supervisor)
@@ -71,7 +71,7 @@
                     @Html.DisplayFor(modelItem => item.Salary)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.LabourGrade!.LabourCode)
+                    @Html.DisplayFor(modelItem => item.LabourGradeCode)
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.Supervisor!.FirstName) @Html.DisplayFor(modelItem =>
@@ -85,8 +85,10 @@
                     @Html.DisplayFor(modelItem => item.Email)
                 </td>
                 <td>
-                    <a class="btn btn-primary rounded w-100 mb-2 " asp-action="Edit" asp-route-id="@item.Id" role="button">Edit</a>
-                    <a class="btn btn-primary rounded w-100" asp-action="Details" asp-route-id="@item.Id" role="button">Details</a>
+                    <a class="btn btn-primary rounded w-100 mb-2 " asp-action="Edit" asp-route-id="@item.Id"
+                        role="button">Edit</a>
+                    <a class="btn btn-primary rounded w-100" asp-action="Details" asp-route-id="@item.Id"
+                        role="button">Details</a>
                 </td>
             </tr>
         }

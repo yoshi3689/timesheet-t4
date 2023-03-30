@@ -14,20 +14,14 @@ namespace TimesheetApp.Models.TimesheetModels
     public class LabourGrade
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
         [Required]
         [MaxLength(2), MinLength(2)]
         public string? LabourCode { get; set; }
         [Required]
         public double Rate { get; set; }
-        [InverseProperty("LabourGrade")]
-        public virtual ICollection<ApplicationUser> ApplicationUsers { get; } = new List<ApplicationUser>();
-
-        [InverseProperty("LabourGrade")]
-        public virtual ICollection<Budget>? Budgets { get; set; }
-
-        [InverseProperty("LabourGrade")]
-        public virtual ICollection<ResponsibleEngineerEstimate>? ResponsibleEngineerEstimates { get; set; }
-
-
+        public int Year { get; set; }
     }
 }

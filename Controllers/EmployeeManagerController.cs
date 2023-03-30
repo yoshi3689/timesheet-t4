@@ -23,7 +23,7 @@ namespace TimesheetApp.Controllers
         // GET: EmployeeManager
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Users.Include(a => a.LabourGrade).Include(a => a.Supervisor).Include(a => a.TimesheetApprover);
+            var applicationDbContext = _context.Users.Include(a => a.Supervisor).Include(a => a.TimesheetApprover);
             return View(await applicationDbContext.ToListAsync());
         }
 
@@ -36,7 +36,6 @@ namespace TimesheetApp.Controllers
             }
 
             var applicationUser = await _context.Users
-                .Include(a => a.LabourGrade)
                 .Include(a => a.Supervisor)
                 .Include(a => a.TimesheetApprover)
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -61,7 +60,7 @@ namespace TimesheetApp.Controllers
             {
                 return NotFound();
             }
-            ViewData["LabourGradeCode"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode", applicationUser.LabourGradeCode);
+            ViewData["LabourGradeCode"] = new SelectList(_context.LabourGrades.Where(c => c.Year == DateTime.Now.Year), "LabourCode", "LabourCode", applicationUser.LabourGradeCode);
             ViewData["SupervisorId"] = new SelectList(_context.Users, "Id", "FirstName", applicationUser.SupervisorId);
             ViewData["TimesheetApproverId"] = new SelectList(_context.Users, "Id", "FirstName", applicationUser.TimesheetApproverId);
             return View(applicationUser);
@@ -123,7 +122,7 @@ namespace TimesheetApp.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["LabourGradeCode"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode", applicationUser.LabourGradeCode);
+            ViewData["LabourGradeCode"] = new SelectList(_context.LabourGrades.Where(c => c.Year == DateTime.Now.Year), "LabourCode", "LabourCode", applicationUser.LabourGradeCode);
             ViewData["SupervisorId"] = new SelectList(_context.Users, "Id", "Id", applicationUser.SupervisorId);
             ViewData["TimesheetApproverId"] = new SelectList(_context.Users, "Id", "Id", applicationUser.TimesheetApproverId);
             return View(applicationUser);

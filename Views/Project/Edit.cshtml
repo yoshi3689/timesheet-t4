@@ -582,6 +582,9 @@ ViewData["Title"] = "Manage Project";
                                 <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
                                 <span style="display:none;" >${c.id}</span>
                                 `;
+                            if(c.selected){
+                                a.querySelector(".form-check-input").checked = true;
+                            }
                             candidateEmpEle.appendChild(a);
                         });
                         if (response.length == 0) {
@@ -609,7 +612,7 @@ ViewData["Title"] = "Manage Project";
         table.appendChild(createRow("Work Package ID: ", name, "Closed: ", closed, false));
 
         let re = document.createElement("span");
-        re.id = WorkPackageId + "ResponsibleEngineer";
+        re.id = "ResponsibleEngineer" + WorkPackageId;
         re.className = "label";
         if (ResponsibleUserFN !== null) {
             re.innerHTML = ResponsibleUserFN + " " + ResponsibleUserLN;
@@ -812,7 +815,7 @@ ViewData["Title"] = "Manage Project";
             }
         }).then(res => {
             if (res) {
-                var id = "#" + document.querySelector("#currentWP").value + "ResponsibleEngineer";
+                var id = "#ResponsibleEngineer" + document.querySelector("#currentWP").value;
                 var reField = document.querySelector(id);
                 reField.style = "";
                 reField.innerHTML = res;

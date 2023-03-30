@@ -36,7 +36,7 @@ namespace TimesheetApp.Controllers
         public IActionResult Index()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userSheets = _context.Timesheets!.Where(t => t.UserId == userId).OrderBy(c => c.EndDate).ToList();
+            var userSheets = _context.Timesheets!.Where(t => t.UserId == userId && t.ApproverHash == null).OrderByDescending(c => c.EndDate).ToList();
             int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
             DateTime nextFriday = DateTime.Today.AddDays(offset);
 
@@ -166,6 +166,14 @@ namespace TimesheetApp.Controllers
                 return Json("Date cannot be earlier than the present.");
             }
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int offset = (7 - (int)Convert.ToDateTime(end).DayOfWeek + (int)DayOfWeek.Friday) % 7;
+            DateTime nextFriday = Convert.ToDateTime(end).AddDays(offset);
+            var sheet = _context.Timesheets.Where(c => c.EndDate == DateOnly.FromDateTime(nextFriday) && c.UserId == userId).FirstOrDefault();
+            if (sheet != null)
+            {
+                Response.StatusCode = 400;
+                return Json("Timesheet already exists for this week.");
+            }
             Timesheet? createdTimesheet = createUpdateTimesheetWithRows(Convert.ToDateTime(end), userId!);
             if (createdTimesheet == null)
             {
@@ -183,19 +191,16 @@ namespace TimesheetApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult?> UpdateRow([FromBody] TimesheetRow timesheetRow)
+        public IActionResult? UpdateRow([FromBody] TimesheetRow timesheetRow)
         {
-            string json = JsonSerializer.Serialize(timesheetRow);
-            try
+            var oldRow = _context.TimesheetRows.Where(c => c.TimesheetRowId == timesheetRow.TimesheetRowId).Include(c => c.Timesheet).FirstOrDefault();
+            if (oldRow == null || oldRow.Timesheet == null || oldRow.Timesheet.EmployeeHash != null)
             {
-                _context.Update(timesheetRow);
-                await _context.SaveChangesAsync();
+                return BadRequest();
             }
-            catch (DbUpdateConcurrencyException)
-            {
-                return NotFound();
-
-            }
+            oldRow.packedHours = timesheetRow.packedHours;
+            oldRow.Notes = timesheetRow.Notes;
+            _context.SaveChanges();
             return Ok();
         }
 
@@ -299,6 +304,15 @@ namespace TimesheetApp.Controllers
 
             return RedirectToAction("Index");
         }
+
+        [HttpGet]
+        public IActionResult GetAll()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userSheets = _context.Timesheets!.Where(t => t.UserId == userId && t.ApproverHash != null).OrderByDescending(c => c.EndDate).ToList();
+            return Json(userSheets);
+        }
+
         public byte[]? hashTimesheet(Timesheet timesheet, string password, byte[] encryptedPrivateKey)
         {
             using (RSA rsa = RSA.Create())

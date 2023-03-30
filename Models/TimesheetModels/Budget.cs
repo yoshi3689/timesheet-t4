@@ -36,9 +36,6 @@ namespace TimesheetApp.Models.TimesheetModels
         }
         public bool isREBudget { get; set; }
 
-        [ForeignKey("LabourCode")]
-        public LabourGrade? LabourGrade { get; set; }
-
         [NotMapped]
         public double Rate { get; set; }
 
