@@ -45,6 +45,7 @@ namespace TimesheetApp.Controllers
             // add a new set of budgets
             if (input.budgets != null)
             {
+                Budget? parentB = null;
                 List<Budget> parentBudgets = _context.Budgets.Where(c => c.WPProjectId == input.budgets[0].WPProjectId).ToList();
                 foreach (var budget in input.budgets)
                 {
@@ -54,11 +55,17 @@ namespace TimesheetApp.Controllers
                         People = budget.People,
                         Days = budget.Days,
                         LabourCode = budget.LabourCode,
-                        Remaining = budget.BudgetAmount,
+                        UnallocatedDays = budget.UnallocatedDays,
+                        UnallocatedPeople = budget.UnallocatedPeople,
                         isREBudget = true
                     };
                     _context.Budgets!.Add(newBudget);
-                    parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First().Remaining -= newBudget.BudgetAmount;
+                    parentB = parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First();
+                    if (parentB != null)
+                    {
+                        parentB.UnallocatedDays -= newBudget.UnallocatedDays;
+                        parentB.UnallocatedPeople -= newBudget.UnallocatedPeople;
+                    }
                 }
             }
 

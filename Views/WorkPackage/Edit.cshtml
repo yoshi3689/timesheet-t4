@@ -28,22 +28,20 @@
           <div class="d-flex align-items-center"
             style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
             <input asp-for="budgets![i].People!" style="width: 10%;" class="form-control people"
-              onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
+              onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].UnallocatedDays, @Model.budgets![i].UnallocatedPeople)" />
             &nbsp;
             <label asp-for="budgets![i].People!" class="control-label"></label>
             &nbsp;x&nbsp;
             <input asp-for="budgets![i].Days!" style="width: 10%;" class="form-control days"
-              onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].Remaining)" />
+              onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].UnallocatedDays, @Model.budgets![i].UnallocatedPeople)" />
             &nbsp;
             <label asp-for="budgets![i].Days!" class="control-label"></label>
             &nbsp;
             x $@Model.budgets![i]!.Rate/day = <span id="@Model.budgets![i].LabourCode"> $0</span>
             &nbsp;&nbsp;
-            @{
-              double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
-            }
-            <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Unallocated:
-              $@remain (@Model.budgets[i].Remaining P.D.)</span>
+            <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Unallocated People:
+              @Model.budgets![i]!.UnallocatedPeople &nbsp;&nbsp; Days:
+              @Model.budgets![i]!.UnallocatedDays</span>
           </div>
           <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
         </div>
@@ -68,15 +66,12 @@
           <div class="d-flex align-items-center"
             style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
             <input asp-for="estimates![i].EstimatedCost!" style="width: 10%;" class="form-control people" onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value,
-          this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
+          this.parentNode.querySelector('.days').value, 0)" />
             &nbsp;
             <label asp-for="estimates![i].EstimatedCost!" class="control-label"></label>
             &nbsp;&nbsp;
-            @{
-              double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
-            }
             <span id='@(String.Format("R{0}", Model.estimates![i].LabourCode))'>After minus estimated cost:
-              $@remain (@Model.budgets[i].Remaining P.D.)</span>
+              $ (0 P.D.)</span>
           </div>
           <span asp-validation-for="estimates![i].EstimatedCost" class="text-danger"></span>
         </div>

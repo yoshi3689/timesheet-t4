@@ -88,48 +88,7 @@ internal class Program
                 context.Database.Migrate();
             }
 
-            //create basic roles
-            List<IdentityRole> roles = new List<IdentityRole>();
-            roles.Add(new IdentityRole { Name = "HR", NormalizedName = "HR" });
-            roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
-            roles.Add(new IdentityRole { Name = "Supervisor", NormalizedName = "SUPERVISOR" });
 
-            foreach (var role in roles)
-            {
-                var roleExist = await RoleManager.RoleExistsAsync(role.NormalizedName ?? "");
-                if (!roleExist)
-                {
-                    DbContext.Roles.Add(role);
-                    DbContext.SaveChanges();
-                }
-            }
-
-            //try create labour grades
-            var grades = DbContext.LabourGrades;
-            LabourGrade adminGrade;
-            if (grades != null && grades.Count() == 0)
-            {
-                //Default labour grades
-                List<LabourGrade> labourGrades = new List<LabourGrade>();
-                adminGrade = new LabourGrade { LabourCode = "JS", Rate = 1 };
-                labourGrades.Add(adminGrade);
-                labourGrades.Add(new LabourGrade { LabourCode = "DS", Rate = 1 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P1", Rate = 1 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P2", Rate = 2 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P3", Rate = 3 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P4", Rate = 4 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P5", Rate = 5 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P6", Rate = 6 });
-                foreach (var lg in labourGrades)
-                {
-                    DbContext.LabourGrades!.Add(lg);
-                }
-                DbContext.SaveChanges();
-            }
-            else
-            {
-                adminGrade = DbContext.LabourGrades!.FirstOrDefault(c => c.LabourCode == "P6") ?? new LabourGrade { LabourCode = "P6", Rate = 99 };
-            }
             RSA rsa = RSA.Create();
             //create a default admin
             ApplicationUser admin = new ApplicationUser
@@ -140,7 +99,7 @@ internal class Program
                 LastName = "admin",
                 JobTitle = "admin",
                 EmailConfirmed = true,
-                LabourGrade = adminGrade,
+                LabourGradeCode = "P5",
                 EmployeeNumber = 1000000000,
                 PublicKey = rsa.ExportRSAPublicKey(),
                 PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey(), "Password123!")
@@ -167,7 +126,7 @@ internal class Program
                 LastName = "Manager",
                 JobTitle = "HR Manager",
                 EmailConfirmed = true,
-                LabourGrade = adminGrade,
+                LabourGradeCode = "P5",
                 EmployeeNumber = 1000000001,
                 SupervisorId = admin.Id,
                 TimesheetApproverId = admin.Id,
@@ -184,12 +143,10 @@ internal class Program
                     await UserManager.AddToRoleAsync(newHR, "HR");
                     await UserManager.AddToRoleAsync(newHR, "Supervisor");
                 }
+                admin.SupervisorId = newHR.Id;
+                admin.TimesheetApproverId = newHR.Id;
+                DbContext.SaveChanges();
             }
-
-            admin.SupervisorId = newHR.Id;
-            admin.TimesheetApproverId = newHR.Id;
-            DbContext.SaveChanges();
-
         }
         app.Run();
     }

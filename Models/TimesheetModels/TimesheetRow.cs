@@ -141,9 +141,6 @@ public partial class TimesheetRow
     //set dbcontext for fk
     public WorkPackage? WorkPackage { get; set; }
 
-    [ForeignKey("OriginalLabourCode")]
-    public virtual LabourGrade? OriginalLabourGrade { get; set; }
-
     //system converted over from bruces timesheet, so columns don't take as much room in the db.
     public const int SAT = 0;
     public const int SUN = 1;

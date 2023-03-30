@@ -53,10 +53,6 @@ namespace TimesheetApp.Models
         [InverseProperty("User")]
         public virtual ICollection<Timesheet> Timesheets { get; } = new List<Timesheet>();
 
-        [ForeignKey("LabourGradeCode")]
-        [Display(Name = "Labour Grade")]
-        public virtual LabourGrade? LabourGrade { get; set; }
-
         [ForeignKey("SupervisorId")]
         public ApplicationUser? Supervisor { get; set; }
 
@@ -87,5 +83,8 @@ namespace TimesheetApp.Models
 
         [InverseProperty("User")]
         public virtual ICollection<Notification>? Notifications { get; set; }
+
+        [NotMapped]
+        public bool Selected { get; set; }
     }
 }
