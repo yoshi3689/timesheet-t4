@@ -135,7 +135,7 @@ namespace TimesheetApp.Controllers
                 }
                 input.project.TotalBudget = totalBudget;
                 var projectString = input.project.ProjectId;
-                _context.Notifications.Add(new Notification { UserId = input.project.ProjectManagerId, Message = "You have been added in the project " + input.project!.ProjectTitle + " as a Project Manager.", For = projectString + " Add", Importance = 1 });
+                _context.Notifications.Add(new Notification { UserId = input.project.ProjectManagerId, Message = "You have been added to the project " + input.project!.ProjectTitle + " as a Project Manager.", For = projectString + " Add", Importance = 1 });
                 _context.SaveChanges();
                 
                 return RedirectToAction("Index");
@@ -313,7 +313,7 @@ namespace TimesheetApp.Controllers
                     if(user == null) return new JsonResult("Error!");
                     ewp = _context.EmployeeWorkPackages.Where(c => c.UserId == ewp.UserId && c.WorkPackageId == ewp.WorkPackageId).Include(c => c.WorkPackage).Include(c => c.WorkPackage.Project).First();
                     var workPackageString = ewp.WorkPackageProjectId + "~" + ewp.WorkPackageId;
-                    _context.Notifications.Add(new Notification { UserId = oldRE, Message = "You have been removed to the work package " + ewp.WorkPackage.Title + " in the project " + ewp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", For = workPackageString + " Remove", Importance = 2 });
+                    _context.Notifications.Add(new Notification { UserId = oldRE, Message = "You have been removed from the work package " + ewp.WorkPackage.Title + " in the project " + ewp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", For = workPackageString + " Remove", Importance = 2 });
                     _context.Notifications.Add(new Notification { UserId = ewp.UserId, Message = "You have been added to the work package " + ewp.WorkPackage.Title + " in the project " + ewp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", For = workPackageString + " Add", Importance = 1 });
                     _context.SaveChanges();
                     return new JsonResult(user.FirstName + " " + user.LastName);
@@ -709,7 +709,7 @@ namespace TimesheetApp.Controllers
                 proj.AssistantProjectManagerId = user;
                 var projectString = projectId;
                 _context.Notifications.Add(new Notification { UserId = oldASM, Message = "You have been removed from the project " + proj!.ProjectTitle + " as an Assistant Project Manager.", For = projectString + " Remove", Importance = 2 });
-                _context.Notifications.Add(new Notification { UserId = proj.AssistantProjectManagerId, Message = "You have been added in the project " + proj!.ProjectTitle + " as an Assistant Project Manager.", For = projectString + " Add", Importance = 1 });
+                _context.Notifications.Add(new Notification { UserId = proj.AssistantProjectManagerId, Message = "You have been added to the project " + proj!.ProjectTitle + " as an Assistant Project Manager.", For = projectString + " Add", Importance = 1 });
                 _context.SaveChanges();
                 return Ok();
             }
