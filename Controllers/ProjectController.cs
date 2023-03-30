@@ -688,20 +688,18 @@ namespace TimesheetApp.Controllers
             var eWps = _context.EmployeeWorkPackages.Where(c => c.WorkPackageProjectId == prj.ProjectId).Include(c => c.User).ToList();
             var timesheets = _context.Timesheets
                 .Where(c => c.TimesheetApproverId != null && c.EndDate >= firstDay && c.EndDate <= lastDay && employees.Contains(c.UserId))
-                .Include(c => c.TimesheetApprover);            //create a list of timesheet rows after verifying timesheets
+                .Include(c => c.TimesheetApprover)
+                .Include(c => c.TimesheetRows);            //create a list of timesheet rows after verifying timesheets
             var timesheetRows = new List<TimesheetRow>();
             TimesheetController tc = new TimesheetController(_context, _userManager);
-
             foreach (var timesheet in timesheets)
             {
                 //check if timesheet is legit
                 if (tc.verifySignature(timesheet, timesheet.TimesheetApprover!.PublicKey!, timesheet.ApproverHash!))
                 {
-                    timesheetRows.AddRange(timesheet.TimesheetRows.Where(c => c.ProjectId == prj.ProjectId));
+                    timesheetRows.AddRange(timesheet.TimesheetRows.Where(c => c.ProjectId == prj.ProjectId).ToList());
                 }
-
             }
-
 
             foreach (var wp in _context.WorkPackages.Where(c => c.ProjectId == prj.ProjectId).OrderBy(c => c.WorkPackageId).ToList())
             {
@@ -782,8 +780,8 @@ namespace TimesheetApp.Controllers
                 costVariance = double.IsNaN(costVariance) ? 0 : costVariance;
 
                 wpTable.AddCell(new Cell()
-                    .Add(new Paragraph(Convert.ToString(Math.Round(pdVariance, 2))).SetFontSize(fontSizeSH))
-                    .Add(new Paragraph(Convert.ToString(Math.Round(costVariance, 2))).SetFontSize(fontSizeSH)));
+                    .Add(new Paragraph(Convert.ToString(Math.Round(pdVariance))).SetFontSize(fontSizeSH))
+                    .Add(new Paragraph(Convert.ToString(Math.Round(costVariance))).SetFontSize(fontSizeSH)));
 
                 double percentComplete = totalCostActual / costEstimate * 100;
                 wpTable.AddCell(new Cell()

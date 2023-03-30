@@ -160,11 +160,11 @@ namespace TimesheetApp.Controllers
                 Response.StatusCode = 400;
                 return Json("Please choose a date.");
             }
-            if (Convert.ToDateTime(end) < DateTime.Now)
-            {
-                Response.StatusCode = 400;
-                return Json("Date cannot be earlier than the present.");
-            }
+            // if (Convert.ToDateTime(end) < DateTime.Now)
+            // {
+            //     Response.StatusCode = 400;
+            //     return Json("Date cannot be earlier than the present.");
+            // }
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int offset = (7 - (int)Convert.ToDateTime(end).DayOfWeek + (int)DayOfWeek.Friday) % 7;
             DateTime nextFriday = Convert.ToDateTime(end).AddDays(offset);
@@ -198,8 +198,10 @@ namespace TimesheetApp.Controllers
             {
                 return BadRequest();
             }
+            oldRow.Timesheet.TotalHours += timesheetRow.TotalHoursRow - oldRow.TotalHoursRow;
             oldRow.packedHours = timesheetRow.packedHours;
             oldRow.Notes = timesheetRow.Notes;
+            oldRow.TotalHoursRow = timesheetRow.TotalHoursRow;
             _context.SaveChanges();
             return Ok();
         }
@@ -243,7 +245,7 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult?> SubmitTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
-            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).Include(c => c.TimesheetRows).FirstOrDefault();
             if (user == null || timesheet == null || timesheet.UserId != user.Id || model.Password == null || user.PrivateKey == null)
             {
                 return BadRequest();
@@ -264,7 +266,7 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult?> ApproveTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
-            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).Include(c => c.TimesheetRows).FirstOrDefault();
             if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
             {
                 return BadRequest();
@@ -281,27 +283,27 @@ namespace TimesheetApp.Controllers
             return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
         }
 
-    [HttpPost]
-    [Authorize]
-    public async Task<IActionResult?> DeclineTimesheetAsync([FromBody] SignTimesheetViewModel model)
-    {
-      var user = await _userManager.GetUserAsync(User);
-      var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
-      if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
-      {
-        return BadRequest();
-      }
-      byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
-      if (timesheetHash == null)
-      {
-        return Unauthorized();
-      }
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult?> DeclineTimesheetAsync([FromBody] SignTimesheetViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
+            if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
+            {
+                return BadRequest();
+            }
+            byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
+            if (timesheetHash == null)
+            {
+                return Unauthorized();
+            }
 
-      timesheet.ApproverNotes = model.ApproverNotes;
-      _context.Update(timesheet);
-      _context.SaveChanges();
-      return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
-    }
+            timesheet.ApproverNotes = model.ApproverNotes;
+            _context.Update(timesheet);
+            _context.SaveChanges();
+            return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
+        }
 
 
         [HttpPost]
