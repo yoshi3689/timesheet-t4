@@ -22,27 +22,32 @@
                 <li class="navbar-collapse collapse d-sm-inline-flex d-flex justify-content-between">
                     <ul class="navbar-nav">
                         <li class="nav-item p-4">
-                            <a class="nav-link text-dark p-0 text-decoration-none" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-dark p-0 text-decoration-none" asp-area="" asp-controller="Home"
+                                asp-action="Index">Home</a>
                         </li>
                         <li class="nav-item p-4">
-                           <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Timesheet"
-                                    asp-action="Index">Timesheets</a>
+                            <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
+                                asp-controller="Timesheet" asp-action="Index">Timesheets</a>
                         </li>
                         <li class="nav-item p-4">
-                           <a class="nav-item text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
-                                    asp-action="Index">Projects</a>
+                            @* should only be visible to timesheet approvers. Ask Sam how *@
+                            <a class="dropdown-item text-dark" asp-area="" asp-controller="Timesheet"
+                                asp-action="ToApprove">Timesheet Approval</a>
+
+                            <a class="dropdown-item text-dark" asp-area="" asp-controller="Project"
+                                asp-action="Index">Projects</a>
                         </li>
                         <li class="nav-item p-4">
-                             <a class="nav-item text-dark p-0 text-decoration-none" asp-area="" asp-controller="EmployeeProject"
-                                    asp-action="Index">Assign Employee</a>
+                            <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                                asp-controller="EmployeeProject" asp-action="Index">Assign Employee</a>
                         </li>
                         <li class="nav-item p-4">
-                            <a class="nav-item text-dark p-0 text-decoration-none" asp-area="" asp-controller="WorkPackage"
-                                asp-action="Index">Work Packages</a>
+                            <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                                asp-controller="WorkPackage" asp-action="Index">Work Packages</a>
                         </li>
                     </ul>
                     <partial name="_LoginPartial" />
-                </div>
+            </div>
             </div>
         </nav>
     </header>

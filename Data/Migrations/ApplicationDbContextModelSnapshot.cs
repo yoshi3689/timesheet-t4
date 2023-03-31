@@ -43,6 +43,26 @@ namespace TimesheetApp.Data.Migrations
                         .HasDatabaseName("RoleNameIndex");
 
                     b.ToTable("AspNetRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "40fe771a-8142-4ebe-9895-dc00fe1a5a86",
+                            Name = "HR",
+                            NormalizedName = "HR"
+                        },
+                        new
+                        {
+                            Id = "cbfbe54d-0be5-40a8-9526-0e160c6adfa3",
+                            Name = "Admin",
+                            NormalizedName = "ADMIN"
+                        },
+                        new
+                        {
+                            Id = "0b5d7250-9812-4f10-a312-909bf86317c1",
+                            Name = "Supervisor",
+                            NormalizedName = "SUPERVISOR"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -190,7 +210,7 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<string>("LabourGradeCode")
                         .IsRequired()
-                        .HasColumnType("varchar(2)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -253,8 +273,6 @@ namespace TimesheetApp.Data.Migrations
                     b.HasIndex("EmployeeNumber")
                         .IsUnique();
 
-                    b.HasIndex("LabourGradeCode");
-
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -279,7 +297,7 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("double");
 
                     b.Property<string>("LabourCode")
-                        .HasColumnType("varchar(2)");
+                        .HasColumnType("longtext");
 
                     b.Property<int>("People")
                         .HasColumnType("int");
@@ -298,8 +316,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.HasKey("BudgetId");
-
-                    b.HasIndex("LabourCode");
 
                     b.ToTable("Budgets");
                 });
@@ -339,16 +355,516 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.LabourGrade", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
                     b.Property<string>("LabourCode")
+                        .IsRequired()
                         .HasMaxLength(2)
                         .HasColumnType("varchar(2)");
 
                     b.Property<double>("Rate")
                         .HasColumnType("double");
 
-                    b.HasKey("LabourCode");
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
 
                     b.ToTable("LabourGrades");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            LabourCode = "DS",
+                            Rate = 232.24000000000001,
+                            Year = 2023
+                        },
+                        new
+                        {
+                            Id = 2,
+                            LabourCode = "SS",
+                            Rate = 256.19,
+                            Year = 2023
+                        },
+                        new
+                        {
+                            Id = 3,
+                            LabourCode = "P1",
+                            Rate = 275.33999999999997,
+                            Year = 2023
+                        },
+                        new
+                        {
+                            Id = 4,
+                            LabourCode = "P2",
+                            Rate = 351.94999999999999,
+                            Year = 2023
+                        },
+                        new
+                        {
+                            Id = 5,
+                            LabourCode = "P3",
+                            Rate = 428.56999999999999,
+                            Year = 2023
+                        },
+                        new
+                        {
+                            Id = 6,
+                            LabourCode = "P4",
+                            Rate = 538.70000000000005,
+                            Year = 2023
+                        },
+                        new
+                        {
+                            Id = 7,
+                            LabourCode = "P5",
+                            Rate = 636.86000000000001,
+                            Year = 2023
+                        },
+                        new
+                        {
+                            Id = 9,
+                            LabourCode = "DS",
+                            Rate = 241.06999999999999,
+                            Year = 2024
+                        },
+                        new
+                        {
+                            Id = 10,
+                            LabourCode = "SS",
+                            Rate = 265.92000000000002,
+                            Year = 2024
+                        },
+                        new
+                        {
+                            Id = 11,
+                            LabourCode = "P1",
+                            Rate = 285.80000000000001,
+                            Year = 2024
+                        },
+                        new
+                        {
+                            Id = 12,
+                            LabourCode = "P2",
+                            Rate = 365.32999999999998,
+                            Year = 2024
+                        },
+                        new
+                        {
+                            Id = 13,
+                            LabourCode = "P3",
+                            Rate = 444.86000000000001,
+                            Year = 2024
+                        },
+                        new
+                        {
+                            Id = 14,
+                            LabourCode = "P4",
+                            Rate = 559.16999999999996,
+                            Year = 2024
+                        },
+                        new
+                        {
+                            Id = 15,
+                            LabourCode = "P5",
+                            Rate = 661.07000000000005,
+                            Year = 2024
+                        },
+                        new
+                        {
+                            Id = 17,
+                            LabourCode = "DS",
+                            Rate = 250.22999999999999,
+                            Year = 2025
+                        },
+                        new
+                        {
+                            Id = 18,
+                            LabourCode = "SS",
+                            Rate = 276.02999999999997,
+                            Year = 2025
+                        },
+                        new
+                        {
+                            Id = 19,
+                            LabourCode = "P1",
+                            Rate = 296.66000000000003,
+                            Year = 2025
+                        },
+                        new
+                        {
+                            Id = 20,
+                            LabourCode = "P2",
+                            Rate = 379.20999999999998,
+                            Year = 2025
+                        },
+                        new
+                        {
+                            Id = 21,
+                            LabourCode = "P3",
+                            Rate = 461.75999999999999,
+                            Year = 2025
+                        },
+                        new
+                        {
+                            Id = 22,
+                            LabourCode = "P4",
+                            Rate = 580.41999999999996,
+                            Year = 2025
+                        },
+                        new
+                        {
+                            Id = 23,
+                            LabourCode = "P5",
+                            Rate = 686.19000000000005,
+                            Year = 2025
+                        },
+                        new
+                        {
+                            Id = 25,
+                            LabourCode = "DS",
+                            Rate = 259.74000000000001,
+                            Year = 2026
+                        },
+                        new
+                        {
+                            Id = 26,
+                            LabourCode = "SS",
+                            Rate = 286.51999999999998,
+                            Year = 2026
+                        },
+                        new
+                        {
+                            Id = 27,
+                            LabourCode = "P1",
+                            Rate = 307.94,
+                            Year = 2026
+                        },
+                        new
+                        {
+                            Id = 28,
+                            LabourCode = "P2",
+                            Rate = 393.62,
+                            Year = 2026
+                        },
+                        new
+                        {
+                            Id = 29,
+                            LabourCode = "P3",
+                            Rate = 479.31,
+                            Year = 2026
+                        },
+                        new
+                        {
+                            Id = 30,
+                            LabourCode = "P4",
+                            Rate = 602.48000000000002,
+                            Year = 2026
+                        },
+                        new
+                        {
+                            Id = 31,
+                            LabourCode = "P5",
+                            Rate = 712.25999999999999,
+                            Year = 2026
+                        },
+                        new
+                        {
+                            Id = 33,
+                            LabourCode = "DS",
+                            Rate = 269.61000000000001,
+                            Year = 2027
+                        },
+                        new
+                        {
+                            Id = 34,
+                            LabourCode = "SS",
+                            Rate = 297.41000000000003,
+                            Year = 2027
+                        },
+                        new
+                        {
+                            Id = 35,
+                            LabourCode = "P1",
+                            Rate = 319.63999999999999,
+                            Year = 2027
+                        },
+                        new
+                        {
+                            Id = 36,
+                            LabourCode = "P2",
+                            Rate = 408.57999999999998,
+                            Year = 2027
+                        },
+                        new
+                        {
+                            Id = 37,
+                            LabourCode = "P3",
+                            Rate = 497.51999999999998,
+                            Year = 2027
+                        },
+                        new
+                        {
+                            Id = 38,
+                            LabourCode = "P4",
+                            Rate = 625.37,
+                            Year = 2027
+                        },
+                        new
+                        {
+                            Id = 39,
+                            LabourCode = "P5",
+                            Rate = 739.33000000000004,
+                            Year = 2027
+                        },
+                        new
+                        {
+                            Id = 41,
+                            LabourCode = "DS",
+                            Rate = 279.85000000000002,
+                            Year = 2028
+                        },
+                        new
+                        {
+                            Id = 42,
+                            LabourCode = "SS",
+                            Rate = 308.70999999999998,
+                            Year = 2028
+                        },
+                        new
+                        {
+                            Id = 43,
+                            LabourCode = "P1",
+                            Rate = 331.77999999999997,
+                            Year = 2028
+                        },
+                        new
+                        {
+                            Id = 44,
+                            LabourCode = "P2",
+                            Rate = 424.11000000000001,
+                            Year = 2028
+                        },
+                        new
+                        {
+                            Id = 45,
+                            LabourCode = "P3",
+                            Rate = 516.42999999999995,
+                            Year = 2028
+                        },
+                        new
+                        {
+                            Id = 46,
+                            LabourCode = "P4",
+                            Rate = 649.13,
+                            Year = 2028
+                        },
+                        new
+                        {
+                            Id = 47,
+                            LabourCode = "P5",
+                            Rate = 767.41999999999996,
+                            Year = 2028
+                        },
+                        new
+                        {
+                            Id = 49,
+                            LabourCode = "DS",
+                            Rate = 290.49000000000001,
+                            Year = 2029
+                        },
+                        new
+                        {
+                            Id = 50,
+                            LabourCode = "SS",
+                            Rate = 320.44,
+                            Year = 2029
+                        },
+                        new
+                        {
+                            Id = 51,
+                            LabourCode = "P1",
+                            Rate = 344.38999999999999,
+                            Year = 2029
+                        },
+                        new
+                        {
+                            Id = 52,
+                            LabourCode = "P2",
+                            Rate = 440.22000000000003,
+                            Year = 2029
+                        },
+                        new
+                        {
+                            Id = 53,
+                            LabourCode = "P3",
+                            Rate = 536.04999999999995,
+                            Year = 2029
+                        },
+                        new
+                        {
+                            Id = 54,
+                            LabourCode = "P4",
+                            Rate = 673.79999999999995,
+                            Year = 2029
+                        },
+                        new
+                        {
+                            Id = 55,
+                            LabourCode = "P5",
+                            Rate = 796.58000000000004,
+                            Year = 2029
+                        },
+                        new
+                        {
+                            Id = 57,
+                            LabourCode = "DS",
+                            Rate = 301.51999999999998,
+                            Year = 2030
+                        },
+                        new
+                        {
+                            Id = 58,
+                            LabourCode = "SS",
+                            Rate = 332.61000000000001,
+                            Year = 2030
+                        },
+                        new
+                        {
+                            Id = 59,
+                            LabourCode = "P1",
+                            Rate = 357.48000000000002,
+                            Year = 2030
+                        },
+                        new
+                        {
+                            Id = 60,
+                            LabourCode = "P2",
+                            Rate = 456.94999999999999,
+                            Year = 2030
+                        },
+                        new
+                        {
+                            Id = 61,
+                            LabourCode = "P3",
+                            Rate = 556.41999999999996,
+                            Year = 2030
+                        },
+                        new
+                        {
+                            Id = 62,
+                            LabourCode = "P4",
+                            Rate = 699.40999999999997,
+                            Year = 2030
+                        },
+                        new
+                        {
+                            Id = 63,
+                            LabourCode = "P5",
+                            Rate = 826.85000000000002,
+                            Year = 2030
+                        },
+                        new
+                        {
+                            Id = 65,
+                            LabourCode = "DS",
+                            Rate = 312.98000000000002,
+                            Year = 2031
+                        },
+                        new
+                        {
+                            Id = 66,
+                            LabourCode = "SS",
+                            Rate = 345.25,
+                            Year = 2031
+                        },
+                        new
+                        {
+                            Id = 67,
+                            LabourCode = "P1",
+                            Rate = 371.06,
+                            Year = 2031
+                        },
+                        new
+                        {
+                            Id = 68,
+                            LabourCode = "P2",
+                            Rate = 474.31,
+                            Year = 2031
+                        },
+                        new
+                        {
+                            Id = 69,
+                            LabourCode = "P3",
+                            Rate = 577.55999999999995,
+                            Year = 2031
+                        },
+                        new
+                        {
+                            Id = 70,
+                            LabourCode = "P4",
+                            Rate = 725.98000000000002,
+                            Year = 2031
+                        },
+                        new
+                        {
+                            Id = 71,
+                            LabourCode = "P5",
+                            Rate = 858.26999999999998,
+                            Year = 2031
+                        },
+                        new
+                        {
+                            Id = 73,
+                            LabourCode = "DS",
+                            Rate = 324.88,
+                            Year = 2032
+                        },
+                        new
+                        {
+                            Id = 74,
+                            LabourCode = "SS",
+                            Rate = 358.37,
+                            Year = 2032
+                        },
+                        new
+                        {
+                            Id = 75,
+                            LabourCode = "P1",
+                            Rate = 385.16000000000003,
+                            Year = 2032
+                        },
+                        new
+                        {
+                            Id = 76,
+                            LabourCode = "P2",
+                            Rate = 492.33999999999997,
+                            Year = 2032
+                        },
+                        new
+                        {
+                            Id = 77,
+                            LabourCode = "P3",
+                            Rate = 599.50999999999999,
+                            Year = 2032
+                        },
+                        new
+                        {
+                            Id = 78,
+                            LabourCode = "P4",
+                            Rate = 753.57000000000005,
+                            Year = 2032
+                        },
+                        new
+                        {
+                            Id = 79,
+                            LabourCode = "P5",
+                            Rate = 890.88999999999999,
+                            Year = 2032
+                        });
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Notification", b =>
@@ -422,7 +938,7 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("double");
 
                     b.Property<string>("LabourCode")
-                        .HasColumnType("varchar(2)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ProjectId")
                         .HasColumnType("longtext");
@@ -431,8 +947,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LabourCode");
 
                     b.ToTable("ResponsibleEngineerEstimates");
                 });
@@ -445,6 +959,9 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<byte[]>("ApproverHash")
                         .HasColumnType("longblob");
+
+                    b.Property<string>("ApproverNotes")
+                        .HasColumnType("longtext");
 
                     b.Property<byte[]>("EmployeeHash")
                         .HasColumnType("longblob");
@@ -459,6 +976,9 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<double>("Overtime")
                         .HasColumnType("double");
 
+                    b.Property<string>("TimesheetApproverId")
+                        .HasColumnType("varchar(255)");
+
                     b.Property<double>("TotalHours")
                         .HasColumnType("double");
 
@@ -467,6 +987,8 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("TimesheetId");
+
+                    b.HasIndex("TimesheetApproverId");
 
                     b.HasIndex("UserId");
 
@@ -483,7 +1005,7 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("OriginalLabourCode")
-                        .HasColumnType("varchar(2)");
+                        .HasColumnType("longtext");
 
                     b.Property<int?>("ProjectId")
                         .HasColumnType("int");
@@ -507,8 +1029,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("TimesheetRowId");
-
-                    b.HasIndex("OriginalLabourCode");
 
                     b.HasIndex("ProjectId");
 
@@ -613,12 +1133,6 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.ApplicationUser", b =>
                 {
-                    b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "LabourGrade")
-                        .WithMany("ApplicationUsers")
-                        .HasForeignKey("LabourGradeCode")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "Supervisor")
                         .WithMany("SupervisedUsers")
                         .HasForeignKey("SupervisorId");
@@ -627,20 +1141,9 @@ namespace TimesheetApp.Data.Migrations
                         .WithMany("ApprovableUsers")
                         .HasForeignKey("TimesheetApproverId");
 
-                    b.Navigation("LabourGrade");
-
                     b.Navigation("Supervisor");
 
                     b.Navigation("TimesheetApprover");
-                });
-
-            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Budget", b =>
-                {
-                    b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "LabourGrade")
-                        .WithMany("Budgets")
-                        .HasForeignKey("LabourCode");
-
-                    b.Navigation("LabourGrade");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.EmployeeProject", b =>
@@ -709,32 +1212,25 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("ProjectManager");
                 });
 
-            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.ResponsibleEngineerEstimate", b =>
-                {
-                    b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "LabourGrade")
-                        .WithMany("ResponsibleEngineerEstimates")
-                        .HasForeignKey("LabourCode");
-
-                    b.Navigation("LabourGrade");
-                });
-
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Timesheet", b =>
                 {
+                    b.HasOne("TimesheetApp.Models.ApplicationUser", "TimesheetApprover")
+                        .WithMany()
+                        .HasForeignKey("TimesheetApproverId");
+
                     b.HasOne("TimesheetApp.Models.ApplicationUser", "User")
                         .WithMany("Timesheets")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("TimesheetApprover");
+
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.TimesheetRow", b =>
                 {
-                    b.HasOne("TimesheetApp.Models.TimesheetModels.LabourGrade", "OriginalLabourGrade")
-                        .WithMany()
-                        .HasForeignKey("OriginalLabourCode");
-
                     b.HasOne("TimesheetApp.Models.TimesheetModels.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId");
@@ -750,8 +1246,6 @@ namespace TimesheetApp.Data.Migrations
                         .HasForeignKey("WorkPackageId", "WorkPackageProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("OriginalLabourGrade");
 
                     b.Navigation("Project");
 
@@ -802,15 +1296,6 @@ namespace TimesheetApp.Data.Migrations
                     b.Navigation("Timesheets");
 
                     b.Navigation("WorkPackages");
-                });
-
-            modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.LabourGrade", b =>
-                {
-                    b.Navigation("ApplicationUsers");
-
-                    b.Navigation("Budgets");
-
-                    b.Navigation("ResponsibleEngineerEstimates");
                 });
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.Project", b =>

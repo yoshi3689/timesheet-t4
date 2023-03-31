@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -24,6 +25,7 @@ namespace TimesheetApp.Controllers
         }
 
         // GET: WorkPackage
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Index()
         {
             // Console.WriteLine(User.Identity.Name);
@@ -35,6 +37,7 @@ namespace TimesheetApp.Controllers
             return View(await applicationDbContext.ToListAsync());
         }
 
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult CreateBudgetsAndEstimates(LowestWorkPackageBAndEViewModel input)
         {
             // add a new set of budgets
@@ -84,6 +87,7 @@ namespace TimesheetApp.Controllers
         }
 
         // GET: WorkPackage/Details/5
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Details(string id)
         {
             if (id == null || _context.WorkPackages == null)
@@ -105,6 +109,7 @@ namespace TimesheetApp.Controllers
         }
 
         // GET: WorkPackage/Create
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult Create()
         {
             ViewData["ParentWorkPackageId"] = new SelectList(_context.WorkPackages, "WorkPackageId", "WorkPackageId");
@@ -118,6 +123,7 @@ namespace TimesheetApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Create([Bind("WorkPackageId,ProjectId,Title,ResponsibleUserId,ParentWorkPackageId,ParentWorkPackageProjectId,IsBottomLevel,ActualCost,IsClosed")] WorkPackage workPackage)
         {
             if (ModelState.IsValid)
@@ -133,6 +139,7 @@ namespace TimesheetApp.Controllers
         }
 
         // GET: WorkPackage/Edit/5
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult Edit(string id1, int id2)
         {
             // fetch project budgets for this LWP set by PM
@@ -216,6 +223,7 @@ namespace TimesheetApp.Controllers
         // }
 
         // GET: WorkPackage/Delete/5
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Delete(string id)
         {
             if (id == null || _context.WorkPackages == null)
@@ -239,6 +247,7 @@ namespace TimesheetApp.Controllers
         // POST: WorkPackage/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> DeleteConfirmed(string id)
         {
             if (_context.WorkPackages == null)

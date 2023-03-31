@@ -25,6 +25,7 @@ public class HomeController : Controller
         _logger = logger;
     }
 
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> IndexAsync()
     {
         var user = (await _userManager.GetUserAsync(User));
@@ -41,7 +42,8 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Policy = "KeyRequirement")]
+
     public async Task<IActionResult> SeeNotification([FromBody] string id)
     {
         int newID;
