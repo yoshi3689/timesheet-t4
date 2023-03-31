@@ -221,13 +221,11 @@ namespace TimesheetApp.Controllers
                 {
                     total += row.getHour(i);
                 }
-                Console.WriteLine(total);
                 if (total > 24)
                 {
                     validationErrors.Add(i, "Cannot have more then 24 hours in a column.");
                 }
             }
-            Console.WriteLine("------------");
             if (validationErrors.Count() > 0)
             {
                 Response.StatusCode = 400;
