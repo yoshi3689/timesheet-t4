@@ -252,7 +252,7 @@
         @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
         {
             <text>
-                addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", "@timesheet.User.FirstName" + " " + "@timesheet.User.LastName", "@timesheet.User.EmployeeNumber");
+                addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", "@timesheet.User!.FirstName" + " " + "@timesheet.User.LastName", "@timesheet.User.EmployeeNumber");
             </text>
         }
     </script>

@@ -141,10 +141,9 @@ namespace TimesheetApp.Controllers
                 var projectString = input.project.ProjectId;
                 _context.Notifications.Add(new Notification { UserId = input.project.ProjectManagerId, Message = "You have been added to the project " + input.project!.ProjectTitle + " as a Project Manager.", For = projectString + " Add", Importance = 1 });
                 _context.SaveChanges();
-
                 return RedirectToAction("Index");
-
             }
+
             var users = _context.Users.Select(s => new
             {
                 Id = s.Id,
@@ -314,15 +313,17 @@ namespace TimesheetApp.Controllers
                 if (LLWP != null)
                 {
                     var oldRE = LLWP.ResponsibleUserId;
-
                     LLWP.ResponsibleUserId = ewp.UserId;
                     // add rows of estimate for this LLWP
                     var user = _context.Users.Where(c => c.Id == ewp.UserId).FirstOrDefault();
                     if (user == null) return new JsonResult("Error!");
                     ewp = _context.EmployeeWorkPackages.Where(c => c.UserId == ewp.UserId && c.WorkPackageId == ewp.WorkPackageId).Include(c => c.WorkPackage).Include(c => c.WorkPackage!.Project).First();
                     var workPackageString = ewp.WorkPackageProjectId + "~" + ewp.WorkPackageId;
-                    _context.Notifications.Add(new Notification { UserId = oldRE, Message = "You have been removed from the work package " + ewp.WorkPackage!.Title + " in the project " + ewp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", For = workPackageString + " Remove", Importance = 2 });
-                    _context.Notifications.Add(new Notification { UserId = ewp.UserId, Message = "You have been added to the work package " + ewp.WorkPackage.Title + " in the project " + ewp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", For = workPackageString + " Add", Importance = 1 });
+                    if (oldRE != null)
+                    {
+                        _context.Notifications.Add(new Notification { UserId = oldRE, Message = "You have been removed from the work package " + ewp.WorkPackage!.Title + " in the project " + ewp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", For = workPackageString + " Remove", Importance = 2 });
+                    }
+                    _context.Notifications.Add(new Notification { UserId = ewp.UserId, Message = "You have been added to the work package " + ewp.WorkPackage!.Title + " in the project " + ewp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", For = workPackageString + " Add", Importance = 1 });
                     _context.SaveChanges();
                     return new JsonResult(user.FirstName + " " + user.LastName);
                 }
@@ -371,7 +372,7 @@ namespace TimesheetApp.Controllers
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
 
             //check if the fields are valid
-            if (ModelState.GetFieldValidationState("WorkPackage.ParentWorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.WorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.Title") != ModelValidationState.Valid)
+            if (ModelState.GetFieldValidationState("WorkPackage.ParentWorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.WorkPackageId") != ModelValidationState.Valid || ModelState.GetFieldValidationState("WorkPackage.Title") != ModelValidationState.Valid || ModelState.GetFieldValidationState("budgets") != ModelValidationState.Valid)
             {
                 Response.StatusCode = 400;
                 return PartialView("_CreateWorkPackagePartial", p);
@@ -832,47 +833,6 @@ namespace TimesheetApp.Controllers
             return fileStreamResult;
         }
 
-        private async Task<Table> GetPdfTable()
-        {
-            // fetch data
-            List<LabourGrade> lgs = await _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year)!.ToListAsync();
-            // Table with 2 columns
-            Table table = new Table(2, false);
-            // Headings
-            Cell cellLabourCode = new Cell(1, 1)
-               .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
-               .SetTextAlignment(TextAlignment.CENTER)
-               .Add(new Paragraph("Labour Grade Code"));
-
-            Cell cellRates = new Cell(1, 1)
-               .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
-               .SetTextAlignment(TextAlignment.LEFT)
-               .Add(new Paragraph("Rate"));
-
-            //   Cell cellQuantity = new Cell(1, 1)
-            //      .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
-            //      .SetTextAlignment(TextAlignment.CENTER)
-            //      .Add(new Paragraph("Estimate by Responsible Engineer"));
-
-            table.AddCell(cellLabourCode);
-            table.AddCell(cellRates);
-
-            foreach (var item in lgs)
-            {
-                Cell cId = new Cell(1, 1)
-                    .SetTextAlignment(TextAlignment.CENTER)
-                    .Add(new Paragraph(item.LabourCode!.ToString()));
-
-                Cell cName = new Cell(1, 1)
-                    .SetTextAlignment(TextAlignment.LEFT)
-                    .Add(new Paragraph(item.Rate!.ToString()));
-
-                table.AddCell(cId);
-                table.AddCell(cName);
-            }
-
-            return table;
-        }
         [Authorize(Policy = "KeyRequirement")]
         [HttpGet]
         public async Task<IActionResult> GetAllEmployees()
@@ -887,7 +847,7 @@ namespace TimesheetApp.Controllers
             var employees = await _context.EmployeeProjects
                 .Where(c => c.ProjectId == projectId && c.UserId != userId)
                 .Include(c => c.Project)
-                    .ThenInclude(p => p.AssistantProjectManager)
+                    .ThenInclude(p => p!.AssistantProjectManager)
                 .Include(c => c.Project!.ProjectManager)
                 .Include(c => c.User)
                 .Select(c => new

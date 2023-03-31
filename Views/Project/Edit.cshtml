@@ -706,11 +706,9 @@ ViewData["Title"] = "Manage Project";
                 var modal = bootstrap.Modal.getInstance(myModalEl)
                 modal.hide();
                 document.querySelector("#modal-placeholder").innerHTML = text;
-                document.querySelector("#parentWPID").value = WorkPackageId;
                 myModalEl = document.getElementById('splitModal');
                 modal = new bootstrap.Modal(myModalEl);
                 modal.show();
-                document.querySelector("#newWPForm").addEventListener('submit', submitForm);
                 return;
             }
             return await c.json();

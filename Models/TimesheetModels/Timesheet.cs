@@ -17,11 +17,13 @@ public partial class Timesheet
 
     [Required]
     public DateOnly? EndDate { get; set; }
-
+    [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
     public double TotalHours { get; set; }
+    [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
     public double FlexHours { get; set; }
     public byte[]? EmployeeHash { get; set; }
     public byte[]? ApproverHash { get; set; }
+    [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
     public double Overtime { get; set; }
     [Required]
     public string UserId { get; set; } = null!;

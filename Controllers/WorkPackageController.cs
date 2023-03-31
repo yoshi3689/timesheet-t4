@@ -71,19 +71,20 @@ namespace TimesheetApp.Controllers
             {
                 foreach (var estimate in input.estimates)
                 {
+                    int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
+                    DateTime nextFriday = DateTime.Today.AddDays(offset);
                     ResponsibleEngineerEstimate re = new ResponsibleEngineerEstimate
                     {
                         WPProjectId = estimate.WPProjectId,
                         LabourCode = estimate.LabourCode,
-                        // Date will be set after form submission
-                        Date = DateOnly.FromDateTime(DateTime.Now),
+                        Date = DateOnly.FromDateTime(nextFriday),
                         EstimatedCost = estimate.EstimatedCost,
                     };
                     _context.ResponsibleEngineerEstimates!.Add(re);
                 }
                 _context.SaveChanges();
             }
-            return Json(input);
+            return RedirectToAction("Index");
         }
 
         // GET: WorkPackage/Details/5
@@ -142,25 +143,23 @@ namespace TimesheetApp.Controllers
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult Edit(string id1, int id2)
         {
+            int labourGradeCount = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).Count();
             // fetch project budgets for this LWP set by PM
-            List<Budget> budgets
-            = _context.Budgets.Where(b => b.WPProjectId == id2 + "~" + id1)
-            .AsEnumerable().TakeLast(8).ToList();
+            List<Budget> budgets = _context.Budgets.Where(b => b.WPProjectId == id2 + "~" + id1).AsEnumerable().TakeLast(labourGradeCount).ToList();
             // fetch REEstimates for this LWP
-            List<ResponsibleEngineerEstimate> estimates
-            = _context.ResponsibleEngineerEstimates.Where(ree => ree.WPProjectId == id2 + "~" + id1)
-            .AsEnumerable().TakeLast(8).ToList();
+            List<ResponsibleEngineerEstimate> estimates = _context.ResponsibleEngineerEstimates.Where(ree => ree.WPProjectId == id2 + "~" + id1)
+                .AsEnumerable().TakeLast(8).ToList();
 
             // if no estimates made for this LWP or the date of the most recently created
-            // set of estimates is more than 7 days prior to the current date
-            bool shouldMakeWE = estimates.Count == 0
-              || DateOnly.FromDateTime(DateTime.Now).DayNumber
-                - estimates[estimates.Count - 1].Date.GetValueOrDefault().DayNumber >= 7;
+            // make sure there aren't any with the same end date
+            int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
+            DateTime nextFriday = DateTime.Today.AddDays(offset);
+            bool shouldMakeWE = estimates.Count == 0 || DateOnly.FromDateTime(nextFriday) != estimates[estimates.Count - 1].Date;
 
             // for now, clear the content of the estimates array
             // just to send the new set of re objects to the form
             estimates.Clear();
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < labourGradeCount; i++)
             {
                 budgets[i].Days = 0;
                 budgets[i].People = 0;
@@ -183,44 +182,6 @@ namespace TimesheetApp.Controllers
 
             return View(model);
         }
-
-        // POST: WorkPackage/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        // [HttpPost]
-        // [ValidateAntiForgeryToken]
-        // public async Task<IActionResult> Edit(string id, [Bind("WorkPackageId,ProjectId,Title,ResponsibleUserId,ParentWorkPackageId,ParentWorkPackageProjectId,IsBottomLevel,ActualCost,IsClosed")] WorkPackage workPackage)
-        // {
-        //     if (id != workPackage.WorkPackageId)
-        //     {
-        //         return NotFound();
-        //     }
-
-        //     if (ModelState.IsValid)
-        //     {
-        //         try
-        //         {
-        //             _context.Update(workPackage);
-        //             await _context.SaveChangesAsync();
-        //         }
-        //         catch (DbUpdateConcurrencyException)
-        //         {
-        //             if (!WorkPackageExists(workPackage.WorkPackageId))
-        //             {
-        //                 return NotFound();
-        //             }
-        //             else
-        //             {
-        //                 throw;
-        //             }
-        //         }
-        //         return RedirectToAction(nameof(Index));
-        //     }
-        //     ViewData["ParentWorkPackageId"] = new SelectList(_context.WorkPackages, "WorkPackageId", "WorkPackageId", workPackage.ParentWorkPackageId);
-        //     ViewData["ProjectId"] = new SelectList(_context.Projects, "ProjectId", "ProjectManagerId", workPackage.ProjectId);
-        //     ViewData["ResponsibleUserId"] = new SelectList(_context.Users, "Id", "Id", workPackage.ResponsibleUserId);
-        //     return View(workPackage);
-        // }
 
         // GET: WorkPackage/Delete/5
         [Authorize(Policy = "KeyRequirement")]

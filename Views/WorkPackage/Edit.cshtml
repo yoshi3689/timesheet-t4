@@ -12,7 +12,7 @@
 <br>
 @if (Model.estimates != null && Model.budgets![0].isREBudget == false)
 {
-  <form id="reBudgetEstimateForm">
+  <form id="reBudgetEstimateForm" asp-action="CreateBudgetsAndEstimates">
 
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <h1>Work Package Budget</h1>
@@ -90,8 +90,7 @@
 }
 else
 {
-  <h1>There's no Resonsible Engineer tasks avaialble for you as of now!!</h1>
-  @* <h1>Last weekly estimate entry is: @Model.estimates[0]!.Date.GetValueOrDefault()</h1> *@
+  <h3>There's no Resonsible Engineer tasks avaialble for you as of now!!</h3>
 }
 
 <div>
@@ -111,21 +110,4 @@ else
     element = document.querySelector("#R" + labourCode);
     element.innerHTML = "Remaining: $" + ((remain * rate) - (people * days * rate)) + " (" + (remain - (people * days)) + "  P.D.)";
   }
-  //submit creation of sub work package
-  document.querySelector("#reBudgetEstimateForm").addEventListener('submit', async function submitForm(event) {
-    event.preventDefault();
-    const formData = new FormData(document.querySelector("#reBudgetEstimateForm"));
-    console.log(formData);
-    await fetch("/WorkPackage/CreateBudgetsAndEstimates", {
-      method: "POST",
-      body: formData,
-    }).then(async c => {
-      console.log(c);
-      //if there is a field validation error show it again
-      if (c.status == 200) {
-        console.log("submitted successfully");
-        return;
-      }
-    })
-  });
 </script>

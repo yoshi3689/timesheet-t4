@@ -304,8 +304,10 @@
                     }
                     document.querySelector("#weekEnds").innerHTML = endDate;
                     document.querySelector("#weekNumber").innerHTML = getWeek(new Date(endDate));
-                    document.querySelector("#messageHeader").style.display = "inline";
-                    document.querySelector("#approverMessage").innerHTML = approverMessage;
+                    if(approverMessage != ""){
+                        document.querySelector("#messageHeader").style.display = "inline";
+                        document.querySelector("#approverMessage").innerHTML = approverMessage;
+                    }
                 }
                 newTimesheet.addEventListener('click', function() {
                     let timesheets = document.querySelectorAll('#timesheets a');

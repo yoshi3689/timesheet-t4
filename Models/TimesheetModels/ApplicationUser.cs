@@ -28,9 +28,11 @@ namespace TimesheetApp.Models
         public string? LastName { get; set; }
         [Required]
         [IntLength(5, 10)]
+        [Range(0, int.MaxValue, ErrorMessage = "Only positive number allowed.")]
         [Display(Name = "Employee Number")]
         public int EmployeeNumber { get; set; }
         [Display(Name = "Sick Days")]
+        [Range(0, int.MaxValue, ErrorMessage = "Only positive number allowed.")]
         public double SickDays { get; set; }
         [Display(Name = "Flex Time")]
         public double FlexTime { get; set; }
@@ -44,7 +46,6 @@ namespace TimesheetApp.Models
         public byte[]? PrivateKey { get; set; }
         [Required]
         [Display(Name = "Labour Grade")]
-
         public string? LabourGradeCode { get; set; }
         public string? SupervisorId { get; set; }
         [Display(Name = "Timesheet Approver")]

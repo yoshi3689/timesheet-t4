@@ -129,7 +129,7 @@ public partial class TimesheetRow
             TotalHoursRow = getSum();
         }
     }
-
+    [Range(0, long.MaxValue, ErrorMessage = "Only positive number allowed.")]
     public long packedHours { get; set; }
     public string? OriginalLabourCode { get; set; }
     [Required]

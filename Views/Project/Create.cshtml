@@ -28,11 +28,15 @@
                         style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
                         <input asp-for="budgets![i].People!" style="width: 15%;" class="form-control people"
                             onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].UnallocatedDays, @Model.budgets![i].UnallocatedPeople)" />
+                        <span asp-validation-for="budgets![i].People!" class="text-danger"></span>
+
                         &nbsp;
                         <label asp-for="budgets![i].People!" class="control-label"></label>
                         &nbsp;x&nbsp;
                         <input asp-for="budgets![i].Days!" style="width: 15%;" class="form-control days"
                             onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].UnallocatedDays, @Model.budgets![i].UnallocatedPeople)" />
+                        <span asp-validation-for="budgets![i].Days!" class="text-danger"></span>
+
                         &nbsp;
                         <label asp-for="budgets![i].Days!" class="control-label"></label>
                         &nbsp;

@@ -21,7 +21,9 @@ namespace TimesheetApp.Models.TimesheetModels
         [MaxLength(2), MinLength(2)]
         public string? LabourCode { get; set; }
         [Required]
+        [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
         public double Rate { get; set; }
+        [Range(0, int.MaxValue, ErrorMessage = "Only positive number allowed.")]
         public int Year { get; set; }
     }
 }
