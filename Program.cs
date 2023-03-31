@@ -104,6 +104,7 @@ internal partial class Program
                 JobTitle = "admin",
                 EmailConfirmed = true,
                 LabourGradeCode = "P5",
+                SickDays = 7,
                 EmployeeNumber = 1000000000,
                 PublicKey = rsa.ExportRSAPublicKey(),
                 PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey(), "Password123!")
@@ -137,6 +138,7 @@ internal partial class Program
                 LabourGradeCode = "P5",
                 EmployeeNumber = 1000000001,
                 SupervisorId = admin.Id,
+                SickDays = 7,
                 TimesheetApproverId = admin.Id,
                 PublicKey = rsa2.ExportRSAPublicKey(),
                 PrivateKey = KeyHelper.Encrypt(rsa2.ExportRSAPrivateKey(), "Password123!")

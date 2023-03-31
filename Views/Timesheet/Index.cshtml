@@ -75,6 +75,7 @@
             <tr>
                 <th>Name</th>
                 <th>Employee Number</th>
+                <th>Remaining Sick Days</th>
                 <th>Week Number</th>
                 <th>Week Ends</th>
             </tr>
@@ -92,6 +93,12 @@
                 <td>
                     @if (@Model.CurrentUser != null){
                         @Model.CurrentUser.EmployeeNumber
+                    }
+                </td>
+                <td>
+                    @if (@Model.CurrentUser != null)
+                    {
+                        @Model.CurrentUser.SickDays
                     }
                 </td>
                 <td id="weekNumber"></td>
@@ -293,7 +300,7 @@
                     newTimesheet.className = 'list-group-item list-group-item-success readonly';
                 }
                 if (approverMessage != "" && approverMessage != null) {
-                    newTimesheet.className = 'list-group-item list-group-item-danger readonly';
+                    newTimesheet.className = 'list-group-item list-group-item-danger';
                 }
                 newTimesheet.value = timesheetId + "";
                 if(active){
@@ -539,7 +546,7 @@
                     totalsRow.classList.add("totals-row");
 
                     // Add empty cells for Project, WP, and Notes columns
-                    var emptyCells = "<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>";
+                    var emptyCells = "<td></td><td>Total:</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>";
                     var totalCell = "<td>Total</td>";
                     var notesCell = "<td></td>";
                     var cells = emptyCells + totalCell + notesCell;
@@ -589,7 +596,6 @@
             }
 
             function addExtraRow(type){
-                @* AddCustomRowAsync([FromBody] string type, string timesheetId) *@
                 fetch("/Timesheet/AddCustomRow", {
                     method: "POST",
                     headers: {

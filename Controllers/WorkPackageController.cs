@@ -109,35 +109,6 @@ namespace TimesheetApp.Controllers
             return View(workPackage);
         }
 
-        // GET: WorkPackage/Create
-        [Authorize(Policy = "KeyRequirement")]
-        public IActionResult Create()
-        {
-            ViewData["ParentWorkPackageId"] = new SelectList(_context.WorkPackages, "WorkPackageId", "WorkPackageId");
-            ViewData["ProjectId"] = new SelectList(_context.Projects, "ProjectId", "ProjectManagerId");
-            ViewData["ResponsibleUserId"] = new SelectList(_context.Users, "Id", "Id");
-            return View();
-        }
-
-        // POST: WorkPackage/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Policy = "KeyRequirement")]
-        public async Task<IActionResult> Create([Bind("WorkPackageId,ProjectId,Title,ResponsibleUserId,ParentWorkPackageId,ParentWorkPackageProjectId,IsBottomLevel,ActualCost,IsClosed")] WorkPackage workPackage)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(workPackage);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["ParentWorkPackageId"] = new SelectList(_context.WorkPackages, "WorkPackageId", "WorkPackageId", workPackage.ParentWorkPackageId);
-            ViewData["ProjectId"] = new SelectList(_context.Projects, "ProjectId", "ProjectManagerId", workPackage.ProjectId);
-            ViewData["ResponsibleUserId"] = new SelectList(_context.Users, "Id", "Id", workPackage.ResponsibleUserId);
-            return View(workPackage);
-        }
 
         // GET: WorkPackage/Edit/5
         [Authorize(Policy = "KeyRequirement")]
@@ -181,48 +152,6 @@ namespace TimesheetApp.Controllers
             };
 
             return View(model);
-        }
-
-        // GET: WorkPackage/Delete/5
-        [Authorize(Policy = "KeyRequirement")]
-        public async Task<IActionResult> Delete(string id)
-        {
-            if (id == null || _context.WorkPackages == null)
-            {
-                return NotFound();
-            }
-
-            var workPackage = await _context.WorkPackages
-                .Include(w => w.ParentWorkPackage)
-                .Include(w => w.Project)
-                .Include(w => w.ResponsibleUser)
-                .FirstOrDefaultAsync(m => m.WorkPackageId == id);
-            if (workPackage == null)
-            {
-                return NotFound();
-            }
-
-            return View(workPackage);
-        }
-
-        // POST: WorkPackage/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        [Authorize(Policy = "KeyRequirement")]
-        public async Task<IActionResult> DeleteConfirmed(string id)
-        {
-            if (_context.WorkPackages == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.WorkPackages'  is null.");
-            }
-            var workPackage = await _context.WorkPackages.FindAsync(id);
-            if (workPackage != null)
-            {
-                _context.WorkPackages.Remove(workPackage);
-            }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
         }
 
         private bool WorkPackageExists(string id)

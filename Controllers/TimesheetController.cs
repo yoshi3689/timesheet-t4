@@ -62,6 +62,7 @@ namespace TimesheetApp.Controllers
             createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
 
             var rows = _context.TimesheetRows.Where(c => c.TimesheetId == timesheet!.TimesheetId).ToList();
+
             var model = new TimesheetViewModel()
             {
                 Timesheets = userSheets,
@@ -88,7 +89,7 @@ namespace TimesheetApp.Controllers
             //get the timesheets for each employee
             foreach (var emp in empsApproving)
             {
-                approveSheets.Add(_context.Timesheets!.Where(t => t.UserId == emp.Id && t.EmployeeHash != null && t.ApproverHash == null).OrderBy(c => c.EndDate).FirstOrDefault() ?? new Timesheet());
+                approveSheets.AddRange(_context.Timesheets!.Where(t => t.UserId == emp.Id && t.EmployeeHash != null && t.ApproverHash == null).Include(c => c.User).Include(c => c.TimesheetRows).OrderBy(c => c.EndDate));
             }
 
             var timesheet = approveSheets.AsEnumerable()
@@ -100,10 +101,23 @@ namespace TimesheetApp.Controllers
                 timesheet.CurrentlySelected = true;
             }
 
+            var verifiedSheets = new List<Timesheet>();
+            foreach (var sheet in approveSheets)
+            {
+                if (sheet.User == null || sheet.EmployeeHash == null || sheet.User.PublicKey == null || !verifySignature(sheet, sheet.User!.PublicKey, sheet.EmployeeHash))
+                {
+                    Console.WriteLine("signature fail");
+                }
+                else
+                {
+                    verifiedSheets.Add(sheet);
+                }
+            }
+
             var rows = _context.TimesheetRows.Where(c => c.TimesheetId == timesheet!.TimesheetId).ToList();
             var model = new TimesheetViewModel()
             {
-                Timesheets = approveSheets,
+                Timesheets = verifiedSheets,
                 TimesheetRows = rows,
             };
 
@@ -231,7 +245,6 @@ namespace TimesheetApp.Controllers
                 Response.StatusCode = 400;
                 return Json(validationErrors);
             }
-
             _context.SaveChanges();
             return Json(new { oldRow.Timesheet.TotalHours, oldRow.Sun, oldRow.Mon, oldRow.Tue, oldRow.Wed, oldRow.Thu, oldRow.Fri, oldRow.Sat, oldRow.TotalHoursRow, oldRow.ProjectId, oldRow.WorkPackageId, oldRow.TimesheetRowId, oldRow.Notes });
         }
@@ -297,7 +310,7 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult?> ApproveTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
-            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).Include(c => c.TimesheetRows).FirstOrDefault();
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).Include(c => c.TimesheetRows).Include(c => c.User).FirstOrDefault();
             if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
             {
                 return BadRequest();
@@ -306,6 +319,13 @@ namespace TimesheetApp.Controllers
             if (timesheetHash == null)
             {
                 return Unauthorized();
+            }
+            foreach (var row in timesheet.TimesheetRows)
+            {
+                if (row.WorkPackageProjectId == 010 && row.WorkPackageId == "SICK")
+                {
+                    timesheet.User!.SickDays -= row.TotalHoursRow / 8;
+                }
             }
             timesheet.ApproverHash = timesheetHash;
             timesheet.TimesheetApproverId = user.Id;
@@ -324,12 +344,8 @@ namespace TimesheetApp.Controllers
             {
                 return BadRequest();
             }
-            byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
-            if (timesheetHash == null)
-            {
-                return Unauthorized();
-            }
-
+            timesheet.ApproverHash = null;
+            timesheet.EmployeeHash = null;
             timesheet.ApproverNotes = model.ApproverNotes;
             _context.Update(timesheet);
             _context.SaveChanges();
