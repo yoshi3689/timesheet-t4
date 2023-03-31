@@ -31,12 +31,7 @@ namespace TimesheetApp.Controllers
             // var applicationDbContext = _context.WorkPackages.Include(w => w.ParentWorkPackage).Include(w => w.Project).Include(w => w.ResponsibleUser);
             ViewData["name"] = user.FirstName;
             // fetch if the user is assigned to the wp as an novice emp or a RE
-            var applicationDbContext
-              = _context.WorkPackages.Where(wp =>
-                (wp!.EmployeeWorkPackages!.Select(ewp => ewp.UserId).Contains(user.Id)
-                || user.Id == wp.ResponsibleUserId)
-                && wp.IsBottomLevel).Include(w => w.Project);
-
+            var applicationDbContext = _context.WorkPackages.Where(wp => user.Id == wp.ResponsibleUserId && wp.IsBottomLevel).Include(w => w.Project);
             return View(await applicationDbContext.ToListAsync());
         }
 
