@@ -878,10 +878,21 @@ namespace TimesheetApp.Controllers
             var employees = await _context.EmployeeProjects
                 .Where(c => c.ProjectId == projectId && c.UserId != userId)
                 .Include(c => c.Project)
+                    .ThenInclude(p => p.AssistantProjectManager)
                 .Include(c => c.Project!.ProjectManager)
                 .Include(c => c.User)
-                .Select(c => new { c!.User!.FirstName, c!.User!.LastName, c!.User!.EmployeeNumber, ManagerNumber = c.Project!.AssistantProjectManager!.EmployeeNumber })
+                .Select(c => new
+                {
+                    c!.User!.FirstName,
+                    c!.User!.LastName,
+                    c!.User!.EmployeeNumber,
+                    ManagerNumber = c.Project != null && c.Project.AssistantProjectManager != null ? c.Project.AssistantProjectManager.EmployeeNumber : 0,
+                    ProjectManagerNumber = c.Project != null && c.Project.ProjectManager != null ? c.Project.ProjectManager.EmployeeNumber : 0
+                })
                 .ToListAsync();
+
+
+
             return Json(employees);
         }
         [Authorize(Policy = "KeyRequirement")]

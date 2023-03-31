@@ -202,7 +202,9 @@ namespace TimesheetApp.Controllers
                 Response.StatusCode = 400;
                 return Json(timesheetRow.ValidationErrors);
             }
-            var oldRow = _context.TimesheetRows.Where(c => c.TimesheetRowId == timesheetRow.TimesheetRowId).Include(c => c.Timesheet).FirstOrDefault();
+
+            var timesheetRows = _context.TimesheetRows.Where(c => c.TimesheetId == timesheetRow.TimesheetId).Include(c => c.Timesheet).ToList();
+            var oldRow = timesheetRows.Where(c => c.TimesheetRowId == timesheetRow.TimesheetRowId).FirstOrDefault();
             if (oldRow == null || oldRow.Timesheet == null || oldRow.Timesheet.EmployeeHash != null)
             {
                 return BadRequest();
@@ -211,6 +213,27 @@ namespace TimesheetApp.Controllers
             oldRow.packedHours = timesheetRow.packedHours;
             oldRow.Notes = timesheetRow.Notes;
             oldRow.TotalHoursRow = timesheetRow.TotalHoursRow;
+            Dictionary<int, string> validationErrors = new Dictionary<int, string>();
+            for (int i = 0; i < 7; i++)
+            {
+                float total = 0;
+                foreach (var row in timesheetRows)
+                {
+                    total += row.getHour(i);
+                }
+                Console.WriteLine(total);
+                if (total > 24)
+                {
+                    validationErrors.Add(i, "Cannot have more then 24 hours in a column.");
+                }
+            }
+            Console.WriteLine("------------");
+            if (validationErrors.Count() > 0)
+            {
+                Response.StatusCode = 400;
+                return Json(validationErrors);
+            }
+
             _context.SaveChanges();
             return Json(new { oldRow.Timesheet.TotalHours, oldRow.Sun, oldRow.Mon, oldRow.Tue, oldRow.Wed, oldRow.Thu, oldRow.Fri, oldRow.Sat, oldRow.TotalHoursRow, oldRow.ProjectId, oldRow.WorkPackageId, oldRow.TimesheetRowId, oldRow.Notes });
         }
@@ -354,7 +377,13 @@ namespace TimesheetApp.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userSheets = _context.Timesheets!.Where(t => t.UserId == userId && t.ApproverHash != null).OrderByDescending(c => c.EndDate).ToList();
-            return Json(userSheets);
+            return Json(userSheets.Select(createdTimesheet => new Timesheet
+            {
+                TotalHours = createdTimesheet.TotalHours,
+                EndDate = createdTimesheet.EndDate,
+                TimesheetId = createdTimesheet.TimesheetId,
+                EmployeeHash = createdTimesheet.EmployeeHash
+            }));
         }
 
         [Authorize(Policy = "KeyRequirement")]

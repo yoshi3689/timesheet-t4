@@ -304,6 +304,8 @@
                     }
                     document.querySelector("#weekEnds").innerHTML = endDate;
                     document.querySelector("#weekNumber").innerHTML = getWeek(new Date(endDate));
+                    document.querySelector("#messageHeader").style.display = "inline";
+                    document.querySelector("#approverMessage").innerHTML = approverMessage;
                 }
                 newTimesheet.addEventListener('click', function() {
                     let timesheets = document.querySelectorAll('#timesheets a');
@@ -569,7 +571,7 @@
                 for (var j = 2; j <= 9; j++) {
                     var totalCell = totalsRow.cells[j];
                     totalCell.innerHTML = "<span>" + totalHours[j - 2] + "</span>";
-                    if(totalHours[j-2] < 8 && totalHours[j-2] > 0){
+                    if(totalHours[j-2] < 8 && totalHours[j-2] > 0 && j != 9){
                         flexTime += 8 - totalHours[j-2];
                     }
                 }
