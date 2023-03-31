@@ -55,7 +55,7 @@ ViewData["Title"] = "Manage Project";
   </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="employeeModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="employeeModal">
     <div class="modal-dialog" role="document" style="max-width: 70%;">
         <div class="modal-content">
             <div class="modal-header">
@@ -95,7 +95,7 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="budgetModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="budgetModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -110,7 +110,7 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="warningModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="warningModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -126,7 +126,7 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="RespEngModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="RespEngModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -157,7 +157,7 @@ ViewData["Title"] = "Manage Project";
     window.onload = function(){
         isPrimaryPM("@Model.wps![0]!.Project!.ProjectManagerId");
     }
-    
+
 
     @foreach(var wp in Model.wps) {
         <text >
@@ -831,7 +831,7 @@ ViewData["Title"] = "Manage Project";
 
     function setTotal(labourCode, rate, people, days, remainDays, remainPeople) {
         var element = document.querySelector("#" + labourCode);
-        element.innerHTML = " $" + (people * days * rate);
+        element.innerHTML = " $" + (people * days * rate).toFixed(2);
         element = document.querySelector("#R" + labourCode);
         element.innerHTML = "&nbsp;&nbsp;Unallocated People: " + remainPeople + "  &nbsp;Days: " + remainDays;
     }
@@ -884,6 +884,9 @@ ViewData["Title"] = "Manage Project";
                     menuItem.addEventListener('click', () => {
                         employeeSearchBox.value = `${employee.firstName} ${employee.lastName}`;
                     });
+                    if(employee.employeeNumber == employee.managerNumber){
+                        employeeSearchBox.value = `${employee.firstName} ${employee.lastName}`;
+                    }
                     employeeMenu.appendChild(menuItem);
                 });
         });

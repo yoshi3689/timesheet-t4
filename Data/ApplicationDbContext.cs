@@ -80,7 +80,5 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             counter += 7;
         }
         modelBuilder.Entity<LabourGrade>().HasData(labourGrades);
-
-
     }
 }

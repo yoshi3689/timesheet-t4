@@ -5,10 +5,10 @@ using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
 using System.Security.Cryptography;
 using TimesheetApp.Helpers;
+using TimesheetApp.Authorization;
+using Microsoft.AspNetCore.Authorization;
 
-
-
-internal class Program
+internal partial class Program
 {
     private static async Task Main(string[] args)
     {
@@ -30,7 +30,11 @@ internal class Program
         builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
-
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("KeyRequirement", policy => policy.Requirements.Add(new KeyRequirement(true)));
+        });
+        builder.Services.AddScoped<IAuthorizationHandler, KeyRequirementHandler>();
         builder.Services.AddControllersWithViews();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddDistributedMemoryCache();
@@ -116,6 +120,10 @@ internal class Program
                     await UserManager.AddToRoleAsync(newAdmin, "HR");
                 }
             }
+            else
+            {
+                admin = adminExist;
+            }
 
             RSA rsa2 = RSA.Create();
             ApplicationUser newHR = new ApplicationUser
@@ -147,6 +155,30 @@ internal class Program
                 admin.TimesheetApproverId = newHR.Id;
                 DbContext.SaveChanges();
             }
+
+            var project = DbContext.Projects.Where(c => c.ProjectId == 010).FirstOrDefault();
+            if (project == null)
+            {
+                project = new Project { ProjectId = 010, ProjectTitle = "Extras", ProjectManagerId = admin.Id };
+                DbContext.Projects.Add(project);
+                DbContext.SaveChanges();
+            }
+            var sick = DbContext.WorkPackages.Where(c => c.WorkPackageId == "SICK").FirstOrDefault();
+            if (sick == null)
+            {
+                DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "SICK", ProjectId = project!.ProjectId, Title = "Sick Time" });
+            }
+            var vacn = DbContext.WorkPackages.Where(c => c.WorkPackageId == "VACN").FirstOrDefault();
+            if (vacn == null)
+            {
+                DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "VACN", ProjectId = project!.ProjectId, Title = "Vacation Time" });
+            }
+            var shol = DbContext.WorkPackages.Where(c => c.WorkPackageId == "SHOL").FirstOrDefault();
+            if (shol == null)
+            {
+                DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "SHOL", ProjectId = project!.ProjectId, Title = "Statutory Holiday" });
+            }
+            DbContext.SaveChanges();
         }
         app.Run();
     }

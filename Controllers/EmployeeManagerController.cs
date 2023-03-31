@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,8 @@ namespace TimesheetApp.Controllers
             _context = context;
         }
 
-        // GET: EmployeeManager
+        // GET: EmployeeManage
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Index()
         {
             var applicationDbContext = _context.Users.Include(a => a.Supervisor).Include(a => a.TimesheetApprover);
@@ -28,6 +30,8 @@ namespace TimesheetApp.Controllers
         }
 
         // GET: EmployeeManager/Details/5
+        [Authorize(Policy = "KeyRequirement")]
+
         public async Task<IActionResult> Details(string id)
         {
             if (id == null || _context.Users == null)
@@ -48,6 +52,7 @@ namespace TimesheetApp.Controllers
         }
 
         // GET: EmployeeManager/Edit/5
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Edit(string id)
         {
             if (id == null || _context.Users == null)
@@ -71,6 +76,7 @@ namespace TimesheetApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Edit(string id, [Bind("FirstName,LastName,EmployeeNumber,SickDays,FlexTime,JobTitle,Salary,LabourGradeCode,SupervisorId,TimesheetApproverId,Id,UserName,NormalizedUserName,Email,NormalizedEmail,PhoneNumber,LockoutEnd,LockoutEnabled,AccessFailedCount")] ApplicationUser applicationUser)
         {
             if (id != applicationUser.Id)

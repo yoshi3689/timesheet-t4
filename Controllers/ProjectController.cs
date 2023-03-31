@@ -30,7 +30,8 @@ namespace TimesheetApp.Controllers
     /// <summary>
     /// Deals with creating and managing projects, which includes creating and updating work packages.
     /// </summary>
-    [Authorize]
+    [Authorize(Policy = "KeyRequirement")]
+
     public class ProjectController : Controller
     {
         private readonly ILogger<ProjectController> _logger;
@@ -48,6 +49,7 @@ namespace TimesheetApp.Controllers
         /// Used to get the main projects list. If you are an admin or HR, you can see all of them.
         /// </summary>
         /// <returns>project list page</returns>
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult Index()
         {
             if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
@@ -67,6 +69,7 @@ namespace TimesheetApp.Controllers
         /// Gets the page for creating a new project. Only HR or admin may create a project.
         /// </summary>
         /// <returns>new project page.</returns>
+        [Authorize(Policy = "KeyRequirement")]
         [Authorize(Roles = "HR,Admin")]
         public IActionResult Create()
         {
@@ -95,6 +98,7 @@ namespace TimesheetApp.Controllers
         /// <returns>Same page if errors, home page if not.</returns>
         [HttpPost]
         [Authorize(Roles = "HR,Admin")]
+        [Authorize(Policy = "KeyRequirement")]
         [ValidateAntiForgeryToken]
         public IActionResult Create(CreateProjectViewModel input)
         {
@@ -152,9 +156,13 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <param name="id">the id of the project</param>
         /// <returns>The project manage page</returns>
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Edit(int? id)
         {
+            if (id == 10)
+            {
+                return RedirectToAction("Index");
+            }
             //store the current project into the session for use later.
             HttpContext.Session.SetInt32("CurrentProject", id ?? 0);
             CurrentProject = id;
@@ -227,7 +235,7 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <param name="ewps">A list of employee WP relationships.</param>
         /// <returns>A list of the added users.</returns>
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> AssignEmployeesAsync([FromBody] List<EmployeeWorkPackage> ewps)
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
@@ -292,7 +300,7 @@ namespace TimesheetApp.Controllers
         /// <param name="ewp">Takes the Employee-WP relationship of the RE</param>
         /// <returns>RE's full name</returns>
         [HttpPost]
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> AssignResponsibleEngineerAsync([FromBody] EmployeeWorkPackage ewp)
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
@@ -317,6 +325,7 @@ namespace TimesheetApp.Controllers
         /// Creates and send the partial view which contains the work package creation form. Done this way to allow field validation.
         /// </summary>
         /// <returns>WP creation partial view</returns>
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> ShowSplitAsync()
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
@@ -347,7 +356,7 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <param name="p">View model which contains new WP</param>
         /// <returns>the new WP, or the partial view with errors.</returns>
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> SplitAsync(WorkPackageViewModel p)
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
@@ -442,7 +451,7 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <param name="wp">Work package object that must contain the workpackageid</param>
         /// <returns></returns>
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> BudgetDetailsAsync([FromBody] WorkPackage wp)
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
@@ -461,7 +470,7 @@ namespace TimesheetApp.Controllers
         }
 
         //get employees for a wp, and say if they are already assigned or not.
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> GetWPEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
@@ -510,7 +519,7 @@ namespace TimesheetApp.Controllers
 
 
         // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> GetCandidateEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
@@ -532,7 +541,7 @@ namespace TimesheetApp.Controllers
         }
 
         // get employees with the project id
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> GetAssignedEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
@@ -561,10 +570,11 @@ namespace TimesheetApp.Controllers
             return false;
         }
 
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Report(int id)
         {
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
             MemoryStream ms = new MemoryStream();
-
             PdfWriter writer = new PdfWriter(ms);
             PdfDocument pdfDoc = new PdfDocument(writer);
             Document document = new Document(pdfDoc, PageSize.A4.Rotate(), false);
@@ -854,7 +864,7 @@ namespace TimesheetApp.Controllers
 
             return table;
         }
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         [HttpGet]
         public async Task<IActionResult> GetAllEmployees()
         {
@@ -867,12 +877,14 @@ namespace TimesheetApp.Controllers
             int projectId = HttpContext.Session.GetInt32("CurrentProject") ?? 0;
             var employees = await _context.EmployeeProjects
                 .Where(c => c.ProjectId == projectId && c.UserId != userId)
-                .Select(c => c.User)
-                .Select(c => new { c!.FirstName, c!.LastName, c!.EmployeeNumber })
+                .Include(c => c.Project)
+                .Include(c => c.Project!.ProjectManager)
+                .Include(c => c.User)
+                .Select(c => new { c!.User!.FirstName, c!.User!.LastName, c!.User!.EmployeeNumber, ManagerNumber = c.Project!.AssistantProjectManager!.EmployeeNumber })
                 .ToListAsync();
             return Json(employees);
         }
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         [HttpPost]
         public async Task<IActionResult> AssignASM([FromBody] String? asm)
         {
@@ -917,7 +929,7 @@ namespace TimesheetApp.Controllers
             }
             return null;
         }
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         [HttpGet]
         public async Task<IActionResult> FindPM()
         {

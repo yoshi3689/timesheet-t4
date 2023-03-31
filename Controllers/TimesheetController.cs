@@ -21,7 +21,8 @@ namespace TimesheetApp.Controllers
     /// <summary>
     /// Class that is used to manage Timesheets, and timesheet rows.
     /// </summary>
-    [Authorize]
+    [Authorize(Policy = "KeyRequirement")]
+
     public class TimesheetController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -33,6 +34,7 @@ namespace TimesheetApp.Controllers
             _context = context;
             _userManager = userManager;
         }
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult Index()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -64,11 +66,12 @@ namespace TimesheetApp.Controllers
             {
                 Timesheets = userSheets,
                 TimesheetRows = rows,
+                CurrentUser = _context.Users.Where(c => c.Id == userId).First()
             };
 
             return View(model);
         }
-
+        [Authorize(Policy = "KeyRequirement")]
         //Sends to page displaying list of timesheets to approve for the current user.
         public IActionResult ToApprove()
         {
@@ -152,7 +155,7 @@ namespace TimesheetApp.Controllers
 
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult CreateTimesheet([FromBody] string end)
         {
             if (string.IsNullOrWhiteSpace(end))
@@ -191,8 +194,14 @@ namespace TimesheetApp.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult? UpdateRow([FromBody] TimesheetRow timesheetRow)
         {
+            if (timesheetRow.ValidationErrors != null)
+            {
+                Response.StatusCode = 400;
+                return Json(timesheetRow.ValidationErrors);
+            }
             var oldRow = _context.TimesheetRows.Where(c => c.TimesheetRowId == timesheetRow.TimesheetRowId).Include(c => c.Timesheet).FirstOrDefault();
             if (oldRow == null || oldRow.Timesheet == null || oldRow.Timesheet.EmployeeHash != null)
             {
@@ -203,10 +212,11 @@ namespace TimesheetApp.Controllers
             oldRow.Notes = timesheetRow.Notes;
             oldRow.TotalHoursRow = timesheetRow.TotalHoursRow;
             _context.SaveChanges();
-            return Ok();
+            return Json(new { oldRow.Timesheet.TotalHours, oldRow.Sun, oldRow.Mon, oldRow.Tue, oldRow.Wed, oldRow.Thu, oldRow.Fri, oldRow.Sat, oldRow.TotalHoursRow, oldRow.ProjectId, oldRow.WorkPackageId, oldRow.TimesheetRowId, oldRow.Notes });
         }
 
         [HttpPost]
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult? GetTimesheet([FromBody] string timesheetId)
         {
             int tid;
@@ -241,7 +251,7 @@ namespace TimesheetApp.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult?> SubmitTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -262,7 +272,7 @@ namespace TimesheetApp.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult?> ApproveTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -284,7 +294,7 @@ namespace TimesheetApp.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult?> DeclineTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -305,31 +315,41 @@ namespace TimesheetApp.Controllers
             return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
         }
 
-
+        [Authorize(Policy = "KeyRequirement")]
         [HttpPost]
-        public async Task<IActionResult> AddRow()
+        public async Task<IActionResult> AddCustomRowAsync([FromBody] CustomRowModel model)
         {
-            TimesheetRow row = new TimesheetRow()
+            int timesheetIdInt;
+            try
             {
-                WorkPackageId = "",
-                ProjectId = 0,
-                Sat = 0,
-                Sun = 0,
-                Mon = 0,
-                Tue = 0,
-                Wed = 0,
-                Thu = 0,
-                Fri = 0,
-                Notes = "",
-                TimesheetId = 1,
-            };
-            _context.TimesheetRows!.Add(row);
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction("Index");
+                timesheetIdInt = Convert.ToInt32(model.TimesheetId);
+            }
+            catch (System.Exception)
+            {
+                return BadRequest();
+            }
+            var user = await _userManager.GetUserAsync(User);
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == timesheetIdInt).FirstOrDefault();
+            if (user == null || timesheet == null || timesheet.UserId != user.Id)
+            {
+                return BadRequest();
+            }
+            TimesheetRow row = new TimesheetRow { WorkPackageId = model.Type, WorkPackageProjectId = 010, OriginalLabourCode = user.LabourGradeCode, TimesheetId = timesheetIdInt };
+            try
+            {
+                _context.TimesheetRows.Add(row);
+                _context.SaveChanges();
+            }
+            catch (System.Exception)
+            {
+                return BadRequest();
+            }
+            row.Timesheet = null;
+            return Json(row);
         }
 
         [HttpGet]
+        [Authorize(Policy = "KeyRequirement")]
         public IActionResult GetAll()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -337,6 +357,7 @@ namespace TimesheetApp.Controllers
             return Json(userSheets);
         }
 
+        [Authorize(Policy = "KeyRequirement")]
         public byte[]? hashTimesheet(Timesheet timesheet, string password, byte[] encryptedPrivateKey)
         {
             using (RSA rsa = RSA.Create())
@@ -353,6 +374,7 @@ namespace TimesheetApp.Controllers
             }
         }
 
+        [Authorize(Policy = "KeyRequirement")]
         public bool verifySignature(Timesheet timesheet, byte[] publicKey, byte[] hashedSignature)
         {
             using (RSA rsa = RSA.Create())

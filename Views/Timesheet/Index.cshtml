@@ -3,7 +3,7 @@
     ViewData["Title"] = "Index";
 }
 <input type="hidden" id="currentTimesheetId">
-<div class="modal" tabindex="-1" role="dialog" id="timesheetErrorModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="timesheetErrorModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -17,7 +17,24 @@
         </div>
     </div>
 </div>
-<div class="modal" tabindex="-1" role="dialog" id="submitModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="addRowModal" aria-labelledby="customRowTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customRowTitle">Add Custom Row</h5>
+            </div>
+            <div class="modal-body" id="timesheetError">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="SHOL" onclick="addExtraRow(this.id)">Add Statutory Holiday Row</button><br/><br/>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="SICK" onclick="addExtraRow(this.id)">Add Sick Time Row</button><br/><br/>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="VACN" onclick="addExtraRow(this.id)">Add Vacation Time Row</button><br/>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" tabindex="-1" role="dialog" id="submitModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -53,6 +70,34 @@
 
     @* Actual current timesheet box *@
     <div style="width: 80%; margin: 0 10px;">
+        <table class="table table-responsive" cellpadding="0"
+            cellspacing="0">
+            <tr>
+                <th>Name</th>
+                <th>Employee Number</th>
+                <th>Week Number</th>
+                <th>Week Ends</th>
+            </tr>
+            <tr>
+                <td>
+                    @if (@Model.CurrentUser != null)
+                    {
+                        @Model.CurrentUser.FirstName
+                        <text>
+                        &nbsp;
+                        </text>
+                        @Model.CurrentUser.LastName
+                    }
+                </td>
+                <td>
+                    @if (@Model.CurrentUser != null){
+                        @Model.CurrentUser.EmployeeNumber
+                    }
+                </td>
+                <td id="weekNumber"></td>
+                <td id="weekEnds"></td>
+            </tr>
+        </table>
         <table id="rowTable" class="table table-bordered table-responsive table-striped " cellpadding="0"
             cellspacing="0">
             <tr>
@@ -69,11 +114,20 @@
                 <th>Notes</th>
             </tr>
         </table>
-        <form asp-action="AddRow">
-            <input type="submit" value="Add Row" class="w-100 btn btn-lg btn-secondary px-4 py-2 TSButtons"/>
-        </form>
-    <input type="button" value="Submit Timesheet" class="w-100 btn btn-lg btn-primary px-4 py-2 mt-4 TSButtons" onclick="submitTimesheet()">
-
+        <table class="table table-responsive" cellpadding="0" cellspacing="0">
+            <tr>
+                <th>Overtime</th>
+                <th>Flextime</th>
+            </tr>
+            <tr>
+                <td id="overtime"></td>
+                <td id="flextime"></td>
+            </tr>
+        </table>
+        <h3 id="messageHeader" style="display: none;">Approver Message</h3>
+        <div id="approverMessage"></div>
+        <button type="button" data-bs-toggle="modal" data-bs-target="#addRowModal" class="w-100 btn btn-lg btn-secondary px-4 py-2 TSButtons">Add Row</button>
+        <input type="button" value="Submit Timesheet" class="w-100 btn btn-lg btn-primary px-4 py-2 mt-4 TSButtons" onclick="submitTimesheet()">
     </div>
 </div>
 
@@ -106,7 +160,7 @@
                     return await response.json();
                 }).then((response) => {
                     if(response){
-                        addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, false, false);
+                        addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, false, null);
                     }
                 });
             }
@@ -133,6 +187,8 @@
 
             //Update event handler.
             $("body").on("click", "#rowTable .Update", function () {
+                var toHide = [];
+                var toShow = [];
                 var row = $(this).closest("tr");
                 var data = {}; // create an empty object
                 data["TimesheetRowId"] = row.attr('id') + "";
@@ -144,16 +200,16 @@
                         var span = $(this).find("span");
                         var input = $(this).find("input");
                         span.html(input.val());
-                        span.show();
-                        input.hide();
+                        toShow.push(span);
+                        toHide.push(input);
                     }
                 });
                 data["TimesheetId"] = document.querySelector("#currentTimesheetId").value;
 
-                row.find(".Edit").show();
-                row.find(".Delete").show();
-                row.find(".Cancel").hide();
-                $(this).hide();
+                toShow.push(row.find(".Edit"));
+                toShow.push(row.find(".Delete"));
+                toHide.push(row.find(".Cancel"));
+                toHide.push($(this));
 
                 fetch("/Timesheet/UpdateRow", {
                     method: "POST",
@@ -164,11 +220,38 @@
                     body: JSON.stringify(data),
                 }).then(async (response) => {
                     if (response.status != 200) {
-                        alert(await response.json());
+                        const days = new Map([
+                            ["0", "Saturday"],
+                            ["1", "Sunday"],
+                            ["2", "Monday"],
+                            ["3", "Tuesday"],
+                            ["4", "Wednesday"],
+                            ["5", "Thursday"],
+                            ["6", "Friday"],
+                        ]);
+                        var errors = "";
+                        var errorResponse = await response.json();
+                        Object.keys(errorResponse).forEach(function(k){
+                            errors += days.get(k) + " has the error: " + errorResponse[k] + "<br/>";
+                        });
+                         document.querySelector("#timesheetError").innerHTML = errors;
+                        var myModalEl = document.querySelector("#timesheetErrorModal");
+                        var modal = new bootstrap.Modal(myModalEl);
+                        modal.show();
+                    } else {
+                        return await response.json();
                     }
-                }).then((response) => {
-                    if(response != null){
-
+                }).then((r) => {
+                    if(r != null){
+                        document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .totalHours").innerHTML = "Hours: " + r.totalHours;
+                        addTableRow(r.projectId, r.workPackageId, r.totalHoursRow, r.sat, r.sun, r.mon, r.tue, r.wed, r.thu, r.fri, r.notes, r.timesheetRowId, false);
+                        updateTotals(false);
+                        for (let i = 0; i < toHide.length; i++) {
+                            toHide[i].hide();
+                        }
+                        toShow.forEach((c) => {
+                            c.show();
+                        });
                     }
                 });
 
@@ -193,18 +276,23 @@
             });
 
 
-            function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, rejected) {
+            function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, approverMessage) {
                 let timesheetsDiv = document.getElementById('timesheets');
                 let newTimesheet = document.createElement('a');
                 newTimesheet.id = "Timesheet" + timesheetId;
                 newTimesheet.className = 'list-group-item list-group-item-action';
+                let message = document.createElement('a');
+                message.style.display = "none";
+                message.className = "message";
+                message.innerHTML = approverMessage;
+                newTimesheet.appendChild(message);
                 if(readonly) {
                     newTimesheet.className = 'list-group-item list-group-item-secondary readonly';
                 }
                 if (accepted) {
                     newTimesheet.className = 'list-group-item list-group-item-success readonly';
                 }
-                if (rejected) {
+                if (approverMessage != "" && approverMessage != null) {
                     newTimesheet.className = 'list-group-item list-group-item-danger readonly';
                 }
                 newTimesheet.value = timesheetId + "";
@@ -214,6 +302,8 @@
                     if(readonly){
                         readonlyExists = true;
                     }
+                    document.querySelector("#weekEnds").innerHTML = endDate;
+                    document.querySelector("#weekNumber").innerHTML = getWeek(new Date(endDate));
                 }
                 newTimesheet.addEventListener('click', function() {
                     let timesheets = document.querySelectorAll('#timesheets a');
@@ -248,38 +338,80 @@
                         }
                         if(response != null){
                             var table = document.getElementById("rowTable");
-                            for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
-                                table.deleteRow(i); // delete the row at the current index
-                            }
+                            const childElements = table.querySelectorAll(':scope > tbody > [id]');
+                            childElements.forEach(c => {
+                                c.remove();
+                            });
                             response.forEach((cell) => {
                                 addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow);
                             });
+                            updateTotals(readonlyRow);
+                            var message = document.querySelector("#Timesheet" + this.value + " > .message").innerHTML;
+                            if(message == ""){
+                                document.querySelector("#messageHeader").style.display = "none";
+                                document.querySelector("#approverMessage").innerHTML = message;
+                            } else {
+                                document.querySelector("#messageHeader").style.display = "inline";
+                                document.querySelector("#approverMessage").innerHTML = message;
+                            }
+                            var date = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .endDate").innerHTML.substring(10);
+                            document.querySelector("#weekEnds").innerHTML = date;
+                            document.querySelector("#weekNumber").innerHTML = getWeek(new Date(date));
                         }
                     });
                 });
 
                 let timesheetDiv = document.createElement('div');
                 let endDateDiv = document.createElement('div');
+                endDateDiv.className = "endDate";
                 endDateDiv.textContent = 'End Date: ' + endDate;
                 let totalHoursDiv = document.createElement('div');
+                totalHoursDiv.className = "totalHours";
                 totalHoursDiv.textContent = 'Hours: ' + totalHours;
+                let weekNum = document.createElement('div');
+                weekNum.textContent = 'Week Number: ' + getWeek(new Date(endDate));
                 timesheetDiv.appendChild(endDateDiv);
+                timesheetDiv.appendChild(weekNum);
                 timesheetDiv.appendChild(totalHoursDiv);
                 newTimesheet.appendChild(timesheetDiv);
                 timesheetsDiv.appendChild(newTimesheet);
             }
 
+            function getWeek(date) {
+                const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+                const daysSinceFirstDay = (date - firstDayOfYear) / 86400000; // 86400000 = 24 hours * 60 minutes * 60 seconds * 1000 milliseconds
+                const weekNumber = Math.ceil((daysSinceFirstDay + firstDayOfYear.getDay() + 1) / 7);
+                return weekNumber;
+            }
 
             @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
             {
                 <text>
-                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, false);
+                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, "@timesheet.ApproverNotes");
                 </text>
             }
 
            function addTableRow(projectId, workPackageId, totalHours, sat, sun, mon, tue, wed, thu, fri, notes, timesheetRowId, readonly) {
                 var table = document.getElementById("rowTable");
-                var row = table.insertRow(-1); // add new row at the end
+                var row = document.getElementById(timesheetRowId);
+
+                if (row) { // if row with the same id exists, update values in existing row
+                    row.querySelector(".ProjectId span").textContent = projectId;
+                    row.querySelector(".WorkPackageId span").textContent = workPackageId;
+                    row.querySelector(".Sat span").textContent = sat;
+                    row.querySelector(".Sun span").textContent = sun;
+                    row.querySelector(".Mon span").textContent = mon;
+                    row.querySelector(".Tue span").textContent = tue;
+                    row.querySelector(".Wed span").textContent = wed;
+                    row.querySelector(".Thu span").textContent = thu;
+                    row.querySelector(".Fri span").textContent = fri;
+                    row.querySelector(".TotalHours span").textContent = totalHours;
+                    row.querySelector(".Notes span").textContent = notes;
+                    return; // exit function since row was updated
+                }
+
+                // if row with the same id doesn't exist, add new row at the end
+                row = table.insertRow(table.rows.length - 1);
                 row.id = timesheetRowId + "";
 
                 if(notes == undefined){
@@ -311,6 +443,7 @@
                     row.innerHTML += cells[i];
                 }
             }
+            updateTotals(readonlyExists);
 
             @foreach (var row in Model.TimesheetRows!)
             {
@@ -323,6 +456,8 @@
                         addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonlyExists);
                 </text>
             }
+
+            updateTotals(readonlyExists);
 
             function submitTimesheet(){
                 var myModalEl = document.getElementById('submitModal');
@@ -356,12 +491,14 @@
                                 c.style.display = "none";
                             });
                             var table = document.getElementById("rowTable");
-                            for (var i = table.rows.length - 1; i > 0; i--) { // loop through all rows except the first (header) row
-                                table.deleteRow(i); // delete the row at the current index
-                            }
+                            const childElements = table.querySelectorAll(':scope > tbody > [id]');
+                            childElements.forEach(c => {
+                                c.remove();
+                            });
                             response.forEach((cell) => {
                                 addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, true);
                             });
+                            updateTotals(true);
                         }
                     });
                 });
@@ -374,10 +511,102 @@
                     }).then((c) => {
                         obj.style.display = "none";
                         c.forEach((response) => {
-                            addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, true, false);
+                            addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, true, null);
                         });
                     });
             }
+
+            function updateTotals(readonly) {
+                var table = document.getElementById("rowTable");
+                var rowCount = table.rows.length;
+                var totalsRow = null;
+
+                // Search for existing totals row
+                for (var i = 0; i < rowCount; i++) {
+                    if (table.rows[i].classList.contains("totals-row")) {
+                    totalsRow = table.rows[i];
+                    break;
+                    }
+                }
+
+                // If totals row doesn't exist, create a new one
+                if (!totalsRow) {
+                    totalsRow = table.insertRow(rowCount);
+                    totalsRow.classList.add("totals-row");
+
+                    // Add empty cells for Project, WP, and Notes columns
+                    var emptyCells = "<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>";
+                    var totalCell = "<td>Total</td>";
+                    var notesCell = "<td></td>";
+                    var cells = emptyCells + totalCell + notesCell;
+                    totalsRow.innerHTML = cells;
+                }
+                var totalHours = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+                for (var i = 1; i < rowCount; i++) {
+                    var row = table.rows[i];
+                    var cells = row.cells;
+
+                    // Skip totals row and rows with empty cells
+                    if (row == totalsRow || cells.length < 10) {
+                    continue;
+                    }
+
+                    // Update total hours for each day of the week
+                    for (var j = 2; j <= 9; j++) {
+                        var hours;
+                        if(readonly){
+                            hours = parseFloat(cells[j].textContent);
+                        } else {
+                            hours = parseFloat(cells[j].querySelector("span").textContent);
+                        }
+                        if (!isNaN(hours)) {
+                            totalHours[j - 2] += hours;
+                        }
+                    }
+                }
+                var flexTime = 0;
+                // Update total cells in totals row
+                for (var j = 2; j <= 9; j++) {
+                    var totalCell = totalsRow.cells[j];
+                    totalCell.innerHTML = "<span>" + totalHours[j - 2] + "</span>";
+                    if(totalHours[j-2] < 8 && totalHours[j-2] > 0){
+                        flexTime += 8 - totalHours[j-2];
+                    }
+                }
+                var totalOfTotals = totalHours[7];
+                if(totalOfTotals > 40){
+                    totalOfTotals -= 40;
+                } else {
+                    totalOfTotals = 0;
+                }
+                document.querySelector("#overtime").innerHTML = totalOfTotals;
+                document.querySelector("#flextime").innerHTML = flexTime;
+
+            }
+
+            function addExtraRow(type){
+                @* AddCustomRowAsync([FromBody] string type, string timesheetId) *@
+                fetch("/Timesheet/AddCustomRow", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: type,
+                        timesheetId: document.querySelector("#currentTimesheetId").value + ""
+                    }),
+                }).then(async (response) => {
+                    if (response.status == 200) {
+                        return await response.json();
+                    }
+                }).then((r) => {
+                    if(r){
+                        addTableRow(r.projectId, r.workPackageId, r.totalHoursRow, r.sat, r.sun, r.mon, r.tue, r.wed, r.thu, r.fri, r.notes, r.timesheetRowId, false);
+                    }
+                });
+            }
+
 
         </script>
 }

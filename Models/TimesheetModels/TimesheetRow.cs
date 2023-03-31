@@ -141,6 +141,9 @@ public partial class TimesheetRow
     //set dbcontext for fk
     public WorkPackage? WorkPackage { get; set; }
 
+    [NotMapped]
+    public Dictionary<int, string>? ValidationErrors { get; set; }
+
     //system converted over from bruces timesheet, so columns don't take as much room in the db.
     public const int SAT = 0;
     public const int SUN = 1;
@@ -169,7 +172,10 @@ public partial class TimesheetRow
     }
     public static float toHour(int decihour)
     {
-        return decihour / TimesheetRow.BASE10;
+        float result = decihour / TimesheetRow.BASE10;
+        float main = (float)Math.Floor(result);
+        float secondPart = (float)Math.Round(((result - (int)result) * 25) / 10, 2);
+        return main + secondPart;
     }
     public float getHour(int d)
     {
@@ -179,8 +185,12 @@ public partial class TimesheetRow
     {
         if (charge < 0.0 || charge > HOURS_IN_DAY)
         {
-            throw new Exception("Charge is out of range");
+            ValidationErrors = (ValidationErrors == null) ? new Dictionary<int, string>() : ValidationErrors;
+            ValidationErrors.Add(d, "Hours in a cell must be between 0 and 24");
+            return;
         }
+        charge = (float)Math.Floor(charge) + ((float)Math.Round((charge - (int)charge) / 0.25f) / 10);
+
         setDecihour(d, toDecihour(charge));
     }
     public float getSum()
