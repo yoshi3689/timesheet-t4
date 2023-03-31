@@ -17,6 +17,7 @@ namespace TimesheetApp.Models.TimesheetModels
         [Key]
         [Required]
         [Display(Name = "Id")]
+        [Range(0, int.MaxValue, ErrorMessage = "Must be positive.")]
         public int ProjectId { get; set; }
         [Display(Name = "Name")]
         [Required]

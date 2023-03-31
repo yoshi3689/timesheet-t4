@@ -55,8 +55,8 @@ ViewData["Title"] = "Manage Project";
   </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="employeeModal">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" tabindex="-1" role="dialog" id="employeeModal">
+    <div class="modal-dialog" role="document" style="max-width: 70%;">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Assign Employee</h5>
@@ -95,7 +95,7 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="budgetModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="budgetModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -110,7 +110,7 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="warningModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="warningModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -126,7 +126,7 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="RespEngModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="RespEngModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -157,7 +157,7 @@ ViewData["Title"] = "Manage Project";
     window.onload = function(){
         isPrimaryPM("@Model.wps![0]!.Project!.ProjectManagerId");
     }
-    
+
 
     @foreach(var wp in Model.wps) {
         <text >
@@ -582,6 +582,9 @@ ViewData["Title"] = "Manage Project";
                                 <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
                                 <span style="display:none;" >${c.id}</span>
                                 `;
+                            if(c.selected){
+                                a.querySelector(".form-check-input").checked = true;
+                            }
                             candidateEmpEle.appendChild(a);
                         });
                         if (response.length == 0) {
@@ -609,7 +612,7 @@ ViewData["Title"] = "Manage Project";
         table.appendChild(createRow("Work Package ID: ", name, "Closed: ", closed, false));
 
         let re = document.createElement("span");
-        re.id = WorkPackageId + "ResponsibleEngineer";
+        re.id = "ResponsibleEngineer" + WorkPackageId;
         re.className = "label";
         if (ResponsibleUserFN !== null) {
             re.innerHTML = ResponsibleUserFN + " " + ResponsibleUserLN;
@@ -703,11 +706,9 @@ ViewData["Title"] = "Manage Project";
                 var modal = bootstrap.Modal.getInstance(myModalEl)
                 modal.hide();
                 document.querySelector("#modal-placeholder").innerHTML = text;
-                document.querySelector("#parentWPID").value = WorkPackageId;
                 myModalEl = document.getElementById('splitModal');
                 modal = new bootstrap.Modal(myModalEl);
                 modal.show();
-                document.querySelector("#newWPForm").addEventListener('submit', submitForm);
                 return;
             }
             return await c.json();
@@ -812,7 +813,7 @@ ViewData["Title"] = "Manage Project";
             }
         }).then(res => {
             if (res) {
-                var id = "#" + document.querySelector("#currentWP").value + "ResponsibleEngineer";
+                var id = "#ResponsibleEngineer" + document.querySelector("#currentWP").value;
                 var reField = document.querySelector(id);
                 reField.style = "";
                 reField.innerHTML = res;
@@ -828,7 +829,7 @@ ViewData["Title"] = "Manage Project";
 
     function setTotal(labourCode, rate, people, days, remainDays, remainPeople) {
         var element = document.querySelector("#" + labourCode);
-        element.innerHTML = " $" + (people * days * rate);
+        element.innerHTML = " $" + (people * days * rate).toFixed(2);
         element = document.querySelector("#R" + labourCode);
         element.innerHTML = "&nbsp;&nbsp;Unallocated People: " + remainPeople + "  &nbsp;Days: " + remainDays;
     }
@@ -881,6 +882,9 @@ ViewData["Title"] = "Manage Project";
                     menuItem.addEventListener('click', () => {
                         employeeSearchBox.value = `${employee.firstName} ${employee.lastName}`;
                     });
+                    if(employee.employeeNumber == employee.managerNumber){
+                        employeeSearchBox.value = `${employee.firstName} ${employee.lastName}`;
+                    }
                     employeeMenu.appendChild(menuItem);
                 });
         });

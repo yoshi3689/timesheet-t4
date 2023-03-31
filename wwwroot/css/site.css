@@ -50,6 +50,7 @@ li {
 .btn-primary {
   background-color: #2c3d55 !important;
   border: 1px solid #2c3d55 !important;
+  color: white !important;
 }
 
 select-caret::after {
@@ -89,13 +90,22 @@ select-caret::after {
 }
 
 .activeSheet {
-  border: black solid 3px;
+  border: black solid 3px !important;
 }
 
 .wideHeader {
   min-width: 110px;
 }
 
-.readonly {
-  background-color: green;
+.notiSummary {
+  border-top: 2px solid black;
+  border-radius: 5%;
+}
+
+.primaryBG {
+  background-color: #2c3d55 !important;
+}
+
+.hidden {
+  display: none;
 }

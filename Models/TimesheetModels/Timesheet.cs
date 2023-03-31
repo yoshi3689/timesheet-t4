@@ -17,25 +17,28 @@ public partial class Timesheet
 
     [Required]
     public DateOnly? EndDate { get; set; }
-
+    [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
     public double TotalHours { get; set; }
+    [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
     public double FlexHours { get; set; }
     public byte[]? EmployeeHash { get; set; }
     public byte[]? ApproverHash { get; set; }
-
+    [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
     public double Overtime { get; set; }
     [Required]
     public string UserId { get; set; } = null!;
     public string? TimesheetApproverId { get; set; }
+    public string? ApproverNotes { get; set; }
 
     [InverseProperty("Timesheet")]
     public virtual ICollection<TimesheetRow> TimesheetRows { get; } = new List<TimesheetRow>();
 
+    [ForeignKey("UserId")]
+    public ApplicationUser? User { get; set; } = null!;
+
     [ForeignKey("TimesheetApproverId")]
     public ApplicationUser? TimesheetApprover { get; set; }
 
-    [ForeignKey("UserId")]
-    public ApplicationUser? User { get; set; } = null!;
 
     [NotMapped]
     public bool CurrentlySelected { get; set; }

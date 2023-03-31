@@ -21,7 +21,9 @@ namespace TimesheetApp.Models.TimesheetModels
                 return Days * People;
             }
         }
+        [Range(0, double.MaxValue, ErrorMessage = "Must be positive.")]
         public double Days { get; set; }
+        [Range(0, int.MaxValue, ErrorMessage = "Must be positive.")]
         public int People { get; set; }
         [Display(Name = "Labour Grade")]
         public string? LabourCode { get; set; }
@@ -35,9 +37,6 @@ namespace TimesheetApp.Models.TimesheetModels
             }
         }
         public bool isREBudget { get; set; }
-
-        [ForeignKey("LabourCode")]
-        public LabourGrade? LabourGrade { get; set; }
 
         [NotMapped]
         public double Rate { get; set; }

@@ -14,10 +14,10 @@ namespace TimesheetApp.Models.TimesheetModels
         public int Id { get; set; }
         public string? ProjectId { get; set; }
         public string? WPProjectId { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
         public double EstimatedCost { get; set; }
+        [Display(Name = "End Date")]
         public DateOnly? Date { get; set; }
         public string? LabourCode { get; set; }
-        [ForeignKey("LabourCode")]
-        public LabourGrade? LabourGrade { get; set; }
     }
 }

@@ -16,6 +16,24 @@
                 <label asp-for="Username" class="form-label"></label>
             </div>
             <div class="form-floating mb-3">
+                <input asp-for="EmployeeNum" class="form-control" class="form-select" disabled/>
+                <label asp-for="EmployeeNum" class="form-label"></label>
+            </div>
+            <div class="form-floating mb-3">
+                <input asp-for="JobTitle" class="form-control" class="form-select" disabled/>
+                <label asp-for="JobTitle" class="form-label"></label>
+            </div>
+            <div class="form-floating mb-3">
+                <input asp-for="LabourGrade" class="form-control" class="form-select" disabled/>
+                <label asp-for="LabourGrade" class="form-label"></label>
+
+            </div>
+            <div class="form-floating mb-3">
+                <input asp-for="Supervisor" class="form-control" class="form-select" disabled/>
+                <label asp-for="Supervisor" class="form-label"></label>
+
+            </div>
+            <div class="form-floating mb-3">
                 <input asp-for="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number."/>
                 <label asp-for="Input.PhoneNumber" class="form-label"></label>
                 <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>

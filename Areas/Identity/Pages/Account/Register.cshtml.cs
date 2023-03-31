@@ -29,7 +29,7 @@ using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,HR")]
     public class RegisterModel : PageModel
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
@@ -161,6 +161,8 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 user.EmployeeNumber = Input.EmployeeNumber;
                 user.EmailConfirmed = true;
                 user.SupervisorId = Input.Supervisor;
+                user.TimesheetApproverId = Input.Supervisor;
+                user.SickDays = 7;
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
