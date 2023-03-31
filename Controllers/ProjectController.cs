@@ -553,7 +553,7 @@ namespace TimesheetApp.Controllers
             }
             return false;
         }
-
+        
         public async Task<IActionResult> Report(int id)
         {
             MemoryStream ms = new MemoryStream();
@@ -708,6 +708,166 @@ namespace TimesheetApp.Controllers
             fileStreamResult.FileDownloadName = "Report-" + prj.ProjectId + "-" + DateTime.Now.ToShortDateString() + ".pdf";
             return fileStreamResult;
         }
+
+
+        public async Task<IActionResult> PCBAC(int id)
+        {
+            MemoryStream ms = new MemoryStream();
+
+            PdfWriter writer = new PdfWriter(ms);
+            PdfDocument pdfDoc = new PdfDocument(writer);
+            Document document = new Document(pdfDoc, PageSize.A4.Rotate(), false);
+            writer.SetCloseStream(false);
+
+            Paragraph header = new Paragraph("Project Costing/Budget/Actual Comparison (PCBAC)")
+              .SetTextAlignment(TextAlignment.CENTER)
+              .SetFontSize(15);
+            document.Add(header);
+
+            float fontSizeSH = 11.5F;
+            Paragraph subheader = new Paragraph($"Created Date: {DateTime.Now.ToShortDateString()}").SetFontSize(fontSizeSH);
+            document.Add(subheader);
+
+            Project? prj = await _context.Projects!.FindAsync(id);
+            ApplicationUser? mgr = await _context.Users.FindAsync(prj!.ProjectManagerId);
+            if (prj == null || mgr == null)
+            {
+                return BadRequest();
+            }
+            LineSeparator ls = new LineSeparator(new SolidLine());
+
+            Paragraph details = new Paragraph();
+            details.Add(new Text($"Project Title: {prj.ProjectTitle}"));
+            details.Add(new Tab());
+            details.Add(new Tab());
+            details.Add(new Text($"Manager: {mgr.FirstName} {mgr.LastName} ({mgr.EmployeeNumber})"));
+            details.SetFontSize(fontSizeSH);
+            document.Add(details);
+            document.Add(ls);
+
+            Table wpTable = new Table(5);
+            //headings row
+
+            wpTable.AddCell(new Cell()
+               .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+               .SetTextAlignment(TextAlignment.CENTER)
+               .SetFontSize(fontSizeSH)
+               .Add(new Paragraph("Labour")));
+
+            wpTable.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Stats")));
+
+            wpTable.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Project Budget")));
+
+            wpTable.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Engineer Planned")));
+
+            wpTable.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Actual to date")));
+
+            wpTable.SetWidth(UnitValue.CreatePercentValue(100));
+
+            //get the dates of the previous month
+            var startOfThisMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            var firstDay = startOfThisMonth.AddMonths(-1);
+            var lastDay = startOfThisMonth.AddDays(-1);
+
+            //get all labour grades and budgets in one query so there aren't lots of little ones.
+            var labourGrades = _context.LabourGrades.ToList();
+            var budgets = _context.Budgets.Where(c => c.WPProjectId.StartsWith(prj.ProjectId + "~")).ToList();
+
+            //get all the approved timesheets of users in a project in the last month.
+            var employees = _context.EmployeeProjects.Where(c => c.ProjectId == prj.ProjectId).Select(c => c.UserId).ToList();
+            var timesheets = _context.Timesheets.Where(c => c.ApproverHash != null && Convert.ToDateTime(c.EndDate) >= firstDay && Convert.ToDateTime(c.EndDate) <= lastDay && employees.Contains(c.UserId));
+
+            //create a list of timesheet rows after verifying timesheets
+            var timesheetRows = new List<TimesheetRow>();
+            foreach (var timesheet in timesheets)
+            {
+                // if(TimesheetController.verifySignature(timesheet, ))
+            }
+
+
+            foreach (var wp in _context.WorkPackages.Where(c => c.ProjectId == prj.ProjectId).OrderBy(c => c.WorkPackageId).ToList())
+            {
+                //wp info
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(wp.WorkPackageId).SetFontSize(fontSizeSH))
+                    .Add(new Paragraph(wp.Title).SetFontSize(fontSizeSH)));
+
+                //label column
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph("Total P.D.").SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.RIGHT))
+                    .Add(new Paragraph("Labour $").SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.RIGHT)));
+
+                //PM budget
+                double totalPDPM = 0;
+                double totalCostPM = 0;
+                foreach (var budget in budgets.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId && c.isREBudget == false))
+                {
+                    totalPDPM += budget.BudgetAmount;
+                    totalCostPM += budget.BudgetAmount * labourGrades.Where(c => c.LabourCode == budget.LabourCode).First().Rate;
+                }
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(Convert.ToString(totalPDPM)).SetFontSize(fontSizeSH))
+                    .Add(new Paragraph("$" + totalCostPM).SetFontSize(fontSizeSH)));
+
+                //RE budget
+                double totalPDRE = 0;
+                double totalCostRE = 0;
+                foreach (var budget in budgets.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId && c.isREBudget == true))
+                {
+                    totalPDRE += budget.BudgetAmount;
+                    totalCostRE += budget.BudgetAmount * labourGrades.Where(c => c.LabourCode == budget.LabourCode).First().Rate;
+                }
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(Convert.ToString(totalPDRE)).SetFontSize(fontSizeSH))
+                    .Add(new Paragraph("$" + totalCostRE).SetFontSize(fontSizeSH)));
+
+            }
+
+            document.Add(wpTable);
+
+            // Add table containing data
+            document.Add(await GetPdfTable());
+
+            // Page Numbers
+            int n = pdfDoc.GetNumberOfPages();
+            for (int i = 1; i <= n; i++)
+            {
+                document.ShowTextAligned(new Paragraph(String
+                  .Format("Page " + i + " of " + n)),
+                  559, 806, i, TextAlignment.RIGHT,
+                  VerticalAlignment.TOP, 0);
+            }
+
+            document.Close();
+            byte[] byteInfo = ms.ToArray();
+            ms.Write(byteInfo, 0, byteInfo.Length);
+            ms.Position = 0;
+
+            FileStreamResult fileStreamResult = new FileStreamResult(ms, "application/pdf");
+            //Uncomment this to return the file as a download
+            fileStreamResult.FileDownloadName = "Report-" + prj.ProjectId + "-" + DateTime.Now.ToShortDateString() + ".pdf";
+            return fileStreamResult;
+        }
+
+        
+
+
 
         private async Task<Table> GetPdfTable()
         {
