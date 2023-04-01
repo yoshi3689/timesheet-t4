@@ -11,9 +11,9 @@ RUN dotnet publish -c Release -o out
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
 
-# Install MySQL client
+# Update package index and install default-mysql-client
 RUN apt-get update && \
-    apt-get install -y mysql-client
+    apt-get install -y default-mysql-client
 
 # Add the directory containing mysqldump to the PATH environment variable
 ENV PATH="/usr/bin:${PATH}"
