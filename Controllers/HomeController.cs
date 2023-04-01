@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -86,7 +86,7 @@ public class HomeController : Controller
         process.StartInfo.FileName = "mysqldump";
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.RedirectStandardOutput = true;
-        process.StartInfo.Arguments = $"--user=root --password={GlobalData.DBPassword} --host={GlobalData.DBHost} --port={GlobalData.DBPort} --ssl-mode=DISABLE db";
+        process.StartInfo.Arguments = $"--user=root --password={GlobalData.DBPassword} --host={GlobalData.DBHost} --port={GlobalData.DBPort}  db";
         Console.WriteLine(process.StartInfo.Arguments);
 
         // Start the process and capture the output as a stream
