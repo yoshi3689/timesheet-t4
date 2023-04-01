@@ -329,6 +329,8 @@ ViewData["Title"] = "Manage Project";
         splitButton.id = "SPLIT" + WorkPackageId;
         div.appendChild(splitButton);
 
+        
+
         let budgetDetailsButton = document.createElement("button");
         budgetDetailsButton.value = WorkPackageId;
         budgetDetailsButton.name = "name";
@@ -478,6 +480,37 @@ ViewData["Title"] = "Manage Project";
         });
         div.appendChild(budgetDetailsButton);
 
+        let closedButton = document.createElement("button");
+        closedButton.value = WorkPackageId;
+        console.log("closedbutton value: ", WorkPackageId);
+        closedButton.name = "name";
+        closedButton.className = "label btn btn-danger";
+        closedButton.innerHTML = "Close";
+        closedButton.id = "closedBtn";
+        closedButton.type = "button";
+        closedButton.addEventListener('click', async function (info) {
+            await fetch("/Project/CloseWP", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    workPackageId: closedButton.value
+                }),
+            })
+            .then(async (response) => {
+                if (response.status == 200) {
+                    console.log("success closing")
+                    closedButton.classList.add("hidden");
+                    @* document.getElementsByClassName('isClosed').innerHTML = "True"; *@
+                }
+            })
+        });
+        if (!IsClosed) {
+            div.appendChild(closedButton);
+        }
+        
 
 
         if (IsBottomLevel) {

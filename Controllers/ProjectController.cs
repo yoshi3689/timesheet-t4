@@ -479,6 +479,38 @@ namespace TimesheetApp.Controllers
             return Json(result);
         }
 
+        [HttpPost]
+        [Authorize(Policy = "KeyRequirement")]
+        public async Task<IActionResult> CloseWPAsync([FromBody] WorkPackage wp)
+        {
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+            if (wp == null)
+            {
+                return BadRequest();
+            }
+            else
+            {
+                var closingwp = _context.WorkPackages
+                    .Include(w => w.ChildWorkPackages)
+                    .SingleOrDefault(w => w.WorkPackageId == wp.WorkPackageId);
+                if (closingwp != null)
+                {
+                    if (closingwp.ChildWorkPackages.Count != 0)
+                    {
+                        foreach (var child in closingwp.ChildWorkPackages)
+                        {
+                            await CloseWPAsync(child);
+                        }
+                    }
+                    closingwp.IsClosed = true;
+                }
+
+                _context.SaveChanges();
+                return Ok();
+            }
+
+        }
+
         //get employees for a wp, and say if they are already assigned or not.
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> GetWPEmployeesAsync([FromBody] WorkPackage LowestLevelWp)

@@ -47,19 +47,19 @@ namespace TimesheetApp.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "40fe771a-8142-4ebe-9895-dc00fe1a5a86",
+                            Id = "6f4177bf-23db-4668-a39d-a2ceb54cd4fa",
                             Name = "HR",
                             NormalizedName = "HR"
                         },
                         new
                         {
-                            Id = "cbfbe54d-0be5-40a8-9526-0e160c6adfa3",
+                            Id = "30f60e14-4f82-44e8-868d-2826193d5bd2",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "0b5d7250-9812-4f10-a312-909bf86317c1",
+                            Id = "aa9498fd-9a9e-4377-a152-828deceb77f6",
                             Name = "Supervisor",
                             NormalizedName = "SUPERVISOR"
                         });
