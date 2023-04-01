@@ -23,6 +23,7 @@ internal partial class Program
         GlobalData.DBHost = host;
         GlobalData.DBPassword = password;
         GlobalData.DBPort = port;
+        GlobalData.DBName = db;
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -193,5 +194,6 @@ internal partial class Program
         public static string? DBPassword { get; set; }
         public static string? DBHost { get; set; }
         public static string? DBPort { get; set; }
+        public static string? DBName { get; set; }
     }
 }

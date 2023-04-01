@@ -86,7 +86,7 @@ public class HomeController : Controller
         process.StartInfo.FileName = "mysqldump";
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.RedirectStandardOutput = true;
-        process.StartInfo.Arguments = $"--user=root --password={GlobalData.DBPassword} --host={GlobalData.DBHost} --port={GlobalData.DBPort}  db";
+        process.StartInfo.Arguments = $"--user=root --password={GlobalData.DBPassword} --host={GlobalData.DBHost} --port={GlobalData.DBPort} {GlobalData.DBName}";
         Console.WriteLine(process.StartInfo.Arguments);
 
         // Start the process and capture the output as a stream
