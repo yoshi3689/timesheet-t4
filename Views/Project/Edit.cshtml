@@ -545,18 +545,16 @@ ViewData["Title"] = "Manage Project";
         table.appendChild(createRow("Responsible Engineer: ", re, null, null, !re.innerHTML));
 
         let tbudget = document.createElement("span");
-        tbudget.innerHTML = "$"+totalBudget;
+        tbudget.innerHTML = "$"+parseFloat(totalBudget).toFixed(2);
         let tremain = document.createElement("span");
-        tremain.innerHTML = "$"+remainingBudget;
+        tremain.innerHTML = "$"+parseFloat(remainingBudget).toFixed(2);
         tremain.className = "totalRemaining";
         var budgetRow;
-        if (IsBottomLevel){
-            budgetRow = createRow("Total Budget:", tbudget, "Remaining:", tremain, false);
-        }
-        else if(remainingBudget != 0){
+        if (!IsBottomLevel && parseFloat(remainingBudget) != 0){
             budgetRow = createRow("Total Budget:", tbudget, "Unallocated Budget:", tremain, false);
         } else {
             budgetRow = createRow("Total Budget:", tbudget, null, null, false);
+
         }
         budgetRow.className = "budgetRow";
         table.appendChild(budgetRow);
@@ -649,7 +647,7 @@ ViewData["Title"] = "Manage Project";
 
             let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
             let tremain = document.createElement("span");
-            tremain.innerHTML = "$" + (parseInt(budgetRow[1].innerHTML.replace(/\D/g, '')) - c.totalBudget);
+            tremain.innerHTML = "$" + (parseFloat(budgetRow[1].innerHTML.replace(/[^0-9.-]+/g,"")) - c.totalBudget);
             budgetRow[3].innerHTML = tremain.outerHTML;
             budgetRow[2].innerHTML = "Unallocated Budget:"
 
@@ -663,7 +661,7 @@ ViewData["Title"] = "Manage Project";
 
       async function callSplit(info) {
             currentWorkPackage = info.value;
-            await fetch('/Project/ShowSplit')
+            await fetch('/Project/ShowSplit?workPackageId='+info.value)
             .then(function(data){
                 return data.text();
             }).then(function(data){

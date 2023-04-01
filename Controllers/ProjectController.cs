@@ -180,7 +180,6 @@ namespace TimesheetApp.Controllers
                 wps = findAllChildren(top),
                 LabourGrades = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).ToList()
             };
-
             //calculate the total budget amount for each work package.
             List<Budget> budgets = _context.Budgets.Where(c => c.WPProjectId.StartsWith(CurrentProject + "~")).ToList();
             model.wps = getTotalMoney(model.wps, budgets);
@@ -336,12 +335,16 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <returns>WP creation partial view</returns>
         [Authorize(Policy = "KeyRequirement")]
-        public async Task<IActionResult> ShowSplitAsync()
+        public async Task<IActionResult> ShowSplitAsync(string workPackageId)
         {
             if (await verifyPMAsync() is IActionResult isPM) return isPM;
 
             string projectId = Convert.ToString(HttpContext.Session.GetInt32("CurrentProject") ?? 0);
-            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~0").ToList();
+            var projectBudget = _context.Budgets.Where(c => c.WPProjectId == projectId + "~" + workPackageId).ToList();
+            if (projectBudget == null)
+            {
+                return BadRequest();
+            }
             List<Budget> emptyBudgets = new List<Budget>();
             foreach (var item in _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year)!.ToList())
             {
@@ -413,8 +416,8 @@ namespace TimesheetApp.Controllers
                         People = budget.People,
                         Days = budget.Days,
                         LabourCode = budget.LabourCode,
-                        UnallocatedDays = budget.UnallocatedDays,
-                        UnallocatedPeople = budget.UnallocatedPeople
+                        UnallocatedDays = budget.People,
+                        UnallocatedPeople = budget.Days
                     };
                     _context.Budgets!.Add(newBudget);
                     parentB = parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First();
