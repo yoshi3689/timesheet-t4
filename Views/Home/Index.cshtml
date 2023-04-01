@@ -4,7 +4,6 @@
 }
 
 <div class="text-center">
-    @* <h2>What's New</h2> *@
     <div >
         <h2>
             Notification Summary
@@ -13,6 +12,9 @@
             <div id="notifications"></div>
         </div>
     </div>
+    @if(User.IsInRole("Admin")){
+        <a class="btn btn-primary position-absolute bottom-0 center translate-middle" href="/Home/DownloadSql">Download Backup Sql File</a>
+    }
 </div>
 
 

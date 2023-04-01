@@ -14,7 +14,6 @@
                         <label asp-for="WorkPackage.WorkPackageId" class="control-label"></label>
                         <div class="d-flex align-items-center"
                             style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-                            <div id="newIdPartial"></div>
                             <input asp-for="WorkPackage.WorkPackageId" class="form-control" />
                         </div>
                         <span asp-validation-for="WorkPackage.WorkPackageId" class="text-danger"></span>
@@ -68,3 +67,8 @@
         </div>
     </div>
 </div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

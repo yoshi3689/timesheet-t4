@@ -987,14 +987,14 @@ namespace TimesheetApp.Controllers
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
                 .Add(new Paragraph("Actual Cost To Date")));
-                        
+
             for (int i = 0; i < 3; i++)
             {
-                 wpTable.AddCell(new Cell()
-                    .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
-                    .SetTextAlignment(TextAlignment.CENTER)
-                    .SetFontSize(fontSizeSH)
-                    .Add(new Paragraph("PD")));
+                wpTable.AddCell(new Cell()
+                   .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                   .SetTextAlignment(TextAlignment.CENTER)
+                   .SetFontSize(fontSizeSH)
+                   .Add(new Paragraph("PD")));
 
                 wpTable.AddCell(new Cell()
                     .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
@@ -1037,7 +1037,7 @@ namespace TimesheetApp.Controllers
             foreach (var lg in labourGrades)
             {
                 wpTable.AddCell(new Cell(1, 2).Add(new Paragraph(lg.LabourCode + " (" + lg.Rate + ")")));
-            
+
 
                 double totalPDPM = 0;
                 double totalCostPM = 0;
@@ -1050,8 +1050,8 @@ namespace TimesheetApp.Controllers
                 totalPMPD += totalPDPM;
                 wpTable.AddCell(new Cell().Add(new Paragraph(Convert.ToString(Math.Round(totalPDPM, 2))).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
                 wpTable.AddCell(new Cell().Add(new Paragraph("$" + Math.Round(totalCostPM, 2)).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
-                
-                
+
+
 
                 double totalPDRE = 0;
                 double totalCostRE = 0;
@@ -1079,41 +1079,41 @@ namespace TimesheetApp.Controllers
                 wpTable.AddCell(new Cell().Add(new Paragraph("$" + Math.Round(totalCostActual, 2)).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
             }
 
-            wpTable.AddCell(new Cell(1,2)
+            wpTable.AddCell(new Cell(1, 2)
                 .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
                 .Add(new Paragraph("Total")));
-            
-            wpTable.AddCell(new Cell()
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetFontSize(fontSizeSH)
-                .Add(new Paragraph(Convert.ToString(Math.Round(totalPMPD,2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
-                .Add(new Paragraph("$"+Convert.ToString(Math.Round(totalPM,2)))));
+                .Add(new Paragraph(Convert.ToString(Math.Round(totalPMPD, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
-                .Add(new Paragraph(Convert.ToString(Math.Round(totalREPD,2)))));
+                .Add(new Paragraph("$" + Convert.ToString(Math.Round(totalPM, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
-                .Add(new Paragraph("$"+Convert.ToString(Math.Round(totalRE,2)))));
+                .Add(new Paragraph(Convert.ToString(Math.Round(totalREPD, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
-                .Add(new Paragraph(Convert.ToString(Math.Round(totalActualPD,2)))));
+                .Add(new Paragraph("$" + Convert.ToString(Math.Round(totalRE, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
-                .Add(new Paragraph("$"+Convert.ToString(Math.Round(totalActual,2)))));
+                .Add(new Paragraph(Convert.ToString(Math.Round(totalActualPD, 2)))));
+
+            wpTable.AddCell(new Cell()
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("$" + Convert.ToString(Math.Round(totalActual, 2)))));
 
 
             document.Add(wpTable);

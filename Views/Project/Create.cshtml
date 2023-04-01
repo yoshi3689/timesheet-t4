@@ -63,4 +63,9 @@
         element.innerHTML = " $" + (people * days * rate).toFixed(2);
     }
 </script>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
 

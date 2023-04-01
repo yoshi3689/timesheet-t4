@@ -40,6 +40,10 @@ namespace TimesheetApp.Controllers
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult CreateBudgetsAndEstimates(LowestWorkPackageBAndEViewModel input)
         {
+            if (!ModelState.IsValid)
+            {
+                return View("Edit", input);
+            }
             // add a new set of budgets
             if (input.budgets != null)
             {
@@ -143,6 +147,12 @@ namespace TimesheetApp.Controllers
                     EstimatedCost = 0,
                 };
                 estimates.Add(re);
+            }
+
+            var lgs = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).ToList();
+            foreach (var item in budgets)
+            {
+                item.Rate = lgs.Where(c => c.LabourCode == item.LabourCode).First().Rate;
             }
 
             LowestWorkPackageBAndEViewModel model = new LowestWorkPackageBAndEViewModel

@@ -20,6 +20,9 @@ internal partial class Program
 
         string connectionString = $"server={host}; userid=root; pwd={password};"
                 + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";
+        GlobalData.DBHost = host;
+        GlobalData.DBPassword = password;
+        GlobalData.DBPort = port;
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -183,5 +186,12 @@ internal partial class Program
             DbContext.SaveChanges();
         }
         app.Run();
+    }
+
+    public static class GlobalData
+    {
+        public static string? DBPassword { get; set; }
+        public static string? DBHost { get; set; }
+        public static string? DBPort { get; set; }
     }
 }

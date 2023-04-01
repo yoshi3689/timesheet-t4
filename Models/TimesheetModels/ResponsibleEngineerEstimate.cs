@@ -15,6 +15,7 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? ProjectId { get; set; }
         public string? WPProjectId { get; set; }
         [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
+        [Display(Name = "Estimated Remaining P.D.")]
         public double EstimatedCost { get; set; }
         [Display(Name = "End Date")]
         public DateOnly? Date { get; set; }

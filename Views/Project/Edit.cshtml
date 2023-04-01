@@ -245,84 +245,9 @@ ViewData["Title"] = "Manage Project";
         splitButton.value = WorkPackageId;
         splitButton.name = "name";
         splitButton.className = "label";
-
-        splitButton.addEventListener('click', async function callSplit(info) {
-            currentWorkPackage = info.srcElement.value;
-            await fetch('/Project/ShowSplit')
-            .then(function(data){
-                return data.text();
-            }).then(function(data){
-                document.querySelector("#modal-placeholder").innerHTML = data;
-                document.querySelector("#parentWPID").value = WorkPackageId;
-                var myModalEl = document.getElementById('splitModal');
-                var modal = new bootstrap.Modal(myModalEl);
-                modal.show();
-                //only append to the start if its not right under the project
-                if(WorkPackageId !== "0"){
-                    document.querySelector("#newIdPartial").innerHTML = WorkPackageId;
-                }
-                let errors = "";
-                //submit creation of sub work package
-                document.querySelector("#newWPForm").addEventListener('submit', async function submitForm (event) {
-                    event.preventDefault();
-                    const formData = new FormData(document.querySelector("#newWPForm"));
-                    await fetch("/Project/BudgetDetails", {
-                        method: "POST",
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            workPackageId: formData.get("WorkPackage.ParentWorkPackageId")
-                        }),
-                    })
-                    .then((response) => {
-                        return response.json();
-                    })
-                    .then((response) => {
-                        response.forEach((c) => {
-                            for(var i = 0; i < response.length; i++){
-                                if(formData.get("budgets[" + i + "].LabourCode") == c.labourCode){
-                                    if(parseFloat(formData.get("budgets[" + i + "].Days")) > c.days){
-                                        errors += formData.get("budgets[" + i + "].LabourCode") + " Days<br/>";
-                                    }
-                                    if(parseInt(formData.get("budgets[" + i + "].People")) > c.people){
-                                        errors += formData.get("budgets[" + i + "].LabourCode") + " People<br/>";
-                                    }
-                                }
-                            }
-                        });
-                    });
-
-                    if(errors.length > 0){
-                        document.querySelector("#warningModalBody").innerHTML = "The budget for this work package passes the total budget of the parent work package. Do you want to continue?<br/>Fields that are over:<br/>" + errors;
-                        let modalObj = new bootstrap.Modal(document.querySelector("#warningModal"));
-                        modalObj.show();
-                        document.querySelector("#cancelWarning").addEventListener("click", () => {
-                            var myModalEl = document.querySelector("#warningModal");
-                            var modal = bootstrap.Modal.getInstance(myModalEl)
-                            modal.hide();
-                            myModalEl = document.querySelector("#splitModal");
-                            modal = bootstrap.Modal.getInstance(myModalEl)
-                            modal.hide();
-                        });
-                        document.querySelector("#continueWarning").addEventListener("click", () => {
-                            executeSplit();
-                            var myModalEl = document.querySelector("#warningModal");
-                            var modal = bootstrap.Modal.getInstance(myModalEl)
-                            modal.hide();
-                            myModalEl = document.querySelector("#splitModal");
-                            modal = bootstrap.Modal.getInstance(myModalEl)
-                            modal.hide();
-                        });
-                    } else {
-                        executeSplit();
-                    }
-
-
-                });
-            });
-        }, false);
+        splitButton.addEventListener("click", async function(){
+            callSplit(this)
+        } , false); //HERE!
         splitButton.type = "button";
         splitButton.innerHTML = "Create Subpackage";
         splitButton.className = "label btn btn-primary";
@@ -336,7 +261,7 @@ ViewData["Title"] = "Manage Project";
         budgetDetailsButton.innerHTML = "Budget Details";
         budgetDetailsButton.type = "button";
         budgetDetailsButton.className = "label btn btn-info";
-        budgetDetailsButton.addEventListener('click', async function callSplit(info) {
+        budgetDetailsButton.addEventListener('click', async function details(info) {
             await fetch("/Project/BudgetDetails", {
                 method: "POST",
                 headers: {
@@ -706,9 +631,7 @@ ViewData["Title"] = "Manage Project";
                 var modal = bootstrap.Modal.getInstance(myModalEl)
                 modal.hide();
                 document.querySelector("#modal-placeholder").innerHTML = text;
-                myModalEl = document.getElementById('splitModal');
-                modal = new bootstrap.Modal(myModalEl);
-                modal.show();
+                setUpModal(document.querySelector("#parentWPID").value);
                 return;
             }
             return await c.json();
@@ -737,6 +660,86 @@ ViewData["Title"] = "Manage Project";
             modal.hide();
         });
     }
+
+      async function callSplit(info) {
+            currentWorkPackage = info.value;
+            await fetch('/Project/ShowSplit')
+            .then(function(data){
+                return data.text();
+            }).then(function(data){
+                document.querySelector("#modal-placeholder").innerHTML = data;
+                document.querySelector("#parentWPID").value = currentWorkPackage;
+                setUpModal(currentWorkPackage);
+            });
+        }
+
+        function setUpModal(currentWorkPackage){
+            var myModalEl = document.getElementById('splitModal');
+            var modal = new bootstrap.Modal(myModalEl);
+            modal.show();
+            //only append to the start if its not right under the project
+            if(currentWorkPackage !== "0"){
+                document.querySelector("#newIdPartial").innerHTML = currentWorkPackage;
+            }
+            let errors = "";
+            //submit creation of sub work package
+            document.querySelector("#newWPForm").addEventListener('submit', async function submitForm (event) {
+                event.preventDefault();
+                const formData = new FormData(document.querySelector("#newWPForm"));
+                await fetch("/Project/BudgetDetails", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        workPackageId: formData.get("WorkPackage.ParentWorkPackageId")
+                    }),
+                })
+                .then((response) => {
+                    return response.json();
+                })
+                .then((response) => {
+                    response.forEach((c) => {
+                        for(var i = 0; i < response.length; i++){
+                            if(formData.get("budgets[" + i + "].LabourCode") == c.labourCode){
+                                if(parseFloat(formData.get("budgets[" + i + "].Days")) > c.days){
+                                    errors += formData.get("budgets[" + i + "].LabourCode") + " Days<br/>";
+                                }
+                                if(parseInt(formData.get("budgets[" + i + "].People")) > c.people){
+                                    errors += formData.get("budgets[" + i + "].LabourCode") + " People<br/>";
+                                }
+                            }
+                        }
+                    });
+                });
+
+                if(errors.length > 0){
+                    document.querySelector("#warningModalBody").innerHTML = "The budget for this work package passes the total budget of the parent work package. Do you want to continue?<br/>Fields that are over:<br/>" + errors;
+                    let modalObj = new bootstrap.Modal(document.querySelector("#warningModal"));
+                    modalObj.show();
+                    document.querySelector("#cancelWarning").addEventListener("click", () => {
+                        var myModalEl = document.querySelector("#warningModal");
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                        myModalEl = document.querySelector("#splitModal");
+                        modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                    });
+                    document.querySelector("#continueWarning").addEventListener("click", () => {
+                        executeSplit();
+                        var myModalEl = document.querySelector("#warningModal");
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                        myModalEl = document.querySelector("#splitModal");
+                        modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                    });
+                } else {
+                    executeSplit();
+                }
+            });
+        }
 
     async function assignEmployeeToWp() {
         // creates an array of employees to add to this wp
@@ -930,3 +933,8 @@ ViewData["Title"] = "Manage Project";
             }))
     }
 </script>
+@section Scripts {
+  @{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+  }
+}

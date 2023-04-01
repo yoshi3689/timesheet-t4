@@ -45,12 +45,6 @@
             <th>
                 Project Manager Name
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.TotalBudget)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ActualCost)
-            </th>
             <th></th>
         </tr>
     </thead>
@@ -66,12 +60,6 @@
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.ProjectManager!.FirstName) @item.ProjectManager!.LastName
-                </td>
-                <td>
-                    $@Html.DisplayFor(modelItem => item.TotalBudget)
-                </td>
-                <td>
-                    $@Html.DisplayFor(modelItem => item.ActualCost)
                 </td>
                 <td>
                     <a class="btn btn-primary rounded" asp-action="Edit" asp-route-id="@item.ProjectId"
@@ -120,3 +108,8 @@
         });
     }
 </script>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
