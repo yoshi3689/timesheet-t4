@@ -31,6 +31,7 @@ namespace TimesheetApp.Models.TimesheetModels
         public double TotalBudget { get; set; }
         [Display(Name = "Actual Cost")]
         public double ActualCost { get; set; }
+        public bool IsClosed { get; set; }
 
         [ForeignKey("ProjectManagerId")]
         [Display(Name = "Manager")]

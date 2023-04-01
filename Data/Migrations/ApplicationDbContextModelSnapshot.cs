@@ -47,19 +47,19 @@ namespace TimesheetApp.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "40fe771a-8142-4ebe-9895-dc00fe1a5a86",
+                            Id = "79755a51-2087-4603-a6d5-ccdc9dd56152",
                             Name = "HR",
                             NormalizedName = "HR"
                         },
                         new
                         {
-                            Id = "cbfbe54d-0be5-40a8-9526-0e160c6adfa3",
+                            Id = "23859103-6268-489f-aedd-2e152f74f964",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "0b5d7250-9812-4f10-a312-909bf86317c1",
+                            Id = "d060f502-a476-45b4-a17d-34f6c8531078",
                             Name = "Supervisor",
                             NormalizedName = "SUPERVISOR"
                         });
@@ -904,6 +904,9 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<string>("AssistantProjectManagerId")
                         .HasColumnType("varchar(255)");
+
+                    b.Property<bool>("IsClosed")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("ProjectManagerId")
                         .IsRequired()

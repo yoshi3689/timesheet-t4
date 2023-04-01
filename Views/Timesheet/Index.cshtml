@@ -354,7 +354,7 @@
                                 c.remove();
                             });
                             response.forEach((cell) => {
-                                addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow);
+                                addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow || cell.workPackage.isClosed);
                             });
                             updateTotals(readonlyRow);
                             var message = document.querySelector("#Timesheet" + this.value + " > .message").innerHTML;
@@ -464,7 +464,7 @@
                                 c.style.display = "none";
                             });
                         }
-                        addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonlyExists);
+                        addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonlyExists || "@row.WorkPackage!.IsClosed" == "True");
                 </text>
             }
 
@@ -565,11 +565,7 @@
                     // Update total hours for each day of the week
                     for (var j = 2; j <= 9; j++) {
                         var hours;
-                        if(readonly){
                             hours = parseFloat(cells[j].textContent);
-                        } else {
-                            hours = parseFloat(cells[j].querySelector("span").textContent);
-                        }
                         if (!isNaN(hours)) {
                             totalHours[j - 2] += hours;
                         }

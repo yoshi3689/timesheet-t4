@@ -559,6 +559,29 @@ namespace TimesheetApp.Controllers
             return new JsonResult(_context.EmployeeWorkPackages!.Where(ewp => ewp.WorkPackageId == LowestLevelWp.WorkPackageId && ewp.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject")).Select(e => e.User).Select(e => new { e!.Id, e.FirstName, e.LastName, e.JobTitle }));
         }
 
+
+        [Authorize(Policy = "KeyRequirement")]
+        public async Task<IActionResult> CloseProject([FromBody] int id)
+        {
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+            if (id == 10)
+            {
+                return BadRequest();
+            }
+            var project = _context.Projects.Find(id);
+            if (project == null)
+            {
+                return BadRequest();
+            }
+            project.IsClosed = true;
+            foreach (var wp in _context.WorkPackages.Where(c => c.ProjectId == id).ToList())
+            {
+                wp.IsClosed = true;
+            }
+            _context.SaveChanges();
+            return Ok();
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

@@ -61,7 +61,10 @@ namespace TimesheetApp.Controllers
 
             createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
 
-            var rows = _context.TimesheetRows.Where(c => c.TimesheetId == timesheet!.TimesheetId).ToList();
+            var rows = _context.TimesheetRows
+                .Where(c => c.TimesheetId == timesheet!.TimesheetId)
+                .Include(c => c.WorkPackage)
+                .ToList();
 
             var model = new TimesheetViewModel()
             {
@@ -151,7 +154,7 @@ namespace TimesheetApp.Controllers
             var myExistingRows = _context.TimesheetRows.Where(c => c.Timesheet!.UserId == userId).Select(c => new TimesheetRow { WorkPackageId = c.WorkPackageId, WorkPackageProjectId = c.WorkPackageProjectId, TimesheetId = c.TimesheetId }).ToList();
             foreach (var wp in myWps)
             {
-                if (!myExistingRows.Where(c => c.TimesheetId == sheet.TimesheetId).Any(r => r.WorkPackageId == wp.WorkPackageId && r.WorkPackageProjectId == wp.WorkPackage!.ProjectId))
+                if (wp.WorkPackage != null && !wp.WorkPackage.IsClosed && !myExistingRows.Where(c => c.TimesheetId == sheet.TimesheetId).Any(r => r.WorkPackageId == wp.WorkPackageId && r.WorkPackageProjectId == wp.WorkPackage!.ProjectId))
                 {
                     TimesheetRow row = new TimesheetRow
                     {
@@ -177,11 +180,6 @@ namespace TimesheetApp.Controllers
                 Response.StatusCode = 400;
                 return Json("Please choose a date.");
             }
-            // if (Convert.ToDateTime(end) < DateTime.Now)
-            // {
-            //     Response.StatusCode = 400;
-            //     return Json("Date cannot be earlier than the present.");
-            // }
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int offset = (7 - (int)Convert.ToDateTime(end).DayOfWeek + (int)DayOfWeek.Friday) % 7;
             DateTime nextFriday = Convert.ToDateTime(end).AddDays(offset);
@@ -217,17 +215,23 @@ namespace TimesheetApp.Controllers
                 return Json(timesheetRow.ValidationErrors);
             }
 
-            var timesheetRows = _context.TimesheetRows.Where(c => c.TimesheetId == timesheetRow.TimesheetId).Include(c => c.Timesheet).ToList();
+            var timesheetRows = _context.TimesheetRows.Where(c => c.TimesheetId == timesheetRow.TimesheetId).Include(c => c.Timesheet).Include(c => c.WorkPackage).ToList();
             var oldRow = timesheetRows.Where(c => c.TimesheetRowId == timesheetRow.TimesheetRowId).FirstOrDefault();
             if (oldRow == null || oldRow.Timesheet == null || oldRow.Timesheet.EmployeeHash != null)
             {
                 return BadRequest();
             }
+            Dictionary<int, string> validationErrors = new Dictionary<int, string>();
+            if (oldRow.WorkPackage != null && oldRow.WorkPackage.IsClosed == true)
+            {
+                validationErrors.Add(0, "Row can no longer be edited, this work package is closed.");
+                Response.StatusCode = 400;
+                return Json(validationErrors);
+            }
             oldRow.Timesheet.TotalHours += timesheetRow.TotalHoursRow - oldRow.TotalHoursRow;
             oldRow.packedHours = timesheetRow.packedHours;
             oldRow.Notes = timesheetRow.Notes;
             oldRow.TotalHoursRow = timesheetRow.TotalHoursRow;
-            Dictionary<int, string> validationErrors = new Dictionary<int, string>();
             for (int i = 0; i < 7; i++)
             {
                 float total = 0;
@@ -272,7 +276,7 @@ namespace TimesheetApp.Controllers
 
             createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
 
-            return Json(_context.TimesheetRows.Where(c => c.TimesheetId == tid).Select(c => new TimesheetRow
+            return Json(_context.TimesheetRows.Where(c => c.TimesheetId == tid).Include(c => c.WorkPackage).Select(c => new TimesheetRow
             {
                 TimesheetRowId = c.TimesheetRowId,
                 TimesheetId = c.TimesheetId,
@@ -281,6 +285,12 @@ namespace TimesheetApp.Controllers
                 Notes = c.Notes,
                 packedHours = c.packedHours,
                 OriginalLabourCode = c.OriginalLabourCode,
+                WorkPackage = new WorkPackage
+                {
+                    ProjectId = c.WorkPackage!.ProjectId,
+                    WorkPackageId = c.WorkPackage.WorkPackageId,
+                    IsClosed = c.WorkPackage.IsClosed
+                }
             }).ToList());
         }
 
