@@ -925,7 +925,7 @@ namespace TimesheetApp.Controllers
             document.Add(details);
 
             Paragraph dates = new Paragraph();
-            dates.Add(new Text($"First Date: {firstDay.ToShortDateString()}"));
+            dates.Add(new Text($"Start Date: {firstDay.ToShortDateString()}"));
             dates.Add(new Tab());
             dates.Add(new Tab());
             dates.Add(new Text($"End Date: {lastDay.ToShortDateString()}"));
