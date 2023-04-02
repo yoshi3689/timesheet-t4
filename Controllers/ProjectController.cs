@@ -660,10 +660,10 @@ namespace TimesheetApp.Controllers
                 return BadRequest();
             }
 
-            //get the dates of the previous month
             var startOfThisMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
             var firstDay = DateOnly.FromDateTime(startOfThisMonth.AddMonths(-1));
             var lastDay = DateOnly.FromDateTime(startOfThisMonth.AddDays(-1));
+
 
             LineSeparator ls = new LineSeparator(new SolidLine());
 
@@ -675,15 +675,10 @@ namespace TimesheetApp.Controllers
             details.SetFontSize(fontSizeSH);
             document.Add(details);
 
-
-            //because fridays don't line up with months, adjust he dates a bit
-            DateTime previousSaturday = startOfThisMonth.AddMonths(-1).AddDays(-(int)startOfThisMonth.AddMonths(-1).DayOfWeek - 1);
             DateTime previousFriday = startOfThisMonth.AddDays(-1).AddDays(-(int)startOfThisMonth.AddDays(-1).DayOfWeek - 2);
 
+
             Paragraph dates = new Paragraph();
-            dates.Add(new Text($"Start Date: {previousSaturday.ToShortDateString()}"));
-            dates.Add(new Tab());
-            dates.Add(new Tab());
             dates.Add(new Text($"End Date: {previousFriday.ToShortDateString()}"));
             dates.SetFontSize(fontSizeSH);
             document.Add(dates);
@@ -757,7 +752,7 @@ namespace TimesheetApp.Controllers
             var employees = _context.EmployeeProjects.Where(c => c.ProjectId == prj.ProjectId).Select(c => c.UserId).ToList();
             var eWps = _context.EmployeeWorkPackages.Where(c => c.WorkPackageProjectId == prj.ProjectId).Include(c => c.User).ToList();
             var timesheets = _context.Timesheets
-                .Where(c => c.TimesheetApproverId != null && c.EndDate >= firstDay && c.EndDate <= lastDay && employees.Contains(c.UserId))
+                .Where(c => c.TimesheetApproverId != null && c.EndDate <= lastDay && employees.Contains(c.UserId))
                 .Include(c => c.TimesheetApprover)
                 .Include(c => c.TimesheetRows);            //create a list of timesheet rows after verifying timesheets
             var timesheetRows = new List<TimesheetRow>();
@@ -857,6 +852,228 @@ namespace TimesheetApp.Controllers
                 wpTable.AddCell(new Cell()
                     .Add(new Paragraph(Convert.ToString(double.IsNaN(percentComplete) ? 0 : Math.Round(percentComplete))).SetFontSize(fontSizeSH)));
 
+            }
+
+            document.Add(wpTable);
+
+
+            // Page Numbers
+            int n = pdfDoc.GetNumberOfPages();
+            for (int i = 1; i <= n; i++)
+            {
+                document.ShowTextAligned(new Paragraph(String
+                  .Format("Page " + i + " of " + n)),
+                  559, 806, i, TextAlignment.RIGHT,
+                  VerticalAlignment.TOP, 0);
+            }
+
+            document.Close();
+            byte[] byteInfo = ms.ToArray();
+            ms.Write(byteInfo, 0, byteInfo.Length);
+            ms.Position = 0;
+
+            FileStreamResult fileStreamResult = new FileStreamResult(ms, "application/pdf");
+            //Uncomment this to return the file as a download
+            fileStreamResult.FileDownloadName = "Report-" + prj.ProjectId + "-" + DateTime.Now.ToShortDateString() + ".pdf";
+            return fileStreamResult;
+        }
+
+        [Authorize(Policy = "KeyRequirement")]
+        public async Task<IActionResult> WeekReport(int id)
+        {
+            if (await verifyPMAsync() is IActionResult isPM) return isPM;
+            MemoryStream ms = new MemoryStream();
+            PdfWriter writer = new PdfWriter(ms);
+            PdfDocument pdfDoc = new PdfDocument(writer);
+            Document document = new Document(pdfDoc, PageSize.A4.Rotate(), false);
+            writer.SetCloseStream(false);
+
+            Paragraph header = new Paragraph("Week Details Report")
+              .SetTextAlignment(TextAlignment.CENTER)
+              .SetFontSize(15);
+            document.Add(header);
+
+            float fontSizeSH = 11.5F;
+            Paragraph subheader = new Paragraph($"Created Date: {DateTime.Now.ToShortDateString()}").SetFontSize(fontSizeSH);
+            document.Add(subheader);
+
+            Project? prj = await _context.Projects!.FindAsync(id);
+            if (prj == null)
+            {
+                return BadRequest();
+            }
+            ApplicationUser? mgr = await _context.Users.FindAsync(prj!.ProjectManagerId);
+            if (mgr == null)
+            {
+                return BadRequest();
+            }
+
+            DateTime today = DateTime.Today;
+            int daysUntilFriday = ((int)DayOfWeek.Friday - (int)today.DayOfWeek + 7) % 7;
+            DateTime lastDay = today.AddDays(daysUntilFriday - 7);
+            DateTime firstDay = lastDay.AddDays(-6);
+
+
+            LineSeparator ls = new LineSeparator(new SolidLine());
+
+            Paragraph details = new Paragraph();
+            details.Add(new Text($"Project Title: {prj.ProjectTitle}"));
+            details.Add(new Tab());
+            details.Add(new Tab());
+            details.Add(new Text($"Manager: {mgr.FirstName} {mgr.LastName} ({mgr.EmployeeNumber})"));
+            details.SetFontSize(fontSizeSH);
+            document.Add(details);
+
+            Paragraph dates = new Paragraph();
+            dates.Add(new Text($"First Date: {firstDay.ToShortDateString()}"));
+            dates.Add(new Tab());
+            dates.Add(new Tab());
+            dates.Add(new Text($"End Date: {lastDay.ToShortDateString()}"));
+            dates.SetFontSize(fontSizeSH);
+            document.Add(dates);
+            document.Add(ls);
+
+            Table wpTable = new Table(18);
+            //headings row
+
+            wpTable.AddCell(new Cell()
+               .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+               .SetTextAlignment(TextAlignment.CENTER)
+               .SetFontSize(fontSizeSH)
+               .Add(new Paragraph("Work Package")));
+
+            wpTable.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Employees")));
+
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Sat")));
+
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Sun")));
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Mon")));
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Tue")));
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Wed")));
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Thu")));
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Fri")));
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Total")));
+
+            wpTable.AddCell(new Cell(1, 2)
+               .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+               .SetTextAlignment(TextAlignment.CENTER)
+               .SetFontSize(fontSizeSH)
+               .Add(new Paragraph("")));
+
+            for (int i = 0; i < 8; i++)
+            {
+                wpTable.AddCell(new Cell()
+                    .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetFontSize(fontSizeSH)
+                    .Add(new Paragraph("Hour")));
+
+                wpTable.AddCell(new Cell()
+                    .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetFontSize(fontSizeSH)
+                    .Add(new Paragraph("$")));
+            }
+
+            wpTable.SetWidth(UnitValue.CreatePercentValue(100));
+
+            //get all labour grades and budgets in one query so there aren't lots of little ones.
+            var labourGrades = _context.LabourGrades.ToList();
+            //get all the approved timesheets of users in a project in the last month.
+            var employees = _context.EmployeeProjects.Where(c => c.ProjectId == prj.ProjectId).Select(c => c.UserId).ToList();
+            var eWps = _context.EmployeeWorkPackages.Where(c => c.WorkPackageProjectId == prj.ProjectId).Include(c => c.User).ToList();
+            var timesheets = _context.Timesheets
+                .Where(c => c.TimesheetApproverId != null && c.EndDate == DateOnly.FromDateTime(lastDay) && employees.Contains(c.UserId))
+                .Include(c => c.TimesheetApprover)
+                .Include(c => c.TimesheetRows);            //create a list of timesheet rows after verifying timesheets
+            var timesheetRows = new List<TimesheetRow>();
+            TimesheetController tc = new TimesheetController(_context, _userManager);
+            foreach (var timesheet in timesheets)
+            {
+                //check if timesheet is legit
+                if (tc.verifySignature(timesheet, timesheet.TimesheetApprover!.PublicKey!, timesheet.ApproverHash!))
+                {
+                    timesheetRows.AddRange(timesheet.TimesheetRows.Where(c => c.ProjectId == prj.ProjectId).ToList());
+                }
+            }
+
+            foreach (var wp in _context.WorkPackages.Where(c => c.ProjectId == prj.ProjectId).Include(c => c.EmployeeWorkPackages!).ThenInclude(c => c.User).OrderBy(c => c.WorkPackageId).ToList())
+            {
+                if (wp.EmployeeWorkPackages != null && wp.EmployeeWorkPackages.Count() > 0)
+                {
+                    //wp info
+                    wpTable.AddCell(new Cell(wp.EmployeeWorkPackages.Count(), 1)
+                        .Add(new Paragraph(wp.WorkPackageId).SetFontSize(fontSizeSH))
+                        .Add(new Paragraph(wp.Title).SetFontSize(fontSizeSH)));
+
+                    foreach (var ewp in wp.EmployeeWorkPackages)
+                    {
+                        var user = ewp.User;
+                        wpTable.AddCell(new Cell()
+                            .Add(new Paragraph(user!.FirstName + " " + user.LastName).SetFontSize(fontSizeSH)));
+
+                        double totalMoney = 0;
+                        double totalHour = 0;
+                        var row = timesheetRows.Where(c => c.WorkPackageId == ewp.WorkPackageId && c.Timesheet!.UserId == user.Id).FirstOrDefault();
+                        for (int i = 0; i < 7; i++)
+                        {
+                            double hour = 0;
+                            double money = 0;
+                            if (row != null)
+                            {
+                                hour = row.getHour(i);
+                                totalHour += hour;
+                                money = hour * labourGrades.Where(c => c.Year == DateTime.Now.Year && c.LabourCode == row.OriginalLabourCode).First().Rate / 8;
+                                totalMoney += money;
+                            }
+
+                            wpTable.AddCell(new Cell()
+                                .Add(new Paragraph(Convert.ToString(Math.Round(hour, 2))).SetFontSize(fontSizeSH)));
+                            wpTable.AddCell(new Cell()
+                                .Add(new Paragraph(Convert.ToString(Math.Round(money, 2))).SetFontSize(fontSizeSH)));
+                        }
+                        wpTable.AddCell(new Cell()
+                            .Add(new Paragraph(Convert.ToString(Math.Round(totalHour, 2))).SetFontSize(fontSizeSH)));
+                        wpTable.AddCell(new Cell()
+                            .Add(new Paragraph(Convert.ToString(Math.Round(totalMoney, 2))).SetFontSize(fontSizeSH)));
+                    }
+                }
             }
 
             document.Add(wpTable);

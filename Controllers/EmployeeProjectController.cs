@@ -49,7 +49,7 @@ namespace TimesheetApp.Controllers
             }
             var options = user.SupervisedUsers.ToList();
             options.Add(user);
-            var Projects = _context.Projects.Include(p => p.EmployeeProjects).ThenInclude(c => c.User).ToList();
+            var Projects = _context.Projects.Where(c => c.ProjectId != 010).Include(p => p.EmployeeProjects).ThenInclude(c => c.User).ToList();
             return View(new ProjectUsers { Projects = Projects, Users = options });
         }
 
@@ -93,7 +93,10 @@ namespace TimesheetApp.Controllers
         {
             foreach (var ep in employeeProjects)
             {
-                _context.Add(ep);
+                if (ep.ProjectId != 010)
+                {
+                    _context.Add(ep);
+                }
             }
             _context.SaveChanges();
             return Json("a");

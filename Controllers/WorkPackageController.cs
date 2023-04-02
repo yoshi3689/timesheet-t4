@@ -42,6 +42,11 @@ namespace TimesheetApp.Controllers
         {
             if (!ModelState.IsValid)
             {
+                var errors = ModelState.Values.SelectMany(v => v.Errors);
+                foreach (var error in errors)
+                {
+                    Console.WriteLine(error.ErrorMessage);
+                }
                 return View("Edit", input);
             }
             // add a new set of budgets

@@ -47,10 +47,14 @@
                 <td>
                     <a class="btn btn-primary rounded" asp-action="Edit" asp-route-id="@item.ProjectId"
                         role="button">Manage</a>
-                    <a class="btn btn-primary rounded" asp-action="Report" asp-route-id="@item.ProjectId" role="button">
-                        Last Month Report
+                    <a class="btn btn-secondary rounded" asp-action="Report" asp-route-id="@item.ProjectId" role="button">
+                        PCP Report
                     </a>
-                    <a class="btn btn-primary rounded" asp-action="PCBAC" asp-route-id="@item.ProjectId" role="button">
+                    <a class="btn btn-secondary rounded" asp-action="WeekReport" asp-route-id="@item.ProjectId"
+                        role="button">
+                        Last Week Report
+                    </a>
+                    <a class="btn btn-info rounded" asp-action="PCBAC" asp-route-id="@item.ProjectId" role="button">
                         PCBAC Report
                     </a>
                 </td>
