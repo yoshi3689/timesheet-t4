@@ -18,7 +18,8 @@
     {
         wps = c.SupervisedWorkPackage.Count(),
         projects = c.ManagedProjects.Count(),
-        users = c.ApprovableUsers.Count()
+        users = c.ApprovableUsers.Count(),
+        key = c.PublicKey
     })
     .FirstOrDefault();
 }
@@ -33,6 +34,7 @@
 </head>
 
 <body>
+
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
@@ -42,49 +44,55 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <li class="navbar-collapse collapse d-sm-inline-flex d-flex justify-content-between">
+
                     <ul class="navbar-nav">
-                        <li class="nav-item p-4">
-                            <a class="nav-link text-dark p-0 text-decoration-none" asp-area="" asp-controller="Home"
-                                asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item p-4">
-                            <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
-                                asp-controller="Timesheet" asp-action="Index">Timesheets</a>
-                        </li>
-                        @if (user != null && user.users > 0)
+                        @if (user != null && user.key != null)
                         {
+                            <li class="nav-item p-4">
+                                <a class="nav-link text-dark p-0 text-decoration-none" asp-area="" asp-controller="Home"
+                                asp-action="Index">Home</a>
+                            </li>
                             <li class="nav-item p-4">
                                 <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
+                                asp-controller="Timesheet" asp-action="Index">Timesheets</a>
+                            </li>
+                            @if (user != null && user.users > 0)
+                            {
+                                <li class="nav-item p-4">
+                                    <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
                                 asp-controller="Timesheet" asp-action="ToApprove">Timesheet Approval</a>
-                            </li>
-                        }
-                        @if (User.IsInRole("Admin") || User.IsInRole("HR") || (user != null && user.projects > 0))
-                        {
-                            <li class="nav-item p-4">
-                                <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
+                                </li>
+                            }
+                            @if (User.IsInRole("Admin") || User.IsInRole("HR") || (user != null && user.projects > 0))
+                            {
+                                <li class="nav-item p-4">
+                                    <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
                                 asp-action="Index">Projects</a>
-                            </li>
-                        }
-                        @if (User.IsInRole("Supervisor"))
-                        {
-                            <li class="nav-item p-4">
-                                <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                                </li>
+                            }
+                            @if (User.IsInRole("Supervisor"))
+                            {
+                                <li class="nav-item p-4">
+                                    <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
                                 asp-controller="EmployeeProject" asp-action="Index">Assign Employee</a>
-                            </li>
-                        }
-                        @if (user != null && user.wps > 0)
-                        {
-                            <li class="nav-item p-4">
-                                <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                                </li>
+                            }
+                            @if (user != null && user.wps > 0)
+                            {
+                                <li class="nav-item p-4">
+                                    <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
                                 asp-controller="WorkPackage" asp-action="Index">Work Packages</a>
-                            </li>
+                                </li>
+                            }
                         }
+
                     </ul>
                     <partial name="_LoginPartial" />
             </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()

@@ -13,7 +13,7 @@
                 @Html.DisplayNameFor(model => model.Title)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActualCost)
+                Project Title
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.IsClosed)
@@ -29,7 +29,7 @@
                     @Html.DisplayFor(modelItem => item.Title)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.ActualCost)
+                    @Html.DisplayFor(modelItem => item.Project!.ProjectTitle)
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.IsClosed)
