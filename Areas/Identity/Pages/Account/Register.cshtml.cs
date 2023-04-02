@@ -117,7 +117,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
 
         public async Task OnGetAsync(string returnUrl = null)
         {
-            ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
+            ViewData["LabourGrades"] = new SelectList(_context.LabourGrades.Where(c => c.Year == DateTime.Now.Year), "LabourCode", "LabourCode");
             ViewData["Supervisors"] = getSupervisors();
             rolesList = await roleManager.Roles.ToListAsync();
             ReturnUrl = returnUrl;

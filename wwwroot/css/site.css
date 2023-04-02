@@ -84,7 +84,8 @@ select-caret::after {
 }
 
 .list-group-item {
-  width: 240px;
+  width: 100%;
+  margin-bottom: 1%;
   box-sizing: border-box;
   text-align: left;
 }

@@ -1,5 +1,27 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject TimesheetApp.Data.ApplicationDbContext context
+<!DOCTYPE html>
 <html lang="en">
+@{
+    if (User.Identity == null)
+    {
+        return;
+    }
+    var user = context.Users
+    .Include(u => u.SupervisedWorkPackage)
+    .Include(u => u.ManagedProjects)
+    .Include(u => u.ApprovableUsers)
+    .Where(u => u.UserName == User.Identity.Name)
+    .Select(c => new
+    {
+        wps = c.SupervisedWorkPackage.Count(),
+        projects = c.ManagedProjects.Count(),
+        users = c.ApprovableUsers.Count()
+    })
+    .FirstOrDefault();
+}
 
 <head>
     <meta charset="utf-8" />
@@ -29,24 +51,34 @@
                             <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
                                 asp-controller="Timesheet" asp-action="Index">Timesheets</a>
                         </li>
-                        <li class="nav-item p-4">
-                            <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
+                        @if (user != null && user.users > 0)
+                        {
+                            <li class="nav-item p-4">
+                                <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
                                 asp-controller="Timesheet" asp-action="ToApprove">Timesheet Approval</a>
-                        </li>
-                        <li class="nav-item p-4">
-                            @* should only be visible to timesheet approvers. Ask Sam how *@
-
-                            <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin") || User.IsInRole("HR") || (user != null && user.projects > 0))
+                        {
+                            <li class="nav-item p-4">
+                                <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
                                 asp-action="Index">Projects</a>
-                        </li>
-                        <li class="nav-item p-4">
-                            <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                            </li>
+                        }
+                        @if (User.IsInRole("Supervisor"))
+                        {
+                            <li class="nav-item p-4">
+                                <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
                                 asp-controller="EmployeeProject" asp-action="Index">Assign Employee</a>
-                        </li>
-                        <li class="nav-item p-4">
-                            <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                            </li>
+                        }
+                        @if (user != null && user.wps > 0)
+                        {
+                            <li class="nav-item p-4">
+                                <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
                                 asp-controller="WorkPackage" asp-action="Index">Work Packages</a>
-                        </li>
+                            </li>
+                        }
                     </ul>
                     <partial name="_LoginPartial" />
             </div>
