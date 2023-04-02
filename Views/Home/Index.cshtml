@@ -4,8 +4,17 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Dashboard</h1>
-    <div id="notifications"></div>
+    <div >
+        <h2>
+            Notification Summary
+        </h2> 
+        <div class="notiSummary"> 
+            <div id="notifications"></div>
+        </div>
+    </div>
+    @if(User.IsInRole("Admin")){
+        <a class="btn btn-primary position-absolute bottom-0 center translate-middle" href="/Home/DownloadSql">Download Backup Sql File</a>
+    }
 </div>
 
 

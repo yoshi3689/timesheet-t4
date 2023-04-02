@@ -1,0 +1,474 @@
+@model TimesheetApp.Models.TimesheetModels.TimesheetViewModel
+@{
+    ViewData["Title"] = "Index";
+}
+<input type="hidden" id="currentTimesheetId">
+<div class="modal" tabindex="-1" role="dialog" id="timesheetErrorModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Error</h5>
+            </div>
+            <div class="modal-body" id="timesheetError">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal" tabindex="-1" role="dialog" id="submitModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submit and Sign Timesheet</h5>
+            </div>
+            <div class="modal-body">
+                <label for="privateKeyPassword">Signature Password</label>
+                <input type="password" id="privateKeyPassword" >
+                <label  id="passwordLabel" for="privateKeyPassword" class="text-danger font-weight-bold"></label>
+                <br/>
+                <br/>
+                <div>
+                    <label for="approverNotes" id="approverLabel">Notes</label>
+                    <input id="approverNotes" type="text" class="text-danger font-weight-bold" style="display: none;"/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="submitSignature" type="button" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* List of all the sheets *@
+<div class="d-flex justify-content-md-between">
+
+    <div style="margin: 0 10px;" class="list-group border">
+        <h1 class="text-center">Sheets to Approve</h1>
+        <br />
+        <div id="timesheets">
+        </div>
+    </div>
+
+    @* Actual current timesheet box *@
+    <div style="width: 80%; margin: 0 10px;">
+        <table class="table table-responsive" cellpadding="0"
+            cellspacing="0">
+            <tr>
+                <th>Name</th>
+                <th>Employee Number</th>
+                <th>Remaining Sick Days</th>
+                <th>Week Number</th>
+                <th>Week Ends</th>
+            </tr>
+            <tr>
+                <td id="name"></td>
+                <td id="EmployeeNumber"></td>
+                <td id="sickDays"></td>
+                <td id="weekNumber"></td>
+                <td id="weekEnds"></td>
+            </tr>
+        </table>
+        <table id="rowTable" class="table table-bordered table-responsive table-striped " cellpadding="0"
+            cellspacing="0">
+            <tr>
+                <th>Project</th>
+                <th>WP</th>
+                <th>Sat</th>
+                <th>Sun</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Total</th>
+                <th>Notes</th>
+            </tr>
+        </table>
+        <table class="table table-responsive" cellpadding="0" cellspacing="0">
+            <tr>
+                <th>Overtime</th>
+                <th>Flextime</th>
+            </tr>
+            <tr>
+                <td id="overtime"></td>
+                <td id="flextime"></td>
+            </tr>
+        </table>
+
+        @* Check if submitting and signing a timesheet are the same *@
+    <input type="button" value="Approve Timesheet" class="btn btn-primary" onclick="approveTimesheet()">
+    <input type="button" value="Decline Timesheet" class="btn btn-danger" onclick="declineTimesheet()">
+    </div>
+</div>
+
+@section Scripts{
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+
+        updateTotals(true);
+        @if(Model.TimesheetRows != null){
+            @foreach (var row in Model.TimesheetRows!)
+            {
+                <text>
+                    addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", true);
+                </text>
+            }
+        }
+
+        updateTotals(true);
+
+        function approveTimesheet(){
+            document.querySelector("#passwordLabel").innerHTML = "";
+            document.querySelector("#approverNotes").style.display = "none";
+            document.querySelector("#approverLabel").style.display = "none";
+            var myModalEl = document.getElementById('submitModal');
+            var modal = new bootstrap.Modal(myModalEl);
+            modal.show();
+            document.querySelector("#submitSignature").addEventListener("click", () => {
+                 fetch("/Timesheet/ApproveTimesheet", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: document.querySelector("#privateKeyPassword").value,
+                        timesheet: document.querySelector("#currentTimesheetId").value,
+                        approverNotes: ""
+                    }),
+                })
+                .then(async (response) => {
+                    if(response.status == 401){
+                        document.querySelector("#passwordLabel").innerHTML = "Incorrect Password";
+                    } else {
+                        var myModalEl = document.getElementById('submitModal');
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                        return await response.json();
+                    }
+                }).then((response) => {
+                    if(response != null){
+                        var sibling =  document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).parentElement.querySelector("a:first-child");
+                        if(sibling == null || sibling.id == "Timesheet" + document.querySelector("#currentTimesheetId").value){
+                           sibling = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).parentElement.querySelector("a:last-child");
+                        }
+                        document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).remove();
+                        if(sibling != null){
+                            updateTotals(true);
+                            setTimesheet(sibling);
+                            updateTotals(true);
+                        }
+                    }
+                });
+            });
+        }
+
+        function declineTimesheet(){
+            document.querySelector("#passwordLabel").innerHTML = "";
+            document.querySelector("#approverNotes").style.display = "inline";
+            document.querySelector("#approverLabel").style.display = "inline";
+
+            var myModalEl = document.getElementById('submitModal');
+            var modal = new bootstrap.Modal(myModalEl);
+            modal.show();
+            document.querySelector("#submitSignature").addEventListener("click", () => {
+                 fetch("/Timesheet/DeclineTimesheet", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: document.querySelector("#privateKeyPassword").value,
+                        timesheet: document.querySelector("#currentTimesheetId").value,
+                        approverNotes: document.querySelector("#approverNotes").value
+                    }),
+                })
+                .then(async (response) => {
+                    if(response.status == 401){
+                        document.querySelector("#passwordLabel").innerHTML = "Incorrect Password";
+                    } else {
+                        var myModalEl = document.getElementById('submitModal');
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                        return await response.json();
+                    }
+                }).then((response) => {
+                     if(response != null){
+                        var sibling =  document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).parentElement.querySelector("a:first-child");
+                        if(sibling == null || sibling.id == "Timesheet" + document.querySelector("#currentTimesheetId").value){
+                           sibling = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).parentElement.querySelector("a:last-child");
+                        }
+                        document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).remove();
+                        if(sibling != null){
+                            updateTotals(true);
+                            setTimesheet(sibling);
+                            updateTotals(true);
+                        }
+                    }
+                });
+            });
+        }
+
+        function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, approverMessage, name, sickDays, ownerId) {
+                let timesheetsDiv = document.getElementById('timesheets');
+                let newTimesheet = document.createElement('a');
+                newTimesheet.id = "Timesheet" + timesheetId;
+                newTimesheet.className = 'list-group-item list-group-item-action';
+                let message = document.createElement('a');
+                message.style.display = "none";
+                message.className = "message";
+                message.innerHTML = approverMessage;
+                newTimesheet.appendChild(message);
+                if(readonly) {
+                    newTimesheet.className = 'list-group-item list-group-item-secondary readonly';
+                }
+                if (accepted) {
+                    newTimesheet.className = 'list-group-item list-group-item-success readonly';
+                }
+                if (approverMessage != "" && approverMessage != null) {
+                    newTimesheet.className = 'list-group-item list-group-item-danger readonly';
+                }
+                newTimesheet.value = timesheetId + "";
+                if(active){
+                    newTimesheet.classList.add('activeSheet');
+                    document.querySelector("#currentTimesheetId").value = timesheetId + "";
+                    if(readonly){
+                        readonlyExists = true;
+                    }
+                    document.querySelector("#weekEnds").innerHTML = endDate;
+                    document.querySelector("#weekNumber").innerHTML = getWeek(new Date(endDate));
+                    document.querySelector("#name").innerHTML = name;
+                    document.querySelector("#EmployeeNumber").innerHTML = ownerId;
+                    document.querySelector("#sickDays").innerHTML = sickDays;
+                }
+                newTimesheet.addEventListener('click', function() {
+                    setTimesheet(this)
+                });
+
+                let timesheetDiv = document.createElement('div');
+                let endDateDiv = document.createElement('div');
+                endDateDiv.className = "endDate";
+                endDateDiv.textContent = 'End Date: ' + endDate;
+                let totalHoursDiv = document.createElement('div');
+                totalHoursDiv.className = "totalHours";
+                totalHoursDiv.textContent = 'Hours: ' + totalHours;
+                let weekNum = document.createElement('div');
+                weekNum.textContent = 'Week Number: ' + getWeek(new Date(endDate));
+                let timesheetOwnerDiv = document.createElement('div');
+                timesheetOwnerDiv.className = "name"
+                timesheetOwnerDiv.textContent = 'Owner: ' + name;
+                let idDiv = document.createElement("div");
+                idDiv.className = "ownerid";
+                idDiv.innerHTML = 'Owner Id:' + ownerId;
+                timesheetDiv.appendChild(timesheetOwnerDiv);
+                let sickDiv = document.createElement("div");
+                sickDiv.className = "sick";
+                sickDiv.innerHTML = sickDays;
+                sickDiv.style.display = "none";
+                timesheetDiv.appendChild(sickDiv);
+                timesheetDiv.appendChild(timesheetOwnerDiv);
+                timesheetDiv.appendChild(idDiv);
+                timesheetDiv.appendChild(endDateDiv);
+                timesheetDiv.appendChild(weekNum);
+                timesheetDiv.appendChild(totalHoursDiv);
+                newTimesheet.appendChild(timesheetDiv);
+                timesheetsDiv.appendChild(newTimesheet);
+            }
+
+        function setTimesheet(thisValue){
+            let timesheets = document.querySelectorAll('#timesheets > a');
+            for (let i = 0; i < timesheets.length; i++) {
+                timesheets[i].classList.remove('activeSheet');
+                if (timesheets[i] === thisValue) {
+                    timesheets[i].classList.add('activeSheet');
+                }
+            }
+            document.querySelector("#currentTimesheetId").value = thisValue.value;
+            fetch("/Timesheet/GetTimesheet", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(thisValue.value),
+            }).then(async (response) => {
+                if (response.status == 200) {
+                    return await response.json();
+                }
+            }).then((response) => {
+                var readonlyRow = document.querySelector("#" + thisValue.id).classList.contains("readonly");
+                if(response != null){
+                    var table = document.getElementById("rowTable");
+                    const childElements = table.querySelectorAll(':scope > tbody > [id]');
+                    childElements.forEach(c => {
+                        c.remove();
+                    });
+                    response.forEach((cell) => {
+                        addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow);
+                    });
+                    updateTotals(readonlyRow);
+                    var message = document.querySelector("#Timesheet" + thisValue.value + " > .message").innerHTML;
+                    var date = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .endDate").innerHTML.substring(10);
+                    document.querySelector("#weekEnds").innerHTML = date;
+                    document.querySelector("#weekNumber").innerHTML = getWeek(new Date(date));
+
+                    var name = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .name").innerHTML.substring(6);
+                    document.querySelector("#name").innerHTML = name;
+
+                    var empNum = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .ownerid").innerHTML.substring(10);
+                    document.querySelector("#EmployeeNumber").innerHTML = empNum;
+
+                    var sickDays = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .sick").innerHTML;
+                    document.querySelector("#sickDays").innerHTML = sickDays;
+                }
+            });
+        }
+
+        @if(Model.Timesheets != null){
+            @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
+            {
+                <text>
+                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, "@timesheet.ApproverNotes", "@timesheet.User!.FirstName @timesheet.User.LastName", "@timesheet.User.SickDays", "@timesheet.User.EmployeeNumber");
+                </text>
+            }
+        } else {
+            <text>
+                document.querySelector("#timesheets").innerHTML = "Nothing to approve. Have a nice day! :)";
+            </text>
+        }
+
+        function getWeek(date) {
+            const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+            const daysSinceFirstDay = (date - firstDayOfYear) / 86400000; // 86400000 = 24 hours * 60 minutes * 60 seconds * 1000 milliseconds
+            const weekNumber = Math.ceil((daysSinceFirstDay + firstDayOfYear.getDay() + 1) / 7);
+            return weekNumber;
+        }
+
+         function addTableRow(projectId, workPackageId, totalHours, sat, sun, mon, tue, wed, thu, fri, notes, timesheetRowId, readonly) {
+                var table = document.getElementById("rowTable");
+                var row = document.getElementById(timesheetRowId);
+
+                if (row) { // if row with the same id exists, update values in existing row
+                    row.querySelector(".ProjectId span").textContent = projectId;
+                    row.querySelector(".WorkPackageId span").textContent = workPackageId;
+                    row.querySelector(".Sat span").textContent = sat;
+                    row.querySelector(".Sun span").textContent = sun;
+                    row.querySelector(".Mon span").textContent = mon;
+                    row.querySelector(".Tue span").textContent = tue;
+                    row.querySelector(".Wed span").textContent = wed;
+                    row.querySelector(".Thu span").textContent = thu;
+                    row.querySelector(".Fri span").textContent = fri;
+                    row.querySelector(".TotalHours span").textContent = totalHours;
+                    row.querySelector(".Notes span").textContent = notes;
+                    return; // exit function since row was updated
+                }
+
+                // if row with the same id doesn't exist, add new row at the end
+                row = table.insertRow(table.rows.length - 1);
+                row.id = timesheetRowId + "";
+
+                if(notes == undefined){
+                    notes = "";
+                }
+
+                // create cells and input fields with values
+                var cells = [
+                    "<td class='ProjectId'><span>" + projectId + "</span></td>",
+                    "<td class='WorkPackageId'><span>" + workPackageId + "</span></td>",
+                    "<td class='Sat'>" + (!readonly ? "<span>" + sat + "</span><input style='display: none; width:10%;' type='text' value='" + sat + "' />" : sat) + "</td>",
+                    "<td class='Sun'>" + (!readonly ? "<span>" + sun + "</span><input style='display: none; width:10%;' type='text' value='" + sun + "' />" : sun) + "</td>",
+                    "<td class='Mon'>" + (!readonly ? "<span>" + mon + "</span><input style='display: none; width:10%;' type='text' value='" + mon + "' />" : mon) + "</td>",
+                    "<td class='Tue'>" + (!readonly ? "<span>" + tue + "</span><input style='display: none; width:10%;' type='text' value='" + tue + "' />" : tue) + "</td>",
+                    "<td class='Wed'>" + (!readonly ? "<span>" + wed + "</span><input style='display: none; width:10%;' type='text' value='" + wed + "' />" : wed) + "</td>",
+                    "<td class='Thu'>" + (!readonly ? "<span>" + thu + "</span><input style='display: none; width:10%;' type='text' value='" + thu + "' />" : thu) + "</td>",
+                    "<td class='Fri'>" + (!readonly ? "<span>" + fri + "</span><input style='display: none; width:10%;' type='text' value='" + fri + "' />" : fri) + "</td>",
+                    "<td class='TotalHours'><span>" + totalHours + "</span></td>",
+                    "<td class='Notes'>" + (!readonly ? "<span>" + notes + "</span><input style='display: none; width:10%;' type='text' value='" + notes + "' />" : notes) + "</td>"
+                ];
+
+                // add buttons only if editable is true
+                if (!readonly) {
+                    cells.push("<td><a class='Edit' href='javascript:;'>Edit</a>&nbsp;<a class='Update' style='display: none;' href='javascript:;'>Update</a>&nbsp;<a style='display: none;' class='Cancel' href='javascript:;'>Cancel</a></td>");
+                }
+
+                // insert cells into row
+                for (var i = 0; i < cells.length; i++) {
+                    row.innerHTML += cells[i];
+                }
+            }
+
+            function updateTotals(readonly) {
+                var table = document.getElementById("rowTable");
+                var rowCount = table.rows.length;
+                var totalsRow = null;
+
+                // Search for existing totals row
+                for (var i = 0; i < rowCount; i++) {
+                    if (table.rows[i].classList.contains("totals-row")) {
+                    totalsRow = table.rows[i];
+                    break;
+                    }
+                }
+
+                // If totals row doesn't exist, create a new one
+                if (!totalsRow) {
+                    totalsRow = table.insertRow(rowCount);
+                    totalsRow.classList.add("totals-row");
+
+                    // Add empty cells for Project, WP, and Notes columns
+                    var emptyCells = "<td></td><td>Total:</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>";
+                    var totalCell = "<td>Total</td>";
+                    var notesCell = "<td></td>";
+                    var cells = emptyCells + totalCell + notesCell;
+                    totalsRow.innerHTML = cells;
+                }
+                var totalHours = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+                for (var i = 1; i < rowCount; i++) {
+                    var row = table.rows[i];
+                    var cells = row.cells;
+
+                    // Skip totals row and rows with empty cells
+                    if (row == totalsRow || cells.length < 10) {
+                    continue;
+                    }
+
+                    // Update total hours for each day of the week
+                    for (var j = 2; j <= 9; j++) {
+                        var hours;
+                        if(readonly){
+                            hours = parseFloat(cells[j].textContent);
+                        } else {
+                            hours = parseFloat(cells[j].querySelector("span").textContent);
+                        }
+                        if (!isNaN(hours)) {
+                            totalHours[j - 2] += hours;
+                        }
+                    }
+                }
+                var flexTime = 0;
+                // Update total cells in totals row
+                for (var j = 2; j <= 9; j++) {
+                    var totalCell = totalsRow.cells[j];
+                    totalCell.innerHTML = "<span>" + totalHours[j - 2] + "</span>";
+                    if(totalHours[j-2] < 8 && totalHours[j-2] > 0 && j != 9){
+                        flexTime += 8 - totalHours[j-2];
+                    }
+                }
+                var totalOfTotals = totalHours[7];
+                if(totalOfTotals > 40){
+                    totalOfTotals -= 40;
+                } else {
+                    totalOfTotals = 0;
+                }
+                document.querySelector("#overtime").innerHTML = totalOfTotals;
+                document.querySelector("#flextime").innerHTML = flexTime;
+
+            }
+    </script>
+}

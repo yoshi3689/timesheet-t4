@@ -1,5 +1,28 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject TimesheetApp.Data.ApplicationDbContext context
+<!DOCTYPE html>
 <html lang="en">
+@{
+    if (User.Identity == null)
+    {
+        return;
+    }
+    var user = context.Users
+    .Include(u => u.SupervisedWorkPackage)
+    .Include(u => u.ManagedProjects)
+    .Include(u => u.ApprovableUsers)
+    .Where(u => u.UserName == User.Identity.Name)
+    .Select(c => new
+    {
+        wps = c.SupervisedWorkPackage.Count(),
+        projects = c.ManagedProjects.Count(),
+        users = c.ApprovableUsers.Count(),
+        key = c.PublicKey
+    })
+    .FirstOrDefault();
+}
 
 <head>
     <meta charset="utf-8" />
@@ -11,6 +34,7 @@
 </head>
 
 <body>
+
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
@@ -19,33 +43,56 @@
                     aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Services
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item  text-dark" asp-area="" asp-controller="Timesheet"
-                                    asp-action="Index">Timesheets</a>
-                                <a class="dropdown-item text-dark" asp-area="" asp-controller="Project"
-                                    asp-action="Index">Projects</a>
-                                <a class="dropdown-item text-dark" asp-area="" asp-controller="EmployeeProject"
-                                    asp-action="Index">Assign Employee</a>
-                                <a class="dropdown-item text-dark" asp-area="" asp-controller="WorkPackage"
-                                    asp-action="Index">WorkPackages</a>
-                            </div>
-                        </li>
+                <li class="navbar-collapse collapse d-sm-inline-flex d-flex justify-content-between">
+
+                    <ul class="navbar-nav">
+                        @if (user != null && user.key != null)
+                        {
+                            <li class="nav-item p-4">
+                                <a class="nav-link text-dark p-0 text-decoration-none" asp-area="" asp-controller="Home"
+                                asp-action="Index">Home</a>
+                            </li>
+                            <li class="nav-item p-4">
+                                <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
+                                asp-controller="Timesheet" asp-action="Index">Timesheets</a>
+                            </li>
+                            @if (user != null && user.users > 0)
+                            {
+                                <li class="nav-item p-4">
+                                    <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
+                                asp-controller="Timesheet" asp-action="ToApprove">Timesheet Approval</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Admin") || User.IsInRole("HR") || (user != null && user.projects > 0))
+                            {
+                                <li class="nav-item p-4">
+                                    <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
+                                asp-action="Index">Projects</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Supervisor"))
+                            {
+                                <li class="nav-item p-4">
+                                    <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                                asp-controller="EmployeeProject" asp-action="Index">Assign Employee</a>
+                                </li>
+                            }
+                            @if (user != null && user.wps > 0)
+                            {
+                                <li class="nav-item p-4">
+                                    <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                                asp-controller="WorkPackage" asp-action="Index">Work Packages</a>
+                                </li>
+                            }
+                        }
+
                     </ul>
                     <partial name="_LoginPartial" />
-                </div>
+            </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()

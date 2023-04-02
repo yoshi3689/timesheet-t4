@@ -4,16 +4,15 @@
   ViewData["Title"] = "Edit";
 }
 
-<h1>@User.Identity.Name</h1>
 <br>
-@if (Model.estimates != null && Model.budgets[0].isREBudget == false)
+@if (Model.estimates != null && Model.budgets![0].isREBudget == false)
 {
-  <form id="reBudgetEstimateForm">
+  <form id="reBudgetEstimateForm" asp-action="CreateBudgetsAndEstimates">
 
-  <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-  <h1>Work Package Budget</h1>
-  <h3>Person Days per Labour Grade</h3>
-  @if (Model.budgets[0].isREBudget == false)
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <h1>Work Package Budget</h1>
+    <h3>Person Days per Labour Grade</h3>
+    @if (Model.budgets[0].isREBudget == false)
     {
       @for (int i = 0; i < Model.budgets!.Count; i++)
       {
@@ -22,24 +21,22 @@
           <input type="hidden" asp-for="budgets![i].WPProjectId" value="@Model.budgets![i].WPProjectId" />
           <span>@Model.budgets[i].LabourCode</span>
           <div class="d-flex align-items-center"
-      style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+            style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
             <input asp-for="budgets![i].People!" style="width: 10%;" class="form-control people"
-        onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
+              onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].UnallocatedDays, @Model.budgets![i].UnallocatedPeople)" />
+            <span asp-validation-for="budgets![i].People!" class="text-danger"></span>
+
             &nbsp;
             <label asp-for="budgets![i].People!" class="control-label"></label>
             &nbsp;x&nbsp;
             <input asp-for="budgets![i].Days!" style="width: 10%;" class="form-control days"
-        onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].Remaining)" />
+              onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].UnallocatedDays, @Model.budgets![i].UnallocatedPeople)" />
+            <span asp-validation-for="budgets![i].Days!" class="text-danger"></span>
+
             &nbsp;
             <label asp-for="budgets![i].Days!" class="control-label"></label>
             &nbsp;
             x $@Model.budgets![i]!.Rate/day = <span id="@Model.budgets![i].LabourCode"> $0</span>
-            &nbsp;&nbsp;
-            @{
-              double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
-            }
-            <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Unallocated:
-              $@remain (@Model.budgets[i].Remaining P.D.)</span>
           </div>
           <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
         </div>
@@ -62,17 +59,11 @@
           <input type="hidden" asp-for="estimates![i].WPProjectId" value="@Model.estimates![i].WPProjectId" />
           <span>@Model.estimates[i].LabourCode</span>
           <div class="d-flex align-items-center"
-      style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-            <input asp-for="estimates![i].EstimatedCost!" style="width: 10%;" class="form-control people" onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value,
-          this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
+            style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+            <input asp-for="estimates![i].EstimatedCost!" style="width: 10%;" class="form-control people" />
             &nbsp;
             <label asp-for="estimates![i].EstimatedCost!" class="control-label"></label>
             &nbsp;&nbsp;
-            @{
-              double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
-            }
-            <span id='@(String.Format("R{0}", Model.estimates![i].LabourCode))'>After minus estimated cost:
-              $@remain (@Model.budgets[i].Remaining P.D.)</span>
           </div>
           <span asp-validation-for="estimates![i].EstimatedCost" class="text-danger"></span>
         </div>
@@ -91,8 +82,7 @@
 }
 else
 {
-  <h1>There's no Resonsible Engineer tasks avaialble for you as of now!!</h1>
-  @* <h1>Last weekly estimate entry is: @Model.estimates[0]!.Date.GetValueOrDefault()</h1> *@
+  <h3>Budget and Estimates are already set.</h3>
 }
 
 <div>
@@ -100,31 +90,14 @@ else
 </div>
 
 @section Scripts {
-@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+  @{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+  }
 }
 
 <script>
   function setTotal(labourCode, rate, people, days, remain) {
     var element = document.querySelector("#" + labourCode);
     element.innerHTML = " $" + (people * days * rate);
-    element = document.querySelector("#R" + labourCode);
-    element.innerHTML = "Remaining: $" + ((remain * rate) - (people * days * rate)) + " (" + (remain - (people * days)) + "  P.D.)";
   }
-  //submit creation of sub work package
-  document.querySelector("#reBudgetEstimateForm").addEventListener('submit', async function submitForm(event) {
-    event.preventDefault();
-    const formData = new FormData(document.querySelector("#reBudgetEstimateForm"));
-    console.log(formData);
-    await fetch("/WorkPackage/CreateBudgetsAndEstimates", {
-      method: "POST",
-      body: formData,
-    }).then(async c => {
-      console.log(c);
-      //if there is a field validation error show it again
-      if (c.status == 200) {
-        console.log("submitted successfully");
-        return;
-      }
-    })
-  });
 </script>

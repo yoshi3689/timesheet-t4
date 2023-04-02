@@ -1,6 +1,6 @@
 @model TimesheetApp.Models.WorkPackageViewModel
 
-<div class="modal" tabindex="-1" role="dialog" id="splitModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="splitModal">
     <div class="modal-dialog" role="document" style="max-width: 80%;">
         <div class="modal-content">
             <form id="newWPForm">
@@ -32,24 +32,28 @@
                             <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
                             <span>@Model.budgets[i].LabourCode</span>
                             <div class="d-flex align-items-center"
-                            style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
+                                style="display:flex; flex-direction: row; white-space: nowrap;">
                                 <input asp-for="budgets![i].People!" style="width: 10%;" class="form-control people"
-                                onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].Remaining)" />
+                                    onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].UnallocatedDays-this.parentNode.querySelector('.days').value, @Model.budgets![i].UnallocatedPeople-this.value)" />
+                                <span asp-validation-for="budgets![i].People!" class="text-danger"></span>
+
                                 &nbsp;
                                 <label asp-for="budgets![i].People!" class="control-label"></label>
                                 &nbsp;x&nbsp;
                                 <input asp-for="budgets![i].Days!" style="width: 10%;" class="form-control days"
-                                onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].Remaining)" />
+                                    onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].UnallocatedDays-this.value, @Model.budgets![i].UnallocatedPeople-this.parentNode.querySelector('.people').value)" />
+                                <span asp-validation-for="budgets![i].People!" class="text-danger"></span>
+
                                 &nbsp;
                                 <label asp-for="budgets![i].Days!" class="control-label"></label>
                                 &nbsp;
                                 x $@Model.budgets![i]!.Rate/day = <span id="@Model.budgets![i].LabourCode"> $0</span>
                                 &nbsp;&nbsp;
-                                @{
-                                    double remain = Model.budgets![i].Remaining * Model.budgets![i].Rate;
-                                }
-                                <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>Unallocated:
-                                    $@remain (@Model.budgets[i].Remaining P.D.)</span>
+
+                                <span id='@(String.Format("R{0}", Model.budgets![i].LabourCode))'>&nbsp;&nbsp;Unallocated
+                                    People:
+                                    @Model.budgets![i]!.UnallocatedPeople &nbsp; Days:
+                                    @Model.budgets![i]!.UnallocatedDays</span>
                             </div>
                             <span asp-validation-for="budgets![i].BudgetAmount" class="text-danger"></span>
                         </div>
@@ -64,3 +68,8 @@
         </div>
     </div>
 </div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

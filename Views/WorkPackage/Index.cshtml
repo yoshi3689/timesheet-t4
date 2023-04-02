@@ -1,20 +1,19 @@
 @model IEnumerable<TimesheetApp.Models.TimesheetModels.WorkPackage>
 
 @{
-    ViewData["Title"] = "Work Packages";
+    ViewData["Title"] = "Work Packages for";
 }
+<h1>@ViewData["Title"] @ViewData["name"]</h1>
+<h3>You are responsible for these work packages.</h3>
 
-<h1>@ViewData["Title"]</h1>
-<h1>@ViewData["userId"]</h1>
-
-<table class="table">
+<table class="table table-bordered table-responsive table-striped">
     <thead>
         <tr>
             <th>
                 @Html.DisplayNameFor(model => model.Title)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActualCost)
+                Project Title
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.IsClosed)
@@ -30,7 +29,7 @@
                     @Html.DisplayFor(modelItem => item.Title)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.ActualCost)
+                    @Html.DisplayFor(modelItem => item.Project!.ProjectTitle)
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.IsClosed)

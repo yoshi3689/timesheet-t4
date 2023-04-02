@@ -29,7 +29,9 @@ namespace TimesheetApp.Controllers
       public List<Project> Projects { get; set; }
       public List<ApplicationUser> Users { get; set; }
     }
+
     // GET: EmployeeProject
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> Index()
     {
       var Users = _context.Users.Include(u => u.EmployeeProjects).ToList();
@@ -39,6 +41,7 @@ namespace TimesheetApp.Controllers
     }
 
     // GET: EmployeeProject/Details/5
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> Details(string id)
     {
       if (id == null)
@@ -60,6 +63,7 @@ namespace TimesheetApp.Controllers
 
     // GET: EmployeeProject/Create
     // accept a ProjectId 
+    [Authorize(Policy = "KeyRequirement")]
     [HttpGet]
     public IActionResult Create(int ProjectId)
     {
@@ -71,7 +75,7 @@ namespace TimesheetApp.Controllers
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> AddEmployee([FromBody] List<EmployeeProject> employeeProjects)
     {
       Console.WriteLine(employeeProjects.Count);
@@ -84,7 +88,7 @@ namespace TimesheetApp.Controllers
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> AssignTSApprover([FromBody] EmployeeProject employeeProject)
     {
       // find a user with the Id
@@ -107,6 +111,7 @@ namespace TimesheetApp.Controllers
 
 
     // GET: EmployeeProject/Edit/5
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> Edit(string id)
     {
       if (id == null)
@@ -129,6 +134,7 @@ namespace TimesheetApp.Controllers
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> Edit(string id, [Bind("UserId,ProjectId")] EmployeeProject employeeProject)
     {
       if (id != employeeProject.UserId)
@@ -162,6 +168,7 @@ namespace TimesheetApp.Controllers
     }
 
     // GET: EmployeeProject/Delete/5
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> Delete(string id)
     {
       if (id == null)
@@ -183,6 +190,7 @@ namespace TimesheetApp.Controllers
 
     // POST: EmployeeProject/Delete/5
     [HttpPost, ActionName("Delete")]
+    [Authorize(Policy = "KeyRequirement")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(string id)
     {

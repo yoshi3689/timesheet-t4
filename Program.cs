@@ -3,8 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using TimesheetApp.Data;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
+using System.Security.Cryptography;
+using TimesheetApp.Helpers;
+using TimesheetApp.Authorization;
+using Microsoft.AspNetCore.Authorization;
 
-internal class Program
+internal partial class Program
 {
     private static async Task Main(string[] args)
     {
@@ -12,10 +16,14 @@ internal class Program
         var host = builder.Configuration["DBHOST"] ?? "localhost";
         var port = builder.Configuration["DBPORT"] ?? "3333";
         var password = builder.Configuration["DBPASSWORD"] ?? "password123";
-        var db = builder.Configuration["DBNAME"] ?? "TimesheetDB";
+        var db = builder.Configuration["DBNAME"] ?? "db";
 
         string connectionString = $"server={host}; userid=root; pwd={password};"
                 + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";
+        GlobalData.DBHost = host;
+        GlobalData.DBPassword = password;
+        GlobalData.DBPort = port;
+        GlobalData.DBName = db;
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -26,7 +34,11 @@ internal class Program
         builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
-
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("KeyRequirement", policy => policy.Requirements.Add(new KeyRequirement(true)));
+        });
+        builder.Services.AddScoped<IAuthorizationHandler, KeyRequirementHandler>();
         builder.Services.AddControllersWithViews();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddDistributedMemoryCache();
@@ -84,51 +96,10 @@ internal class Program
                 context.Database.Migrate();
             }
 
-            //create basic roles
-            List<IdentityRole> roles = new List<IdentityRole>();
-            roles.Add(new IdentityRole { Name = "HR", NormalizedName = "HR" });
-            roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
-            roles.Add(new IdentityRole { Name = "Supervisor", NormalizedName = "SUPERVISOR" });
 
-            foreach (var role in roles)
-            {
-                var roleExist = await RoleManager.RoleExistsAsync(role.NormalizedName ?? "");
-                if (!roleExist)
-                {
-                    DbContext.Roles.Add(role);
-                    DbContext.SaveChanges();
-                }
-            }
-
-            //try create labour grades
-            var grades = DbContext.LabourGrades;
-            LabourGrade adminGrade;
-            if (grades != null && grades.Count() == 0)
-            {
-                //Default labour grades
-                List<LabourGrade> labourGrades = new List<LabourGrade>();
-                adminGrade = new LabourGrade { LabourCode = "JS", Rate = 1 };
-                labourGrades.Add(adminGrade);
-                labourGrades.Add(new LabourGrade { LabourCode = "DS", Rate = 1 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P1", Rate = 1 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P2", Rate = 2 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P3", Rate = 3 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P4", Rate = 4 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P5", Rate = 5 });
-                labourGrades.Add(new LabourGrade { LabourCode = "P6", Rate = 6 });
-                foreach (var lg in labourGrades)
-                {
-                    DbContext.LabourGrades!.Add(lg);
-                }
-                DbContext.SaveChanges();
-            }
-            else
-            {
-                adminGrade = DbContext.LabourGrades!.FirstOrDefault(c => c.LabourCode == "P6") ?? new LabourGrade { LabourCode = "P6", Rate = 99 };
-            }
-
+            RSA rsa = RSA.Create();
             //create a default admin
-            ApplicationUser user = new ApplicationUser
+            ApplicationUser admin = new ApplicationUser
             {
                 Email = "admin@admin.com",
                 UserName = "admin@admin.com",
@@ -136,21 +107,93 @@ internal class Program
                 LastName = "admin",
                 JobTitle = "admin",
                 EmailConfirmed = true,
-                LabourGrade = adminGrade,
-                EmployeeNumber = 1000000000
+                LabourGradeCode = "P5",
+                SickDays = 7,
+                EmployeeNumber = 1000000000,
+                PublicKey = rsa.ExportRSAPublicKey(),
+                PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey(), "Password123!")
             };
-            var adminExist = await UserManager.FindByEmailAsync(user.Email);
+            var adminExist = await UserManager.FindByEmailAsync(admin.Email);
             if (adminExist == null)
             {
-                await UserManager.CreateAsync(user, "Password123!");
+                await UserManager.CreateAsync(admin, "Password123!");
                 var newAdmin = await UserManager.FindByEmailAsync("admin@admin.com");
                 if (newAdmin != null)
                 {
                     await UserManager.AddToRoleAsync(newAdmin, "Admin");
+                    await UserManager.AddToRoleAsync(newAdmin, "Supervisor");
+                    await UserManager.AddToRoleAsync(newAdmin, "HR");
                 }
             }
+            else
+            {
+                admin = adminExist;
+            }
 
+            RSA rsa2 = RSA.Create();
+            ApplicationUser newHR = new ApplicationUser
+            {
+                Email = "hr@hr.com",
+                UserName = "hr@hr.com",
+                FirstName = "HR",
+                LastName = "Manager",
+                JobTitle = "HR Manager",
+                EmailConfirmed = true,
+                LabourGradeCode = "P5",
+                EmployeeNumber = 1000000001,
+                SupervisorId = admin.Id,
+                SickDays = 7,
+                TimesheetApproverId = admin.Id,
+                PublicKey = rsa2.ExportRSAPublicKey(),
+                PrivateKey = KeyHelper.Encrypt(rsa2.ExportRSAPrivateKey(), "Password123!")
+            };
+            var hrExists = await UserManager.FindByEmailAsync(newHR.Email);
+            if (hrExists == null)
+            {
+                await UserManager.CreateAsync(newHR, "Password123!");
+                var newHRExists = await UserManager.FindByEmailAsync("hr@hr.com");
+                if (newHRExists != null)
+                {
+                    await UserManager.AddToRoleAsync(newHR, "HR");
+                    await UserManager.AddToRoleAsync(newHR, "Supervisor");
+                }
+                admin.SupervisorId = newHR.Id;
+                admin.TimesheetApproverId = newHR.Id;
+                DbContext.SaveChanges();
+            }
+
+            var project = DbContext.Projects.Where(c => c.ProjectId == 010).FirstOrDefault();
+            if (project == null)
+            {
+                project = new Project { ProjectId = 010, ProjectTitle = "Extras", ProjectManagerId = admin.Id };
+                DbContext.Projects.Add(project);
+                DbContext.SaveChanges();
+            }
+            var sick = DbContext.WorkPackages.Where(c => c.WorkPackageId == "SICK").FirstOrDefault();
+            if (sick == null)
+            {
+                DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "SICK", ProjectId = project!.ProjectId, Title = "Sick Time" });
+            }
+            var vacn = DbContext.WorkPackages.Where(c => c.WorkPackageId == "VACN").FirstOrDefault();
+            if (vacn == null)
+            {
+                DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "VACN", ProjectId = project!.ProjectId, Title = "Vacation Time" });
+            }
+            var shol = DbContext.WorkPackages.Where(c => c.WorkPackageId == "SHOL").FirstOrDefault();
+            if (shol == null)
+            {
+                DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "SHOL", ProjectId = project!.ProjectId, Title = "Statutory Holiday" });
+            }
+            DbContext.SaveChanges();
         }
         app.Run();
+    }
+
+    public static class GlobalData
+    {
+        public static string? DBPassword { get; set; }
+        public static string? DBHost { get; set; }
+        public static string? DBPort { get; set; }
+        public static string? DBName { get; set; }
     }
 }

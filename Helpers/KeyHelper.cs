@@ -47,40 +47,47 @@ namespace TimesheetApp.Helpers
             }
         }
 
-        public static byte[] Decrypt(byte[] cipherText, string passPhrase)
+        public static byte[]? Decrypt(byte[] cipherText, string passPhrase)
         {
             var saltStringBytes = cipherText.Take(Keysize / 8).ToArray();
             var ivStringBytes = cipherText.Skip(Keysize / 8).Take(Keysize / 8).ToArray();
             var cipherTextBytes = cipherText.Skip((Keysize / 8) * 2).Take(cipherText.Length - ((Keysize / 8) * 2)).ToArray();
 
-            using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations, HashAlgorithmName.SHA256))
+            try
             {
-                var keyBytes = password.GetBytes(Keysize / 8);
-                using (var symmetricKey = Aes.Create())
+                using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations, HashAlgorithmName.SHA256))
                 {
-                    symmetricKey.BlockSize = Keysize;
-                    symmetricKey.Mode = CipherMode.CBC;
-                    symmetricKey.Padding = PaddingMode.PKCS7;
-                    using (var decryptor = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
+                    var keyBytes = password.GetBytes(Keysize / 8);
+                    using (var symmetricKey = Aes.Create())
                     {
-                        using (var memoryStream = new MemoryStream(cipherTextBytes))
+                        symmetricKey.BlockSize = Keysize;
+                        symmetricKey.Mode = CipherMode.CBC;
+                        symmetricKey.Padding = PaddingMode.PKCS7;
+                        using (var decryptor = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
                         {
-                            using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+                            using (var memoryStream = new MemoryStream(cipherTextBytes))
                             {
-                                byte[] buffer = new byte[4096];
-                                using (var outputStream = new MemoryStream())
+                                using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
                                 {
-                                    int bytesRead;
-                                    while ((bytesRead = cryptoStream.Read(buffer, 0, buffer.Length)) > 0)
+                                    byte[] buffer = new byte[4096];
+                                    using (var outputStream = new MemoryStream())
                                     {
-                                        outputStream.Write(buffer, 0, bytesRead);
+                                        int bytesRead;
+                                        while ((bytesRead = cryptoStream.Read(buffer, 0, buffer.Length)) > 0)
+                                        {
+                                            outputStream.Write(buffer, 0, bytesRead);
+                                        }
+                                        return outputStream.ToArray();
                                     }
-                                    return outputStream.ToArray();
                                 }
                             }
                         }
                     }
                 }
+            }
+            catch (CryptographicException)
+            {
+                return null;
             }
         }
 

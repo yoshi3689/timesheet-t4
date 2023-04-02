@@ -1,4 +1,5 @@
 @model TimesheetApp.Models.WorkPackageViewModel
+
 @{
 ViewData["Title"] = "Manage Project";
 }
@@ -7,18 +8,71 @@ ViewData["Title"] = "Manage Project";
     <title>@ViewData["Title"]</title>
 </head>
 <h1>@ViewData["Title"]</h1>
+<div class="modal" tabindex="-1" role="dialog" id="confirmClose" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm</h5>
+            </div>
+            <div class="modal-body" id="timesheetError">
+                Are you sure you want to close this? No more work will be able to be done on it. You cannot undo this action.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmButton"
+                    data-bs-dismiss="modal">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-
-<h2>Manage Work Packages</h2>
-<input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)" />
+<div class="d-flex justify-content-around mb-3">
+    <div>
+        <h2>Manage Work Packages</h2>
+        <input type="text" id="WPSearch" placeholder="Search for work package..." oninput="search(this.value)" class="form-control w-100"/>
+    </div>
+    <div id="assignASM">
+        <h2>Assign Assistant Manager</h2>
+        <div class="btn-group form-control w-100 p-0 border-0">
+            <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown" aria-expanded="false"
+                onkeyup="filterDropdown(event)" id=employeeSearchBox placeholder="Search Employee..."/>
+            <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
+            </ul>
+            <div>
+            <!-- Button trigger modal -->
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="populateModal()">
+            Confirm
+            </button>
+            </div>
+        </div>
+    </div>
+</div>
 <div id="WorkPackages" class="accordian"></div>
 <input type="hidden" id="currentWP" />
 <input type="hidden" id="currentProject"/>
 <div id="modal-placeholder"></div>
 
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Assign Assistant Project Manager</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="innerModalBody"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="assignASM()" data-bs-dismiss="modal">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-<div class="modal" tabindex="-1" role="dialog" id="employeeModal">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" tabindex="-1" role="dialog" id="employeeModal">
+    <div class="modal-dialog" role="document" style="max-width: 70%;">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Assign Employee</h5>
@@ -57,7 +111,7 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="budgetModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="budgetModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -72,7 +126,23 @@ ViewData["Title"] = "Manage Project";
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="RespEngModal">
+<div class="modal fade" tabindex="-1" role="dialog" id="warningModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Warning!</h5>
+            </div>
+            <div class="modal-body" id="warningModalBody">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelWarning">Cancel</button>
+                <button type="button" class="btn btn-primary" id="continueWarning">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" tabindex="-1" role="dialog" id="RespEngModal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -90,6 +160,13 @@ ViewData["Title"] = "Manage Project";
         </div>
     </div>
 </div>
+@if (Model.wps[0].Project!.IsClosed == false)
+{
+<div class="text-center">
+    <button class="btn btn-danger rounded position-absolute bottom-0" id='@("WP" + Model.wps[0].Project!.ProjectId)' data-bs-toggle="modal"
+        data-bs-target="#confirmClose" onclick="closeProject(@Model.wps[0].Project!.ProjectId)">Close Project</button>
+</div>
+}
 
 <script>
     let currentWorkPackage = "";
@@ -100,6 +177,10 @@ ViewData["Title"] = "Manage Project";
 
     // assigned resp engineer
     let assignedRespEng;
+    window.onload = function(){
+        isPrimaryPM("@Model.wps![0]!.Project!.ProjectManagerId");
+    }
+
 
     @foreach(var wp in Model.wps) {
         <text >
@@ -187,77 +268,18 @@ ViewData["Title"] = "Manage Project";
         splitButton.value = WorkPackageId;
         splitButton.name = "name";
         splitButton.className = "label";
-
-        splitButton.addEventListener('click', async function callSplit(info) {
-            currentWorkPackage = info.srcElement.value;
-            await fetch('/Project/ShowSplit')
-            .then(function(data){
-                return data.text();
-            }).then(function(data){
-                document.querySelector("#modal-placeholder").innerHTML = data;
-                document.querySelector("#parentWPID").value = WorkPackageId;
-                var myModalEl = document.getElementById('splitModal');
-                var modal = new bootstrap.Modal(myModalEl);
-                modal.show();
-                //only append to the start if its not right under the project
-                if(WorkPackageId !== "0"){
-                    document.querySelector("#newIdPartial").innerHTML = WorkPackageId;
-                }
-                //submit creation of sub work package
-                document.querySelector("#newWPForm").addEventListener('submit', async function submitForm (event) {
-                    event.preventDefault();
-                    const formData = new FormData(document.querySelector("#newWPForm"));
-                    await fetch("/Project/Split", {
-                        method: "POST",
-                        body: formData,
-                    }).then(async c => {
-                        //if there is a field validation error show it again
-                        if(c.status == 400){
-                            var text = await c.text();
-                            var myModalEl = document.getElementById('splitModal');
-                            var modal = bootstrap.Modal.getInstance(myModalEl)
-                            modal.hide();
-                            document.querySelector("#modal-placeholder").innerHTML = text;
-                            document.querySelector("#parentWPID").value = WorkPackageId;
-                            myModalEl = document.getElementById('splitModal');
-                            modal = new bootstrap.Modal(myModalEl);
-                            modal.show();
-                            document.querySelector("#newWPForm").addEventListener('submit', submitForm);
-                            return;
-                        }
-                        return await c.json();
-                    }).then(c => {
-                        if(c == null){
-                            return;
-                        }
-                        let body = document.querySelector("#WP" + c.parentWorkPackageId);
-                        body.querySelectorAll(":scope > .bottomLevel").forEach((del) => {
-                            body.removeChild(del);
-                        });
-                        body.querySelectorAll(":scope > .employeeList").forEach((del) => {
-                            del.style.display = "none";
-                        });
-
-                        let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
-                        let tremain = document.createElement("span");
-                        tremain.innerHTML = "$" + (parseInt(budgetRow[1].innerHTML.replace(/\D/g, '')) - c.totalBudget);
-                        budgetRow[3].innerHTML = tremain.outerHTML;
-                        budgetRow[2].innerHTML = "Unallocated Budget:"
-
-                        addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName,
-                            c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget, c.totalRemaining);
-                        var myModalEl = document.getElementById('splitModal');
-                        var modal = bootstrap.Modal.getInstance(myModalEl)
-                        modal.hide();
-                    });
-                });
-            });
-        }, false);
+        splitButton.addEventListener("click", async function(){
+            callSplit(this)
+        } , false);
         splitButton.type = "button";
         splitButton.innerHTML = "Create Subpackage";
-        splitButton.className = "label btn btn-primary";
+        splitButton.className = "label btn btn-primary wpButton";
         splitButton.id = "SPLIT" + WorkPackageId;
-        div.appendChild(splitButton);
+        if (!IsClosed) {
+            div.appendChild(splitButton);
+        }
+
+        
 
         let budgetDetailsButton = document.createElement("button");
         budgetDetailsButton.value = WorkPackageId;
@@ -266,7 +288,7 @@ ViewData["Title"] = "Manage Project";
         budgetDetailsButton.innerHTML = "Budget Details";
         budgetDetailsButton.type = "button";
         budgetDetailsButton.className = "label btn btn-info";
-        budgetDetailsButton.addEventListener('click', async function callSplit(info) {
+        budgetDetailsButton.addEventListener('click', async function details(info) {
             await fetch("/Project/BudgetDetails", {
                 method: "POST",
                 headers: {
@@ -288,69 +310,119 @@ ViewData["Title"] = "Manage Project";
                 let table = document.createElement("table");
                 table.className = "table table-striped";
 
-                // Create the table header
-                let header = document.createElement("thead");
-                let headerRow = document.createElement("tr");
-                let labourCodeHeader = document.createElement("th");
-                labourCodeHeader.textContent = "Labour Code";
-                headerRow.appendChild(labourCodeHeader);
+                let table2 = document.createElement("table");
+                table2.className = "table table-striped";
 
-                let budgetTotalHeader = document.createElement("th");
-                budgetTotalHeader.textContent = "Total (P.D.)";
-                headerRow.appendChild(budgetTotalHeader);
-
-                let remainingBudgetHeader = document.createElement("th");
-                remainingBudgetHeader.textContent = "Unallocated (P.D.)";
-                headerRow.appendChild(remainingBudgetHeader);
-
-                let budgetTotalHeaderD = document.createElement("th");
-                budgetTotalHeaderD.textContent = "Total";
-                headerRow.appendChild(budgetTotalHeaderD);
-
-                let remainingBudgetHeaderD = document.createElement("th");
-                remainingBudgetHeaderD.textContent = "Unallocated";
-                headerRow.appendChild(remainingBudgetHeaderD);
-
-                header.appendChild(headerRow);
-                table.appendChild(header);
-
-                // Create the table body
+               // Create the table body
                 let tbody = document.createElement("tbody");
 
-                if(response.length !== 0){
-                    response.forEach((res) => {
-                        let row = document.createElement("tr");
+                if(response[0].length !== 0){
+                                    // Create the table header
+                    let header = document.createElement("thead");
+                    let headerRow = document.createElement("tr");
+                    let labourCodeHeader = document.createElement("th");
+                    labourCodeHeader.textContent = "Labour Code";
+                    headerRow.appendChild(labourCodeHeader);
+
+                    let budgetTotalHeader = document.createElement("th");
+                    budgetTotalHeader.textContent = "Days ";
+                    headerRow.appendChild(budgetTotalHeader);
+
+                    let remainingBudgetHeader = document.createElement("th");
+                    remainingBudgetHeader.textContent = "People";
+                    headerRow.appendChild(remainingBudgetHeader);
+
+                    let budgetTotalHeaderD = document.createElement("th");
+                    budgetTotalHeaderD.textContent = "P.D. ";
+                    headerRow.appendChild(budgetTotalHeaderD);
+
+                    header.appendChild(headerRow);
+                    table.appendChild(header);
+
+                    response[0].forEach((res) => {
+                        var row = document.createElement("tr");
 
                         // Labour Code cell
-                        let labourCodeCell = document.createElement("td");
+                        var labourCodeCell = document.createElement("td");
                         labourCodeCell.textContent = res.labourCode;
                         row.appendChild(labourCodeCell);
 
                         // Budget Total cell
-                        let budgetTotalCell = document.createElement("td");
-                        budgetTotalCell.textContent = res.budgetAmount;
+                        var budgetTotalCell = document.createElement("td");
+                        budgetTotalCell.textContent = res.days;
                         row.appendChild(budgetTotalCell);
 
                         // Remaining Budget cell
-                        let remainingBudgetCell = document.createElement("td");
-                        remainingBudgetCell.textContent = res.remaining;
+                        var remainingBudgetCell = document.createElement("td");
+                        remainingBudgetCell.textContent = res.people;
                         row.appendChild(remainingBudgetCell);
 
-                        let budgetTotalCellD = document.createElement("td");
-                        budgetTotalCellD.textContent = "$" + (res.budgetAmount * res.rate);
+                        var budgetTotalCellD = document.createElement("td");
+                        budgetTotalCellD.textContent = res.days * res.people;
                         row.appendChild(budgetTotalCellD);
-
-                        // Remaining Budget cell
-                        let remainingBudgetCellD = document.createElement("td");
-                        remainingBudgetCellD.textContent = "$" + (res.remaining * res.rate);
-                        row.appendChild(remainingBudgetCellD);
 
                         tbody.appendChild(row);
                     });
+                    table.appendChild(tbody);
+                    var title = document.createElement("h3");
+                    title.innerHTML = "Project Manager's Budget";
+                    body.appendChild(title);
+                    body.appendChild(table);
                 }
+                let tbody2 = document.createElement("tbody");
 
-                table.appendChild(tbody);
-                body.appendChild(table);
+                if(response[1].length !== 0){
+                    // Create the table header
+                    let header2 = document.createElement("thead");
+                    let headerRow2 = document.createElement("tr");
+                    let labourCodeHeader2 = document.createElement("th");
+                    labourCodeHeader2.textContent = "Labour Code";
+                    headerRow2.appendChild(labourCodeHeader2);
+
+                    let budgetTotalHeader2 = document.createElement("th");
+                    budgetTotalHeader2.textContent = "Days ";
+                    headerRow2.appendChild(budgetTotalHeader2);
+
+                    let remainingBudgetHeader2 = document.createElement("th");
+                    remainingBudgetHeader2.textContent = "People";
+                    headerRow2.appendChild(remainingBudgetHeader2);
+
+                    let budgetTotalHeaderD2 = document.createElement("th");
+                    budgetTotalHeaderD2.textContent = "P.D.";
+                    headerRow2.appendChild(budgetTotalHeaderD2);
+
+                    header2.appendChild(headerRow2);
+                    table2.appendChild(header2);
+                    response[1].forEach((res2) => {
+                        var row2 = document.createElement("tr");
+
+                        // Labour Code cell
+                        var labourCodeCell2 = document.createElement("td");
+                        labourCodeCell2.textContent = res2.labourCode;
+                        row2.appendChild(labourCodeCell2);
+
+                        // Budget Total cell
+                        var budgetTotalCell2 = document.createElement("td");
+                        budgetTotalCell2.textContent = res2.days;
+                        row2.appendChild(budgetTotalCell2);
+
+                        // Remaining Budget cell
+                        var remainingBudgetCell2 = document.createElement("td");
+                        remainingBudgetCell2.textContent = res2.people;
+                        row2.appendChild(remainingBudgetCell2);
+
+                        var budgetTotalCellD2 = document.createElement("td");
+                        budgetTotalCellD2.textContent = res2.days * res2.people;
+                        row2.appendChild(budgetTotalCellD2);
+
+                        tbody2.appendChild(row2);
+                    });
+                    table2.appendChild(tbody2);
+                    var title2 = document.createElement("h3");
+                    title2.innerHTML = "Responsible Engineer's Budget";
+                    body.appendChild(title2);
+                    body.appendChild(table2);
+                }
                 let modalObj = new bootstrap.Modal(modal);
                 modalObj.show();
 
@@ -358,16 +430,31 @@ ViewData["Title"] = "Manage Project";
         });
         div.appendChild(budgetDetailsButton);
 
-
-
+        let closedButton = document.createElement("button");
+        closedButton.value = WorkPackageId;
+        closedButton.name = "name";
+        closedButton.className = "label btn btn-danger closeBtn";
+        closedButton.innerHTML = "Close";
+        closedButton.type = "button";
+        closedButton.setAttribute("data-bs-toggle", "modal");
+        closedButton.setAttribute("data-bs-target", "#confirmClose");
+        closedButton.addEventListener('click', async function (info) {
+            closeWP(this);
+        });
+        if (!IsClosed) {
+            div.appendChild(closedButton);
+        }
+        
         if (IsBottomLevel) {
             employeeButton = document.createElement("button");
             employeeButton.type = "button";
             employeeButton.innerHTML = "Assign Employee";
-            div.appendChild(employeeButton);
+            if (!IsClosed) {
+                div.appendChild(employeeButton);
+            }
             employeeButton.value = WorkPackageId;
             employeeButton.name = "name";
-            employeeButton.className = "label bottomLevel btn btn-secondary";
+            employeeButton.className = "label bottomLevel btn btn-secondary wpButton";
             employeeButton.addEventListener('click', async function (info) {
                 await fetch("/Project/GetWPEmployees", {
                         method: "POST",
@@ -418,8 +505,8 @@ ViewData["Title"] = "Manage Project";
                                 tabbedArea.innerHTML = tabbedArea.innerHTML.replace(noneError, "");
                             }
                             tabbedArea.appendChild(a);
-                            $("#employeeModal").modal("show");
                         });
+                        $("#employeeModal").modal("show");
                         if(response.length == 0){
                             document.querySelector("#assignEmployeesButton").style.display = "none";
                         } else {
@@ -430,10 +517,12 @@ ViewData["Title"] = "Manage Project";
             let respEngButton = document.createElement("button");
             respEngButton.type = "button";
             respEngButton.innerHTML = "Set Responsible Engineer";
-            div.appendChild(respEngButton);
+            if (!IsClosed) {
+                div.appendChild(respEngButton);
+            }
             respEngButton.value = WorkPackageId;
             respEngButton.name = "name";
-            respEngButton.className = "label bottomLevel btn btn-secondary";
+            respEngButton.className = "label bottomLevel btn btn-secondary wpButton";
             respEngButton.addEventListener('click', async function getCandidateEmployees(info) {
                 document.querySelector("#currentWP").value = info.srcElement.value;
                 const candidateEmpEle = document.querySelector("#candidateEmployees");
@@ -462,6 +551,9 @@ ViewData["Title"] = "Manage Project";
                                 <label class="form-check-label" for="flexCheckDefault${index}">${c.firstName} ${c.lastName}</label>
                                 <span style="display:none;" >${c.id}</span>
                                 `;
+                            if(c.selected){
+                                a.querySelector(".form-check-input").checked = true;
+                            }
                             candidateEmpEle.appendChild(a);
                         });
                         if (response.length == 0) {
@@ -486,10 +578,10 @@ ViewData["Title"] = "Manage Project";
         closed.className = "label";
         closed.innerHTML = IsClosed;
 
-        table.appendChild(createRow("Work Package ID: ", name, "Closed: ", closed, false));
+        table.appendChild(createRow("Work Package ID: ", name, null, null, false));
 
         let re = document.createElement("span");
-        re.id = WorkPackageId + "ResponsibleEngineer";
+        re.id = "ResponsibleEngineer" + WorkPackageId;
         re.className = "label";
         if (ResponsibleUserFN !== null) {
             re.innerHTML = ResponsibleUserFN + " " + ResponsibleUserLN;
@@ -497,18 +589,16 @@ ViewData["Title"] = "Manage Project";
         table.appendChild(createRow("Responsible Engineer: ", re, null, null, !re.innerHTML));
 
         let tbudget = document.createElement("span");
-        tbudget.innerHTML = "$"+totalBudget;
+        tbudget.innerHTML = "$"+parseFloat(totalBudget).toFixed(2);
         let tremain = document.createElement("span");
-        tremain.innerHTML = "$"+remainingBudget;
+        tremain.innerHTML = "$"+parseFloat(remainingBudget).toFixed(2);
         tremain.className = "totalRemaining";
         var budgetRow;
-        if (IsBottomLevel){
-            budgetRow = createRow("Total Budget:", tbudget, "Remaining:", tremain, false);
-        }
-        else if(remainingBudget != 0){
+        if (!IsBottomLevel && parseFloat(remainingBudget) != 0){
             budgetRow = createRow("Total Budget:", tbudget, "Unallocated Budget:", tremain, false);
         } else {
             budgetRow = createRow("Total Budget:", tbudget, null, null, false);
+
         }
         budgetRow.className = "budgetRow";
         table.appendChild(budgetRow);
@@ -516,6 +606,12 @@ ViewData["Title"] = "Manage Project";
         div.append(table);
 
         if (IsBottomLevel) {
+            if(IsClosed){
+                var closedTitle = document.createElement("p");
+                closedTitle.innerHTML = "This work package is closed.";
+                closedTitle.className = "text-danger";
+                div.append(closedTitle);
+            }
             await fetch("/Project/GetAssignedEmployees", {
                     method: "POST",
                     headers: {
@@ -569,6 +665,129 @@ ViewData["Title"] = "Manage Project";
             parent.appendChild(item);
         }
     }
+
+    function executeSplit(){
+        const formData = new FormData(document.querySelector("#newWPForm"));
+        fetch("/Project/Split", {
+            method: "POST",
+            body: formData,
+        }).then(async c => {
+            //if there is a field validation error show it again
+            if(c.status == 400){
+                var text = await c.text();
+                var myModalEl = document.getElementById('splitModal');
+                var modal = bootstrap.Modal.getInstance(myModalEl)
+                modal.hide();
+                document.querySelector("#modal-placeholder").innerHTML = text;
+                setUpModal(document.querySelector("#parentWPID").value);
+                return;
+            }
+            return await c.json();
+        }).then(c => {
+            if(c == null){
+                return;
+            }
+            let body = document.querySelector("#WP" + c.parentWorkPackageId);
+            body.querySelectorAll(":scope > .bottomLevel").forEach((del) => {
+                body.removeChild(del);
+            });
+            body.querySelectorAll(":scope > .employeeList").forEach((del) => {
+                del.style.display = "none";
+            });
+
+            let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
+            let tremain = document.createElement("span");
+            tremain.innerHTML = "$" + (parseFloat(budgetRow[1].innerHTML.replace(/[^0-9.-]+/g,"")) - c.totalBudget);
+            budgetRow[3].innerHTML = tremain.outerHTML;
+            budgetRow[2].innerHTML = "Unallocated Budget:"
+
+            addWP(c.workPackageId, c.title, c.responsibleUser.firstName, c.responsibleUser.lastName,
+                c.isClosed, c.isBottomLevel, c.parentWorkPackageId, c.parentWorkPackageProjectId, c.totalBudget, c.totalRemaining);
+            var myModalEl = document.getElementById('splitModal');
+            var modal = bootstrap.Modal.getInstance(myModalEl)
+            modal.hide();
+        });
+    }
+
+      async function callSplit(info) {
+            currentWorkPackage = info.value;
+            await fetch('/Project/ShowSplit?workPackageId='+info.value)
+            .then(function(data){
+                return data.text();
+            }).then(function(data){
+                document.querySelector("#modal-placeholder").innerHTML = data;
+                document.querySelector("#parentWPID").value = currentWorkPackage;
+                setUpModal(currentWorkPackage);
+            });
+        }
+
+        function setUpModal(currentWorkPackage){
+            var myModalEl = document.getElementById('splitModal');
+            var modal = new bootstrap.Modal(myModalEl);
+            modal.show();
+            //only append to the start if its not right under the project
+            if(currentWorkPackage !== "0"){
+                document.querySelector("#newIdPartial").innerHTML = currentWorkPackage;
+            }
+            let errors = "";
+            //submit creation of sub work package
+            document.querySelector("#newWPForm").addEventListener('submit', async function submitForm (event) {
+                event.preventDefault();
+                const formData = new FormData(document.querySelector("#newWPForm"));
+                await fetch("/Project/BudgetDetails", {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        workPackageId: formData.get("WorkPackage.ParentWorkPackageId")
+                    }),
+                })
+                .then((response) => {
+                    return response.json();
+                })
+                .then((response) => {
+                    response.forEach((c) => {
+                        for(var i = 0; i < response.length; i++){
+                            if(formData.get("budgets[" + i + "].LabourCode") == c.labourCode){
+                                if(parseFloat(formData.get("budgets[" + i + "].Days")) > c.days){
+                                    errors += formData.get("budgets[" + i + "].LabourCode") + " Days<br/>";
+                                }
+                                if(parseInt(formData.get("budgets[" + i + "].People")) > c.people){
+                                    errors += formData.get("budgets[" + i + "].LabourCode") + " People<br/>";
+                                }
+                            }
+                        }
+                    });
+                });
+
+                if(errors.length > 0){
+                    document.querySelector("#warningModalBody").innerHTML = "The budget for this work package passes the total budget of the parent work package. Do you want to continue?<br/>Fields that are over:<br/>" + errors;
+                    let modalObj = new bootstrap.Modal(document.querySelector("#warningModal"));
+                    modalObj.show();
+                    document.querySelector("#cancelWarning").addEventListener("click", () => {
+                        var myModalEl = document.querySelector("#warningModal");
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                        myModalEl = document.querySelector("#splitModal");
+                        modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                    });
+                    document.querySelector("#continueWarning").addEventListener("click", () => {
+                        executeSplit();
+                        var myModalEl = document.querySelector("#warningModal");
+                        var modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                        myModalEl = document.querySelector("#splitModal");
+                        modal = bootstrap.Modal.getInstance(myModalEl)
+                        modal.hide();
+                    });
+                } else {
+                    executeSplit();
+                }
+            });
+        }
 
     async function assignEmployeeToWp() {
         // creates an array of employees to add to this wp
@@ -645,7 +864,7 @@ ViewData["Title"] = "Manage Project";
             }
         }).then(res => {
             if (res) {
-                var id = "#" + document.querySelector("#currentWP").value + "ResponsibleEngineer";
+                var id = "#ResponsibleEngineer" + document.querySelector("#currentWP").value;
                 var reField = document.querySelector(id);
                 reField.style = "";
                 reField.innerHTML = res;
@@ -659,11 +878,11 @@ ViewData["Title"] = "Manage Project";
         });
     }
 
-    function setTotal(labourCode, rate, people, days, remain) {
+    function setTotal(labourCode, rate, people, days, remainDays, remainPeople) {
         var element = document.querySelector("#" + labourCode);
-        element.innerHTML = " $" + (people * days * rate);
+        element.innerHTML = " $" + (people * days * rate).toFixed(2);
         element = document.querySelector("#R" + labourCode);
-        element.innerHTML = "Remaining: $" + ((remain * rate) - (people * days * rate)) + " (" + (remain - (people * days)) + "  P.D.)";
+        element.innerHTML = "&nbsp;&nbsp;Unallocated People: " + remainPeople + "  &nbsp;Days: " + remainDays;
     }
 
     //these 2 functions recursivly search through the wps to find matches in the search bar
@@ -695,4 +914,120 @@ ViewData["Title"] = "Manage Project";
         });
         return matchFound;
     }
+
+    /**
+    fetches employees of the project to search
+    */
+    fetch('/Project/GetAllEmployees')
+            .then(response => response.json())
+            .then(data => {
+                const employeeMenu = document.getElementById('employeeMenu');
+                const employeeSearchBox = document.getElementById("employeeSearchBox");
+                data.forEach(employee => {
+                    //need to get rid of PM from the list
+                    const menuItem = document.createElement('li');
+                    menuItem.classList.add('dropdown-item');
+                    menuItem.textContent = `${employee.firstName} ${employee.lastName}`;
+                    menuItem.id = employee.firstName + " " + employee.lastName;
+                    menuItem.value = employee.employeeNumber;
+                    menuItem.addEventListener('click', () => {
+                        employeeSearchBox.value = `${employee.firstName} ${employee.lastName}`;
+                    });
+                    if(employee.employeeNumber == employee.managerNumber){
+                        employeeSearchBox.value = `${employee.firstName} ${employee.lastName}`;
+                    }
+                    employeeMenu.appendChild(menuItem);
+                });
+        });
+    function filterDropdown(event) {
+        const input = event.target;
+        const dropdown = input.nextElementSibling;
+        const filter = input.value.toUpperCase();
+        const items = dropdown.getElementsByTagName("li");
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const text = item.textContent || item.innerText;
+            const match = text.toUpperCase().indexOf(filter) > -1;
+            item.style.display = match ? "" : "none";
+        }
+    }
+    function populateModal(){
+        const employeeSearchBox = document.getElementById("employeeSearchBox");
+        const innerModalBody = document.getElementById("innerModalBody");
+        innerModalBody.textContent = `Are you sure you want to Assign ${employeeSearchBox.value}`;
+    }
+    function assignASM(){
+        const employeeSearchBox = document.getElementById("employeeSearchBox");
+        const employee = document.getElementById(employeeSearchBox.value);
+        const asm = employee.value + "";
+        fetch("/Project/AssignASM", {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(asm),
+        });
+    }
+    function isPrimaryPM(id){
+        const hideAssignAsm = document.getElementById("assignASM");
+        fetch("/Project/FindPM")
+            .then(response => response.json()
+            .then(data =>{
+                if(id != data){
+                    hideAssignAsm.style.display = "none";
+                }
+            }))
+    }
+    var id;
+    function closeProject(idToClose) {
+        id = idToClose;
+        document.querySelector("#confirmButton").addEventListener("click", () => {
+            fetch("/Project/CloseProject", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(id),
+            })
+                .then(async (response) => {
+                    if (response.status == 200) {
+                        document.querySelector("#WP" + idToClose).style.display = "none";
+                    }
+                });
+        });
+    }
+
+    var closedButtonStorage;
+    async function closeWP(closedButton){
+        closedButtonStorage = closedButton;
+        document.querySelector("#confirmButton").addEventListener("click", async () => {
+        await fetch("/Project/CloseWP", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    workPackageId: closedButtonStorage.value
+                }),
+            })
+            .then(async (response) => {
+                if (response.status == 200) {
+                    closedButtonStorage.classList.add("hidden");
+                    document.querySelectorAll(".wpButton").forEach((c) => {
+                        console.log("hide");
+                        c.classList.add("hidden");
+                    });
+                }
+            });
+        });
+    }
 </script>
+@section Scripts {
+  @{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+  }
+}

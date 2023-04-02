@@ -29,7 +29,7 @@ using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Areas.Identity.Pages.Account
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,HR")]
     public class RegisterModel : PageModel
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
@@ -117,9 +117,16 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
 
         public async Task OnGetAsync(string returnUrl = null)
         {
-            ViewData["LabourGrades"] = new SelectList(_context.LabourGrades, "LabourCode", "LabourCode");
+            ViewData["LabourGrades"] = new SelectList(_context.LabourGrades.Where(c => c.Year == DateTime.Now.Year), "LabourCode", "LabourCode");
             ViewData["Supervisors"] = getSupervisors();
             rolesList = await roleManager.Roles.ToListAsync();
+            for(int i = 0; i < rolesList.Count; i++)
+            {
+                if(rolesList[i].Name == "Admin")
+                {
+                    rolesList.RemoveAt(i);
+                }
+            }
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         }
@@ -161,6 +168,8 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 user.EmployeeNumber = Input.EmployeeNumber;
                 user.EmailConfirmed = true;
                 user.SupervisorId = Input.Supervisor;
+                user.TimesheetApproverId = Input.Supervisor;
+                user.SickDays = 7;
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);

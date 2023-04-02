@@ -13,7 +13,6 @@ namespace TimesheetApp.Models.TimesheetModels
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-
         public string? Message { get; set; }
         public int Importance { get; set; }
         public string? For { get; set; }

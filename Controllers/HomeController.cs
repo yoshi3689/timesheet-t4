@@ -1,10 +1,16 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using TimesheetApp.Data;
 using TimesheetApp.Models;
+using static Program;
 
 namespace TimesheetApp.Controllers;
 /// <summary>
@@ -25,6 +31,7 @@ public class HomeController : Controller
         _logger = logger;
     }
 
+    [Authorize(Policy = "KeyRequirement")]
     public async Task<IActionResult> IndexAsync()
     {
         var user = (await _userManager.GetUserAsync(User));
@@ -41,7 +48,8 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Policy = "KeyRequirement")]
+
     public async Task<IActionResult> SeeNotification([FromBody] string id)
     {
         int newID;
@@ -63,10 +71,35 @@ public class HomeController : Controller
         return Ok();
     }
 
-
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+
+    [Authorize(Policy = "KeyRequirement", Roles = "Admin")]
+    [HttpGet]
+    public async Task<IActionResult> DownloadSql()
+    {
+        // Create a process to execute the mysqldump command
+        var process = new Process();
+        process.StartInfo.FileName = "mysqldump";
+        process.StartInfo.UseShellExecute = false;
+        process.StartInfo.RedirectStandardOutput = true;
+        process.StartInfo.Arguments = $"--user=root --password={GlobalData.DBPassword} --host={GlobalData.DBHost} --port={GlobalData.DBPort} {GlobalData.DBName}";
+        Console.WriteLine(process.StartInfo.Arguments);
+
+        // Start the process and capture the output as a stream
+        process.Start();
+        var streamReader = process.StandardOutput;
+
+        // Return the SQL dump as a file download
+        var fileStream = new MemoryStream();
+        await streamReader.BaseStream.CopyToAsync(fileStream);
+        fileStream.Position = 0;
+        return File(fileStream, "application/octet-stream", "mydb.sql");
+    }
+
+
+
 }
