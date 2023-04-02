@@ -99,8 +99,8 @@
         </table>
 
         @* Check if submitting and signing a timesheet are the same *@
-    <input type="button" value="Approve Timesheet" class="btn-secondary" onclick="approveTimesheet()">
-    <input type="button" value="Decline Timesheet" class="btn-secondary" onclick="declineTimesheet()">
+    <input type="button" value="Approve Timesheet" class="btn btn-primary" onclick="approveTimesheet()">
+    <input type="button" value="Decline Timesheet" class="btn btn-danger" onclick="declineTimesheet()">
     </div>
 </div>
 
@@ -111,12 +111,13 @@
     <script>
 
         updateTotals(true);
-
-        @foreach (var row in Model.TimesheetRows!)
-        {
-            <text>
-                addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", true);
-            </text>
+        @if(Model.TimesheetRows != null){
+            @foreach (var row in Model.TimesheetRows!)
+            {
+                <text>
+                    addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", true);
+                </text>
+            }
         }
 
         updateTotals(true);
@@ -329,11 +330,16 @@
             });
         }
 
-
-        @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
-        {
+        @if(Model.Timesheets != null){
+            @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
+            {
+                <text>
+                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, "@timesheet.ApproverNotes", "@timesheet.User!.FirstName @timesheet.User.LastName", "@timesheet.User.SickDays", "@timesheet.User.EmployeeNumber");
+                </text>
+            }
+        } else {
             <text>
-                    addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, "@timesheet.ApproverNotes", "@timesheet.User!.FirstName @timesheet.User.LastName", "@timesheet.User.SickDays", "@timesheet.User.EmployeeNumber");
+                document.querySelector("#timesheets").innerHTML = "Nothing to approve. Have a nice day! :)";
             </text>
         }
 

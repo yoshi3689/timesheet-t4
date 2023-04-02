@@ -69,16 +69,11 @@ namespace TimesheetApp.Controllers
         /// Gets the page for creating a new project. Only HR or admin may create a project.
         /// </summary>
         /// <returns>new project page.</returns>
-        [Authorize(Policy = "KeyRequirement")]
-        [Authorize(Roles = "HR,Admin")]
+        [Authorize(Policy = "KeyRequirement", Roles = "HR,Admin")]
         public IActionResult Create()
         {
-            var users = _context.Users.Select(s => new
-            {
-                Id = s.Id,
-                Name = s.FirstName + " " + s.LastName
-            });
-            ViewData["UserId"] = new SelectList(users, "Id", "Name");
+            var users = _context.Users.ToList();
+            ViewData["users"] = users;
             CreateProjectViewModel proj = new CreateProjectViewModel
             {
                 budgets = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).Select(lg => new Budget
@@ -144,12 +139,9 @@ namespace TimesheetApp.Controllers
                 return RedirectToAction("Index");
             }
 
-            var users = _context.Users.Select(s => new
-            {
-                Id = s.Id,
-                Name = s.FirstName + " " + s.LastName
-            });
-            ViewData["UserId"] = new SelectList(users, "Id", "Name");
+            var users = _context.Users.ToList();
+
+            ViewData["users"] = users;
             return View(input);
         }
 
@@ -1039,7 +1031,7 @@ namespace TimesheetApp.Controllers
             double totalActual = 0;
             foreach (var lg in labourGrades)
             {
-                wpTable.AddCell(new Cell(1, 2).Add(new Paragraph(lg.LabourCode + " (" + lg.Rate + ")")));
+                wpTable.AddCell(new Cell(1, 2).Add(new Paragraph(lg.LabourCode + " ($" + lg.Rate + ")")));
 
 
                 double totalPDPM = 0;

@@ -15,8 +15,26 @@
                 <span asp-validation-for="project.ProjectTitle" class="text-danger"></span>
             </div>
             <div class="form-group">
+                @*
+                <select asp-for="project.ProjectManagerId" class="form-control" asp-items="ViewBag.UserId"></select> *@
                 <label asp-for="project.ProjectManagerId" class="control-label"></label>
-                <select asp-for="project.ProjectManagerId" class="form-control" asp-items="ViewBag.UserId"></select>
+                <input asp-for="project.ProjectManagerId" type="hidden" id="projectManagerIdInput" />
+                <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown"
+                    aria-expanded="false" onkeyup="filterDropdown(event)" id="employeeSearchBox" autocomplete="off"
+                    placeholder="Search Employee..." />
+                <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
+                    @foreach (ApplicationUser obj
+                    in (ViewData["users"] as List<ApplicationUser>) ?? new List<ApplicationUser>())
+                    {
+                        <li class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id" onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName';
+            document.querySelector('#projectManagerIdInput').value = '@obj.Id'">
+                            @obj.FirstName @obj.LastName
+                        </li>
+                    }
+                </ul>
+                <span asp-validation-for="project.ProjectManagerId" class="text-danger"></span>
+
+
             </div>
             <h1>Project Budget</h1>
             @for (int i = 0; i < Model.budgets!.Count; i++)
@@ -62,6 +80,25 @@
         var element = document.querySelector("#" + labourCode);
         element.innerHTML = " $" + (people * days * rate).toFixed(2);
     }
+    function filterDropdown(event) {
+        const input = event.target;
+        const dropdown = input.nextElementSibling;
+        const filter = input.value.toUpperCase();
+        const items = dropdown.getElementsByTagName("li");
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const text = item.textContent || item.innerText;
+            const match = text.toUpperCase().indexOf(filter) > -1;
+            item.style.display = match ? "" : "none";
+        }
+    }
+    document.querySelector('#employeeSearchBox').addEventListener('focus', function () {
+        if (!document.querySelector('#employeeMenu').classList.contains('show')) {
+            var event = new Event('click');
+            this.dispatchEvent(event);
+        }
+    });
 </script>
 @section Scripts {
     @{

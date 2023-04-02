@@ -8,6 +8,23 @@ ViewData["Title"] = "Manage Project";
     <title>@ViewData["Title"]</title>
 </head>
 <h1>@ViewData["Title"]</h1>
+<div class="modal" tabindex="-1" role="dialog" id="confirmClose" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm</h5>
+            </div>
+            <div class="modal-body" id="timesheetError">
+                Are you sure you want to close this project? No more work will be able to be done on it. You cannot undo this action.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmButton"
+                    data-bs-dismiss="modal">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="d-flex justify-content-around mb-3">
     <div>
@@ -22,7 +39,6 @@ ViewData["Title"] = "Manage Project";
             <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
             </ul>
             <div>
-
             <!-- Button trigger modal -->
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="populateModal()">
             Confirm
@@ -144,6 +160,13 @@ ViewData["Title"] = "Manage Project";
         </div>
     </div>
 </div>
+@if (Model.wps[0].Project!.IsClosed == false)
+{
+<div class="text-center">
+    <button class="btn btn-danger rounded position-absolute bottom-0" id='@("WP" + Model.wps[0].Project!.ProjectId)' data-bs-toggle="modal"
+        data-bs-target="#confirmClose" onclick="closeProject(@Model.wps[0].Project!.ProjectId)">Close Project</button>
+</div>
+}
 
 <script>
     let currentWorkPackage = "";
@@ -929,6 +952,25 @@ ViewData["Title"] = "Manage Project";
                     hideAssignAsm.style.display = "none";
                 }
             }))
+    }
+    var id;
+    function closeProject(idToClose) {
+        id = idToClose;
+        document.querySelector("#confirmButton").addEventListener("click", () => {
+            fetch("/Project/CloseProject", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(id),
+            })
+                .then(async (response) => {
+                    if (response.status == 200) {
+                        document.querySelector("#WP" + idToClose).style.display = "none";
+                    }
+                });
+        });
     }
 </script>
 @section Scripts {

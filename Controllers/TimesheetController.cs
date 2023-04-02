@@ -94,6 +94,10 @@ namespace TimesheetApp.Controllers
             {
                 approveSheets.AddRange(_context.Timesheets!.Where(t => t.UserId == emp.Id && t.EmployeeHash != null && t.ApproverHash == null).Include(c => c.User).Include(c => c.TimesheetRows).OrderBy(c => c.EndDate));
             }
+            if (approveSheets.Count() == 0)
+            {
+                return View(new TimesheetViewModel());
+            }
 
             var timesheet = approveSheets.AsEnumerable()
                 .OrderBy(ts => Math.Abs((DateTime.Parse(ts.EndDate.ToString()!) - currentDate.Date).TotalDays))

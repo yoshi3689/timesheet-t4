@@ -10,23 +10,6 @@
         ViewData["Title"] = "My Projects";
     }
 }
-<div class="modal" tabindex="-1" role="dialog" id="confirmClose" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm</h5>
-            </div>
-            <div class="modal-body" id="timesheetError">
-                Are you sure you want to close this project? No more work will be able to be done on it.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmButton"
-                    data-bs-dismiss="modal">Confirm</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <head>
     <title>@ViewData["Title"]</title>
@@ -70,11 +53,6 @@
                     <a class="btn btn-primary rounded" asp-action="PCBAC" asp-route-id="@item.ProjectId" role="button">
                         PCBAC Report
                     </a>
-                    @if (item.IsClosed == false)
-                    {
-                        <button class="btn btn-danger rounded" id='@("WP" + item.ProjectId)' data-bs-toggle="modal"
-                            data-bs-target="#confirmClose" onclick="closeProject(@item.ProjectId)">Close</button>
-                    }
                 </td>
             </tr>
         }
@@ -86,28 +64,6 @@
         <a class="btn btn-primary rounded" asp-action="Create">New Project</a>
     </p>
 }
-
-<script>
-    var id;
-    function closeProject(idToClose) {
-        id = idToClose;
-        document.querySelector("#confirmButton").addEventListener("click", () => {
-            fetch("/Project/CloseProject", {
-                method: "POST",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(id),
-            })
-                .then(async (response) => {
-                    if (response.status == 200) {
-                        document.querySelector("#WP" + idToClose).style.display = "none";
-                    }
-                });
-        });
-    }
-</script>
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
