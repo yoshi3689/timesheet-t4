@@ -487,7 +487,7 @@ namespace TimesheetApp.Controllers
             {
                 var closingwp = _context.WorkPackages
                     .Include(w => w.ChildWorkPackages)
-                    .SingleOrDefault(w => w.WorkPackageId == wp.WorkPackageId);
+                    .SingleOrDefault(w => w.WorkPackageId == wp.WorkPackageId && w.ProjectId == HttpContext.Session.GetInt32("CurrentProject"));
                 if (closingwp != null)
                 {
                     if (closingwp.ChildWorkPackages.Count != 0)
