@@ -1,33 +1,77 @@
-@model TimesheetApp.Models.TimesheetModels.EmployeeProject
+@model List<ApplicationUser>
 
 @{
-    ViewData["Title"] = "Create";
+  ViewData["Title"] = "Create";
 }
+<div class="container">
+  <h2>Assign employee</h2>
+  <hr />
 
-<h1>Create</h1>
+  @if (Model.Count == 0)
+  {
+    <h2>There is no employees you can assign to this project. </h2>
+  }
+  else
+  {
 
-<h4>EmployeeProject</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
-                <select asp-for="UserId" class ="form-control" asp-items="ViewBag.UserId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="ProjectId" class="control-label"></label>
-                <select asp-for="ProjectId" class ="form-control" asp-items="ViewBag.ProjectId"></select>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <h3>Select Employee to Add</h3>
+    <ul class="list-group" id="listToAddEmp" style="padding-left:0px;">
+      @for (int i = 0; i < ViewBag.Users.Count; i++)
+      {
+        <li class="list-group-item">
+          <input class="form-check-input" type="checkbox" value="" id="@("flexCheckDefault"+i)"
+        class="@("flexCheckDefault"+i)">
+          <label class="form-check-label" for="@("flexCheckDefault"+i)">@ViewBag.Users[i].FirstName
+            @ViewBag.Users[i].LastName (@ViewBag.Users[i].JobTitle) 
+             </label>
+          <span style="display:none;">@ViewBag.Users[i].Id</span>
+        </li>
+      }
+    </ul>
+    <button id="addEmp" class="btn btn-primary">Add Employee to Project</button>
+
+  }
+  
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+  <a asp-action="Index">Back to List of Projects</a>
 </div>
 
+<script>
+  // get project id
+  const usersToAdd = [];
+  const addEmpBtn = document.getElementById("addEmp");
+  const urlParams = new URLSearchParams(window.location.search);
+  const ProjectId = urlParams.get('ProjectId');
+  
+  const addUsersToProject = async (e) => {
+    e.preventDefault();
+    // fetch all the checked user ids
+    const checkedBoxes = document.querySelectorAll("input[type=checkbox]:checked");
+    if (checkedBoxes.length > 0) {
+      const checkedUsers = Array.from(checkedBoxes).map(u => ({
+        UserId: u.nextElementSibling.nextElementSibling.innerText,
+        ProjectId: parseInt(ProjectId)
+      }));
+
+      await fetch("/EmployeeProject/AddEmployee", {
+        method: "POST",
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(checkedUsers),
+      }).then(res => {
+        if (res.status == 200) {
+          location.reload();
+          return res.json();
+        }
+      })
+    }
+  }
+  addEmpBtn && addEmpBtn.addEventListener("click", addUsersToProject);
+  
+</script>
