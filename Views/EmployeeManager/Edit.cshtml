@@ -11,65 +11,65 @@
     <div class="col-md-4">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
+            <div class="form-group mb-2 ">
                 <label asp-for="FirstName" class="control-label"></label>
                 <input asp-for="FirstName" class="form-control" />
                 <span asp-validation-for="FirstName" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="LastName" class="control-label"></label>
                 <input asp-for="LastName" class="form-control" />
                 <span asp-validation-for="LastName" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="EmployeeNumber" class="control-label"></label>
                 <input asp-for="EmployeeNumber" class="form-control" />
                 <span asp-validation-for="EmployeeNumber" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="SickDays" class="control-label"></label>
                 <input asp-for="SickDays" class="form-control" />
                 <span asp-validation-for="SickDays" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="FlexTime" class="control-label"></label>
                 <input asp-for="FlexTime" class="form-control" />
                 <span asp-validation-for="FlexTime" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="JobTitle" class="control-label"></label>
                 <input asp-for="JobTitle" class="form-control" />
                 <span asp-validation-for="JobTitle" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="Salary" class="control-label"></label>
                 <input asp-for="Salary" class="form-control" />
                 <span asp-validation-for="Salary" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="LabourGradeCode" class="control-label"></label>
                 <select asp-for="LabourGradeCode" class="form-control" asp-items="ViewBag.LabourGradeCode"></select>
                 <span asp-validation-for="LabourGradeCode" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="SupervisorId" class="control-label"></label>
                 <select asp-for="SupervisorId" class="form-control" asp-items="ViewBag.SupervisorId"></select>
                 <span asp-validation-for="SupervisorId" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="TimesheetApproverId" class="control-label"></label>
                 <select asp-for="TimesheetApproverId" class="form-control"
                     asp-items="ViewBag.TimesheetApproverId"></select>
                 <span asp-validation-for="TimesheetApproverId" class="text-danger"></span>
             </div>
             <input type="hidden" asp-for="Id" />
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <label asp-for="Email" class="control-label"></label>
                 <input asp-for="Email" class="form-control" />
                 <span asp-validation-for="Email" class="text-danger"></span>
             </div>
             <br />
-            <div class="form-group">
+            <div class="form-group mb-2">
                 <input type="submit" value="Save" class="btn btn-primary rounded mb-2" />
             </div>
         </form>

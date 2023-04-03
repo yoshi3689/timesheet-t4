@@ -110,3 +110,7 @@ select-caret::after {
 .hidden {
   display: none;
 }
+
+.control-label {
+  font-weight: bold;
+}
