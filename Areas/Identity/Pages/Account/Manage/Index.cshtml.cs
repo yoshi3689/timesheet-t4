@@ -24,7 +24,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
 
 
         [Display(Name = "Employee Number")]
-        public int EmployeeNum { get; set; }
+        public long EmployeeNum { get; set; }
 
         [Display(Name = "Job Title")]
         public string JobTitle { get; set; }
@@ -93,7 +93,8 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
             var supervisorID = (await _userManager.GetUserAsync(User)).SupervisorId;
             var supervisor = await _userManager.FindByIdAsync(supervisorID);
 
-            if (supervisor != null) {
+            if (supervisor != null)
+            {
                 Supervisor = supervisor.FirstName + " " + supervisor.LastName;
             }
 
@@ -147,6 +148,6 @@ namespace TimesheetApp.Areas.Identity.Pages.Account.Manage
             return RedirectToPage();
         }
 
-        
+
     }
 }

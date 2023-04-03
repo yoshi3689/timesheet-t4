@@ -120,9 +120,9 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
             ViewData["LabourGrades"] = new SelectList(_context.LabourGrades.Where(c => c.Year == DateTime.Now.Year), "LabourCode", "LabourCode");
             ViewData["Supervisors"] = getSupervisors();
             rolesList = await roleManager.Roles.ToListAsync();
-            for(int i = 0; i < rolesList.Count; i++)
+            for (int i = 0; i < rolesList.Count; i++)
             {
-                if(rolesList[i].Name == "Admin")
+                if (rolesList[i].Name == "Admin")
                 {
                     rolesList.RemoveAt(i);
                 }
@@ -138,17 +138,7 @@ namespace TimesheetApp.Areas.Identity.Pages.Account
                 Id = s.Id,
                 Name = s.FirstName + " " + s.LastName
             });
-            var hrs = _userManager.GetUsersInRoleAsync("HR").GetAwaiter().GetResult().Select(s => new
-            {
-                Id = s.Id,
-                Name = s.FirstName + " " + s.LastName
-            });
-            var admins = _userManager.GetUsersInRoleAsync("Admin").GetAwaiter().GetResult().Select(s => new
-            {
-                Id = s.Id,
-                Name = s.FirstName + " " + s.LastName
-            });
-            return new SelectList(supervisors.Concat(hrs).Concat(admins).ToList(), "Id", "Name");
+            return new SelectList(supervisors.ToList(), "Id", "Name");
         }
 
 

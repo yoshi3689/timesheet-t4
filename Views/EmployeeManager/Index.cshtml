@@ -7,17 +7,15 @@
 <h1>Employees</h1>
 
 <div>
-    Search:<input type="text" id="searchBox" />
+    Search: <input type="text" id="searchBox" />
 </div>
+<br />
 
 <table id="myTable" class="table table-bordered table-responsive table-striped ">
     <thead>
         <tr>
             <th class="text-center text-nowrap">
-                @Html.DisplayNameFor(model => model.FirstName)
-            </th>
-            <th class="text-center text-nowrap">
-                @Html.DisplayNameFor(model => model.LastName)
+                Name
             </th>
             <th class="text-center text-nowrap">
                 @Html.DisplayNameFor(model => model.EmployeeNumber)
@@ -53,10 +51,7 @@
         {
             <tr>
                 <td>
-                    @Html.DisplayFor(modelItem => item.FirstName)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.LastName)
+                    @Html.DisplayFor(modelItem => item.FirstName) @Html.DisplayFor(modelItem => item.LastName)
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.EmployeeNumber)
@@ -102,7 +97,7 @@
 </p>
 
 @section scripts
-{
+    {
     <script>
         function performSearch() {
 
@@ -123,7 +118,7 @@
                 } else {
                     tr.style.display = "none";
                 }
-            }          
+            }
         }
 
         // declare elements

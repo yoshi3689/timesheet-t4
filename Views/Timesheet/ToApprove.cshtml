@@ -302,7 +302,18 @@
                     return await response.json();
                 }
             }).then((response) => {
-                var readonlyRow = document.querySelector("#" + thisValue.id).classList.contains("readonly");
+                var element = document.querySelector("#" + thisValue.id);
+                var readonlyRow = false;
+                if (element) {
+                    readonlyRow = element.classList.contains("readonly");
+                } else {
+                    var table = document.getElementById("rowTable");
+                    const childElements = table.querySelectorAll(':scope > tbody > [id]');
+                    childElements.forEach(c => {
+                        c.remove();
+                    });
+                    return;
+                }
                 if(response != null){
                     var table = document.getElementById("rowTable");
                     const childElements = table.querySelectorAll(':scope > tbody > [id]');

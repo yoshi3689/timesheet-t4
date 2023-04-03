@@ -54,13 +54,13 @@ namespace TimesheetApp.Controllers
         {
             if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
             {
-                var projects = _context.Projects!.Include(s => s.ProjectManager);
+                var projects = _context.Projects!.Include(s => s.ProjectManager).OrderBy(c => c.ProjectId);
                 return View(projects);
             }
             else
             {
                 var userId = _userManager.GetUserId(HttpContext.User);
-                var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId || s.AssistantProjectManagerId == userId).Include(s => s.ProjectManager);
+                var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId || s.AssistantProjectManagerId == userId).OrderBy(c => c.ProjectId).Include(s => s.ProjectManager);
                 return View(project);
             }
         }
@@ -252,6 +252,10 @@ namespace TimesheetApp.Controllers
             if (oldWp.Any()) return Json("Error");
 
             var currentWp = _context.WorkPackages.Where(c => c.WorkPackageId == workPackageId).Include(c => c.Project).First();
+            if (currentWp.IsClosed)
+            {
+                return BadRequest();
+            }
 
             var removedEmployeeIds = _context.EmployeeWorkPackages.Where(c => c.WorkPackageId == workPackageId && c.WorkPackageProjectId == workPackageProjectId).Select(c => c.UserId).ToList();
             _context.EmployeeWorkPackages.RemoveRange(_context.EmployeeWorkPackages.Where(c => c.WorkPackageId == workPackageId && c.WorkPackageProjectId == workPackageProjectId));
@@ -303,6 +307,10 @@ namespace TimesheetApp.Controllers
                 var LLWP = await _context.WorkPackages.FindAsync(ewp.WorkPackageId, ewp.WorkPackageProjectId);
                 if (LLWP != null)
                 {
+                    if (LLWP.IsClosed)
+                    {
+                        return BadRequest();
+                    }
                     var oldRE = LLWP.ResponsibleUserId;
                     LLWP.ResponsibleUserId = ewp.UserId;
                     // add rows of estimate for this LLWP
@@ -384,6 +392,10 @@ namespace TimesheetApp.Controllers
             if (parent != null)
             {
                 parent.IsBottomLevel = false;
+                if (parent.IsClosed)
+                {
+                    return BadRequest();
+                }
             }
             var newChild = new WorkPackage
             {
@@ -1152,7 +1164,10 @@ namespace TimesheetApp.Controllers
                 var oldASM = proj.AssistantProjectManagerId;
                 proj.AssistantProjectManagerId = user;
                 var projectString = projectId;
-                _context.Notifications.Add(new Notification { UserId = oldASM, Message = "You have been removed from the project " + proj!.ProjectTitle + " as an Assistant Project Manager.", For = projectString + " Remove", Importance = 2 });
+                if (oldASM != null)
+                {
+                    _context.Notifications.Add(new Notification { UserId = oldASM, Message = "You have been removed from the project " + proj!.ProjectTitle + " as an Assistant Project Manager.", For = projectString + " Remove", Importance = 2 });
+                }
                 _context.Notifications.Add(new Notification { UserId = proj.AssistantProjectManagerId, Message = "You have been added to the project " + proj!.ProjectTitle + " as an Assistant Project Manager.", For = projectString + " Add", Importance = 1 });
                 _context.SaveChanges();
                 return Ok();
