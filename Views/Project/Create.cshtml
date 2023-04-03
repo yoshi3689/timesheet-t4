@@ -3,15 +3,19 @@
 @{
     ViewData["Title"] = "All Projects";
 }
-<h1>Create A Projects</h1>
+<h1>Create a Project</h1>
 
 <div class="row">
     <div class="col-md-10">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="project.ProjectTitle" class="control-label"></label>
-                <input asp-for="project.ProjectTitle" class="form-control" />
+                <label asp-for="project.ProjectTitle" class="control-label" id="ProjectTitleLabel"></label>
+                <input asp-for="project.ProjectTitle" class="form-control" placeholder="Enter a Project Name" id="ProjectTitleLabel"/>
+                <br />
+                <label asp-for="project.ProjectId" class="control-label" id="ProjectIdLabel"></label>
+                <input asp-for="project.ProjectId" class="form-control" type="number" value="" placeholder="Enter a Project Id" id="ProjectIdInput"/>
+                <br />
                 <span asp-validation-for="project.ProjectTitle" class="text-danger"></span>
             </div>
             <div class="form-group">
@@ -36,6 +40,7 @@
 
 
             </div>
+            <br />
             <h1>Project Budget</h1>
             @for (int i = 0; i < Model.budgets!.Count; i++)
             {
@@ -105,4 +110,3 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
-
