@@ -98,11 +98,6 @@ select-caret::after {
   min-width: 110px;
 }
 
-.notiSummary {
-  border-top: 2px solid black;
-  border-radius: 5%;
-}
-
 .primaryBG {
   background-color: #2c3d55 !important;
 }
