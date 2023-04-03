@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using TimesheetApp.Data;
 using TimesheetApp.Models;
+using TimesheetApp.Models.TimesheetModels;
 using static Program;
 
 namespace TimesheetApp.Controllers;
@@ -38,6 +39,13 @@ public class HomeController : Controller
         if (user != null)
         {
             var userId = user.Id;
+            var ewps = _context.WorkPackages.Where(c => c.ResponsibleUserId == userId).ToList();
+            if(ewps.Count() > 0 && ewps[0] != null) {
+            var newestEstimate = _context.ResponsibleEngineerEstimates.Where(c => c.WPProjectId == ewps[0].WorkPackageId).OrderByDescending(c => c.Date).FirstOrDefault();
+            var workPackageString = _context.WorkPackages.Where(c => c.WorkPackageId == newestEstimate.WPProjectId && c.WorkPackageProjectId == HttpContext.Session.GetInt32("CurrentProject")).First().Title;
+            if(newestEstimate.Date < DateOnly.FromDateTime(DateTime.Now.AddDays(-7))) {
+                _context.Notifications.Add(new Notification { UserId = userId, Message = "It has been over a week since you last made an estimate for the work package " + workPackageString, Importance = 3 });
+            }}
             return View(_context.Notifications.Where(c => c.UserId == userId).ToList());
         }
         else
