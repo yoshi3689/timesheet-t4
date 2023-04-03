@@ -19,86 +19,97 @@ namespace TimesheetApp.Controllers;
 [Authorize]
 public class HomeController : Controller
 {
-    private readonly ILogger<HomeController> _logger;
-    private readonly ApplicationDbContext _context;
-    private readonly UserManager<ApplicationUser> _userManager;
+  private readonly ILogger<HomeController> _logger;
+  private readonly ApplicationDbContext _context;
+  private readonly UserManager<ApplicationUser> _userManager;
 
 
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+  public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+  {
+    _context = context;
+    _userManager = userManager;
+    _logger = logger;
+  }
+
+  [Authorize(Policy = "KeyRequirement")]
+  public async Task<IActionResult> IndexAsync()
+  {
+    var user = (await _userManager.GetUserAsync(User));
+    if (user != null)
     {
-        _context = context;
-        _userManager = userManager;
-        _logger = logger;
+      var userId = user.Id;
+      var workPackages = await _context.WorkPackages
+        .Where(wp => wp.ResponsibleUserId == userId && wp.IsBottomLevel)
+        .Include(w => w.Project)
+        .ToListAsync();
+      var notifications = _context.Notifications.Where(c => c.UserId == userId).ToList();
+      var model = new WorkPackageNotificationModel
+      {
+        Name = user.FirstName,
+        Notifications = notifications,
+        WorkPackages = workPackages
+      };
+      return View(model);
+    }
+    else
+    {
+      return View();
     }
 
-    [Authorize(Policy = "KeyRequirement")]
-    public async Task<IActionResult> IndexAsync()
+  }
+
+  [HttpPost]
+  [Authorize(Policy = "KeyRequirement")]
+
+  public async Task<IActionResult> SeeNotification([FromBody] string id)
+  {
+    int newID;
+    try
     {
-        var user = (await _userManager.GetUserAsync(User));
-        if (user != null)
-        {
-            var userId = user.Id;
-            return View(_context.Notifications.Where(c => c.UserId == userId).ToList());
-        }
-        else
-        {
-            return View();
-        }
-
+      newID = Convert.ToInt32(id);
     }
-
-    [HttpPost]
-    [Authorize(Policy = "KeyRequirement")]
-
-    public async Task<IActionResult> SeeNotification([FromBody] string id)
+    catch (System.Exception)
     {
-        int newID;
-        try
-        {
-            newID = Convert.ToInt32(id);
-        }
-        catch (System.Exception)
-        {
-            return BadRequest();
-        }
-        var userId = (await _userManager.GetUserAsync(User))!.Id;
-        var noti = await _context.Notifications.Where(c => c.Id == newID && c.UserId == userId).FirstOrDefaultAsync();
-        if (noti != null)
-        {
-            _context.Remove(noti);
-            await _context.SaveChangesAsync();
-        }
-        return Ok();
+      return BadRequest();
     }
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
+    var userId = (await _userManager.GetUserAsync(User))!.Id;
+    var noti = await _context.Notifications.Where(c => c.Id == newID && c.UserId == userId).FirstOrDefaultAsync();
+    if (noti != null)
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+      _context.Remove(noti);
+      await _context.SaveChangesAsync();
     }
+    return Ok();
+  }
 
-    [Authorize(Policy = "KeyRequirement", Roles = "Admin")]
-    [HttpGet]
-    public async Task<IActionResult> DownloadSql()
-    {
-        // Create a process to execute the mysqldump command
-        var process = new Process();
-        process.StartInfo.FileName = "mysqldump";
-        process.StartInfo.UseShellExecute = false;
-        process.StartInfo.RedirectStandardOutput = true;
-        process.StartInfo.Arguments = $"--user=root --password={GlobalData.DBPassword} --host={GlobalData.DBHost} --port={GlobalData.DBPort} {GlobalData.DBName}";
-        Console.WriteLine(process.StartInfo.Arguments);
+  [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+  public IActionResult Error()
+  {
+    return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+  }
 
-        // Start the process and capture the output as a stream
-        process.Start();
-        var streamReader = process.StandardOutput;
+  [Authorize(Policy = "KeyRequirement", Roles = "Admin")]
+  [HttpGet]
+  public async Task<IActionResult> DownloadSql()
+  {
+    // Create a process to execute the mysqldump command
+    var process = new Process();
+    process.StartInfo.FileName = "mysqldump";
+    process.StartInfo.UseShellExecute = false;
+    process.StartInfo.RedirectStandardOutput = true;
+    process.StartInfo.Arguments = $"--user=root --password={GlobalData.DBPassword} --host={GlobalData.DBHost} --port={GlobalData.DBPort} {GlobalData.DBName}";
+    Console.WriteLine(process.StartInfo.Arguments);
 
-        // Return the SQL dump as a file download
-        var fileStream = new MemoryStream();
-        await streamReader.BaseStream.CopyToAsync(fileStream);
-        fileStream.Position = 0;
-        return File(fileStream, "application/octet-stream", "mydb.sql");
-    }
+    // Start the process and capture the output as a stream
+    process.Start();
+    var streamReader = process.StandardOutput;
+
+    // Return the SQL dump as a file download
+    var fileStream = new MemoryStream();
+    await streamReader.BaseStream.CopyToAsync(fileStream);
+    fileStream.Position = 0;
+    return File(fileStream, "application/octet-stream", "mydb.sql");
+  }
 
 
 

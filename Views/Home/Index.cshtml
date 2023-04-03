@@ -1,28 +1,88 @@
-﻿@model List<TimesheetApp.Models.TimesheetModels.Notification>
+﻿@model TimesheetApp.Models.WorkPackageNotificationModel
+
 @{
     ViewData["Title"] = "Dashboard";
 }
-
-<div class="text-center">
-    <div >
-        <h2>
-            Notification Summary
-        </h2> 
-        <div class="notiSummary"> 
-            <div id="notifications"></div>
+<div class="d-flex justify-content-md-between">
+    <div style="width: 80%; margin: 0 10px;">
+        <div>
+            <h1>Welcome back to SHEET, @Model.Name! </h1>
+            <br />
+            <p>SHEET stands for SHEET Helps Efficiently Enter Time. SHEET is a comprehensive web-based application that streamlines employee, project, work package, budget, and timesheet management. It provides a user-friendly interface that enables efficient tracking of project progress, employee productivity, and budget allocation. SHEET offers a centralized database that allows for seamless collaboration among team members, enabling them to work efficiently and effectively towards a common goal. With powerful reporting and analytics features, SHEET empowers businesses to make data-driven decisions and optimize their operations.</p>
         </div>
+        <h2 class="text-left">Your Work Packages</h2>
+        <br />
+        <table class="table table-bordered table-responsive table-striped">
+            <thead>
+                <tr>
+                    <th>
+                        @Html.DisplayNameFor(model => model.WorkPackage.WorkPackageId)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.WorkPackage.Title)
+                    </th>
+                    <th>
+                        Project Title
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.WorkPackage.IsClosed)
+                    </th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.WorkPackages)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.WorkPackageId)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Title)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Project!.ProjectTitle)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.IsClosed)
+                        </td>
+                        <td>
+                            <a
+                                class="btn btn-primary rounded"
+                                asp-action="Edit"
+                                asp-route-id1="@item.WorkPackageId"
+                                asp-route-id2="@item.ProjectId"
+                                role="button">
+                                Set Budget/Weekly Est
+                            </a>
+                            @* @Html.ActionLink("Set Budget/Weekly Est", "Edit", new { id=item.ProjectId+"~"+item.WorkPackageId }) *@
+                            @* @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) | *@
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
-    @if(User.IsInRole("Admin")){
-        <a class="btn btn-primary position-absolute bottom-0 center translate-middle" href="/Home/DownloadSql">Download Backup Sql File</a>
-    }
+    <div class="text-center">
+        <div >
+            <h2>
+                Notification Summary
+            </h2>
+            <div class="notiSummary">
+                <div id="notifications"></div>
+            </div>
+        </div>
+        @if(User.IsInRole("Admin")){
+            <a class="btn btn-primary position-absolute bottom-0 center translate-middle" href="/Home/DownloadSql">Download Backup Sql File</a>
+        }
+    </div>
 </div>
-
 
 
 <script>
     @if (Model != null)
     {
-        @foreach (var notification in Model)
+        @foreach (var notification in Model.Notifications)
         {
             <text>
                 createAlertMessage("@notification.Message", @notification.Importance, @notification.Id);
