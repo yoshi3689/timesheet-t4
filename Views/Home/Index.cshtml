@@ -6,7 +6,11 @@
 <div class="d-flex justify-content-md-between">
     <div style="width: 80%; margin: 0 10px;">
         <div>
-            <h1>Welcome back to SHEET, @Model.Name! </h1>
+            @if(Model != null){
+                <h1>Welcome back to SHEET, @Model.Name! </h1>
+            }else{
+                <h1>Welcome back to SHEET</h1>
+            }
             <br />
             <p>SHEET stands for SHEET Helps Efficiently Enter Time. SHEET is a comprehensive web-based application that streamlines employee, project, work package, budget, and timesheet management. It provides a user-friendly interface that enables efficient tracking of project progress, employee productivity, and budget allocation. SHEET offers a centralized database that allows for seamless collaboration among team members, enabling them to work efficiently and effectively towards a common goal. With powerful reporting and analytics features, SHEET empowers businesses to make data-driven decisions and optimize their operations.</p>
         </div>
@@ -31,7 +35,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model.WorkPackages)
+                @foreach (var item in Model!.WorkPackages!)
                 {
                     <tr>
                         <td>

@@ -123,6 +123,14 @@ select-caret::after {
   display: none;
 }
 
+.text-label {
+  font-size: 1.1rem;
+}
+
+.margin-bottom-20 {
+  margin-bottom: 20px;
+}
+
 .control-label {
   font-weight: bold;
 }

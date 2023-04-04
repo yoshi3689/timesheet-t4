@@ -181,7 +181,7 @@ namespace TimesheetApp.Controllers
         {
             if (value != null)
             {
-                long intValue = (long)value;
+                long intValue = Convert.ToInt64(value);
                 long numDigits = intValue.ToString().Length;
 
                 if (numDigits < MinLength || numDigits > MaxLength)
