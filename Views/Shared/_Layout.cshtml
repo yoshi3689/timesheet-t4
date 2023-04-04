@@ -42,55 +42,54 @@
                     <img src="/img/SHEET_Logo.png" alt="SHEET Logo" style="max-width:100%; max-height:20%;">
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
-                    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <li class="navbar-collapse collapse d-sm-inline-flex d-flex justify-content-between">
 
-                    <ul class="navbar-nav">
-                        @if (user != null && user.key != null)
+                <ul class="navbar-nav">
+                    @if (user != null && user.key != null)
+                    {
+                        <li class="nav-item p-4">
+                            <a class="nav-link text-dark p-0 text-decoration-none" asp-area="" asp-controller="Home"
+                               asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item p-4">
+                            <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
+                               asp-controller="Timesheet" asp-action="Index">Timesheets</a>
+                        </li>
+                        @if (user != null && user.users > 0)
                         {
                             <li class="nav-item p-4">
-                                <a class="nav-link text-dark p-0 text-decoration-none" asp-area="" asp-controller="Home"
-                                asp-action="Index">Home</a>
-                            </li>
-                            <li class="nav-item p-4">
                                 <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
-                                asp-controller="Timesheet" asp-action="Index">Timesheets</a>
+                                   asp-controller="Timesheet" asp-action="ToApprove">Timesheet Approval</a>
                             </li>
-                            @if (user != null && user.users > 0)
-                            {
-                                <li class="nav-item p-4">
-                                    <a class="nav-item  text-dark p-0 text-decoration-none" asp-area=""
-                                asp-controller="Timesheet" asp-action="ToApprove">Timesheet Approval</a>
-                                </li>
-                            }
-                            @if (User.IsInRole("Admin") || User.IsInRole("HR") || (user != null && user.projects > 0))
-                            {
-                                <li class="nav-item p-4">
-                                    <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
-                                asp-action="Index">Projects</a>
-                                </li>
-                            }
-                            @if (User.IsInRole("Supervisor"))
-                            {
-                                <li class="nav-item p-4">
-                                    <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
-                                asp-controller="EmployeeProject" asp-action="Index">Assign Employee</a>
-                                </li>
-                            }
-                            @if (user != null && user.wps > 0)
-                            {
-                                <li class="nav-item p-4">
-                                    <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
-                                asp-controller="WorkPackage" asp-action="Index">Work Packages</a>
-                                </li>
-                            }
                         }
+                        @if (User.IsInRole("Admin") || User.IsInRole("HR") || (user != null && user.projects > 0))
+                        {
+                            <li class="nav-item p-4">
+                                <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
+                                   asp-action="Index">Projects</a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Supervisor"))
+                        {
+                            <li class="nav-item p-4">
+                                <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                                   asp-controller="EmployeeProject" asp-action="Index">Assign Employee</a>
+                            </li>
+                        }
+                        @if (user != null && user.wps > 0)
+                        {
+                            <li class="nav-item p-4">
+                                <a class="nav-item text-dark p-0 text-decoration-none" asp-area=""
+                                   asp-controller="WorkPackage" asp-action="Index">Work Packages</a>
+                            </li>
+                        }
+                    }
 
-                    </ul>
-                    <partial name="_LoginPartial" />
-            </div>
+                </ul>
+                <partial name="_LoginPartial" />
             </div>
         </nav>
     </header>
