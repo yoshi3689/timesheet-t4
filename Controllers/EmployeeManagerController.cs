@@ -77,7 +77,7 @@ namespace TimesheetApp.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "KeyRequirement")]
-        public async Task<IActionResult> Edit(string id, [Bind("FirstName,LastName,EmployeeNumber,SickDays,FlexTime,JobTitle,Salary,LabourGradeCode,SupervisorId,TimesheetApproverId,Id,UserName,NormalizedUserName,Email,NormalizedEmail,PhoneNumber,LockoutEnd,LockoutEnabled,AccessFailedCount")] ApplicationUser applicationUser)
+        public async Task<IActionResult> Edit(string id, [Bind("FirstName,LastName,EmployeeNumber,SickDays,FlexTime,JobTitle,Salary,LabourGradeCode,SupervisorId,TimesheetApproverId,Id,UserName,NormalizedUserName,UserName,Email,NormalizedEmail,PhoneNumber,LockoutEnd,LockoutEnabled,AccessFailedCount")] ApplicationUser applicationUser)
         {
             if (id != applicationUser.Id)
             {
@@ -102,10 +102,6 @@ namespace TimesheetApp.Controllers
                         user.LabourGradeCode = applicationUser.LabourGradeCode;
                         user.SupervisorId = applicationUser.SupervisorId;
                         user.TimesheetApproverId = applicationUser.TimesheetApproverId;
-                        user.UserName = applicationUser.UserName;
-                        user.NormalizedUserName = user.UserName?.ToUpper();
-                        user.Email = applicationUser.Email;
-                        user.NormalizedEmail = user.Email?.ToUpper();
                         user.PhoneNumber = applicationUser.PhoneNumber;
                         user.LockoutEnd = applicationUser.LockoutEnd;
                         user.LockoutEnabled = applicationUser.LockoutEnabled;
