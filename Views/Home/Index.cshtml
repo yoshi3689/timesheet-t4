@@ -20,16 +20,16 @@
             <thead>
                 <tr>
                     <th>
-                        @Html.DisplayNameFor(model => model.WorkPackage.WorkPackageId)
+                        @Html.DisplayNameFor(model => model.WorkPackage!.WorkPackageId)
                     </th>
                     <th>
-                        @Html.DisplayNameFor(model => model.WorkPackage.Title)
+                        @Html.DisplayNameFor(model => model.WorkPackage!.Title)
                     </th>
                     <th>
                         Project Title
                     </th>
                     <th>
-                        @Html.DisplayNameFor(model => model.WorkPackage.IsClosed)
+                        @Html.DisplayNameFor(model => model.WorkPackage!.IsClosed)
                     </th>
                     <th></th>
                 </tr>
@@ -87,7 +87,7 @@
 <script>
     @if (Model != null)
     {
-        @foreach (var notification in Model.Notifications)
+        @foreach (var notification in Model.Notifications!)
         {
             <text>
                 createAlertMessage("@notification.Message", @notification.Importance, @notification.Id);
