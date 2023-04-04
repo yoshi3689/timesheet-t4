@@ -12,7 +12,6 @@ namespace TimesheetApp.Models.TimesheetModels
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public string? ProjectId { get; set; }
         public string? WPProjectId { get; set; }
         [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
         [Display(Name = "Estimated Remaining P.D.")]

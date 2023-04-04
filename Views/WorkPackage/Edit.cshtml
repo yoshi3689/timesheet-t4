@@ -5,15 +5,15 @@
 }
 
 <br>
-@if (Model.estimates != null && Model.budgets![0].isREBudget == false)
+@if (Model.estimates != null || Model.budgets![0].isREBudget == false)
 {
   <form id="reBudgetEstimateForm" asp-action="CreateBudgetsAndEstimates">
 
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <h1>Work Package Budget</h1>
-    <h3>Person Days per Labour Grade</h3>
-    @if (Model.budgets[0].isREBudget == false)
+    @if (Model.budgets != null && Model.budgets[0].isREBudget == false)
     {
+      <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+      <h1>Work Package Budget</h1>
+      <h3>Person Days per Labour Grade</h3>
       @for (int i = 0; i < Model.budgets!.Count; i++)
       {
         <div class="form-group">
@@ -42,12 +42,9 @@
         </div>
         <br />
       }
+      <br>
     }
-    else
-    {
-      <h1>Budget is already set once!</h1>
-    }
-    <br>
+
     <h1>Weekly Estimates</h1>
     <h3>Person Days per Labour Grade</h3>
     @if (Model.estimates != null)
@@ -75,7 +72,7 @@
       <h1>Estimates are already set for this week!</h1>
     }
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <a class="btn btn-secondary" asp-action="Index">Back to List</a>
       <input type="submit" value="Create" class="btn btn-primary" />
     </div>
   </form>
@@ -83,11 +80,10 @@
 else
 {
   <h3>Budget and Estimates are already set.</h3>
+  <a class="btn btn-secondary" asp-action="Index">Back to List</a>
+
 }
 
-<div>
-  <a asp-action="Index">Back to List</a>
-</div>
 
 @section Scripts {
   @{
@@ -98,6 +94,6 @@ else
 <script>
   function setTotal(labourCode, rate, people, days, remain) {
     var element = document.querySelector("#" + labourCode);
-    element.innerHTML = " $" + (people * days * rate);
+    element.innerHTML = " $" + (people * days * rate).toFixed(2);
   }
 </script>

@@ -125,17 +125,20 @@ namespace TimesheetApp.Controllers
         {
             int labourGradeCount = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).Count();
             // fetch project budgets for this LWP set by PM
-            List<Budget> budgets = _context.Budgets.Where(b => b.WPProjectId == id2 + "~" + id1).AsEnumerable().TakeLast(labourGradeCount).ToList();
+            List<Budget> budgets = _context.Budgets.Where(b => b.WPProjectId == id2 + "~" + id1 && b.isREBudget == true).AsEnumerable().TakeLast(labourGradeCount).ToList();
+            if (budgets.Count() == 0)
+            {
+                budgets = _context.Budgets.Where(b => b.WPProjectId == id2 + "~" + id1 && b.isREBudget == false).AsEnumerable().TakeLast(labourGradeCount).ToList();
+            }
             // fetch REEstimates for this LWP
-            List<ResponsibleEngineerEstimate> estimates = _context.ResponsibleEngineerEstimates.Where(ree => ree.WPProjectId == id2 + "~" + id1)
-                .AsEnumerable().TakeLast(8).ToList();
+            List<ResponsibleEngineerEstimate> estimates = _context.ResponsibleEngineerEstimates.Where(ree => ree.WPProjectId == id2 + "~" + id1).OrderByDescending(c => c.Date)
+                .Take(labourGradeCount).ToList();
 
             // if no estimates made for this LWP or the date of the most recently created
             // make sure there aren't any with the same end date
             int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
             DateTime nextFriday = DateTime.Today.AddDays(offset);
-            bool shouldMakeWE = estimates.Count == 0 || DateOnly.FromDateTime(nextFriday) != estimates[estimates.Count - 1].Date;
-
+            bool shouldMakeWE = estimates.Count == 0 || DateOnly.FromDateTime(nextFriday) != estimates[0].Date;
             // for now, clear the content of the estimates array
             // just to send the new set of re objects to the form
             estimates.Clear();
@@ -165,7 +168,6 @@ namespace TimesheetApp.Controllers
                 budgets = budgets,
                 estimates = shouldMakeWE ? estimates : null,
             };
-
             return View(model);
         }
 
