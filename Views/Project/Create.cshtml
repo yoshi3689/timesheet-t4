@@ -56,8 +56,9 @@
                                 in (ViewData["users"] as List<ApplicationUser>) ?? new List<ApplicationUser>())
                             {
                                 <option class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id"
-                                        onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName';
-                                                    document.querySelector('#projectManagerIdInput').value = '@obj.Id'">
+                                       >
+                                       @*  onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName';
+                                                    document.querySelector('#projectManagerIdInput').value = '@obj.Id'" *@
                                     @obj.FirstName @obj.LastName
                                 </option>
                             }
@@ -74,7 +75,7 @@
                     {
                         
                         <div class="row form-group ms-3 mb-4">
-                            @* <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" /> *@
+                            <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
                             <span><strong class="text-label">@Model.budgets![i].LabourCode</strong></span>
                             <span asp-validation-for="budgets![i].People!" class="text-danger"></span>
                             <span asp-validation-for="budgets![i].Days!" class="text-danger"></span>
@@ -94,7 +95,7 @@
                             <div class="input-group mb-3 col">
                                 <input asp-for="budgets![i].Days!" type="number" min="0" id="daysInput" class="form-control days"
                                        onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate,
-                                         this.parentNode.parentNode.children[3].children[0].value,
+                                         this.parentNode.parentNode.children[4].children[0].value,
                                          this.value)"/>
 
                                 @* <input asp-for="budgets![i].Days!" type="number" min="0" class="form-control days" *@
