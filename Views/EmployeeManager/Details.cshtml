@@ -11,104 +11,102 @@
     </h1>
     <br/>
     <div class="w-50 mx-auto ">
-    <dl class="row mx-auto">
-        <dt class="col">
-            @Html.DisplayNameFor(model => model.FirstName)
-        </dt>
-        <dd class="col">
-            @Html.DisplayFor(model => model.FirstName)
-        </dd>
-    </dl>
-    <dl class="row mx-auto">
-         <dt class="col">
-            @Html.DisplayNameFor(model => model.LastName)
-        </dt>
-        <dd class="col">
-            @Html.DisplayFor(model => model.LastName)
-        </dd>
-    </dl>
-    <dl class="row mx-auto">
-        <dt class="col">
-            @Html.DisplayNameFor(model => model.EmployeeNumber)
-        </dt>
-        <dd class="col">
-            @Html.DisplayFor(model => model.EmployeeNumber)
-        </dd>
-    </dl>
-    <dl class="row mx-auto">
-         <dt class="col">
-            @Html.DisplayNameFor(model => model.SickDays)
-        </dt>
-        <dd class="col">
-            @Html.DisplayFor(model => model.SickDays)
-        </dd>
-    </dl>
-    <dl class="row mx-auto">
-<dt class="col">
-        @Html.DisplayNameFor(model => model.FlexTime)
-        </dt>
-        <dd class="col">
-        @Html.DisplayFor(model => model.FlexTime)
-        </dd>
-    </dl>
-    <dl class="row mx-auto">
-  <dt class="col">
-        @Html.DisplayNameFor(model => model.JobTitle)
-        </dt>
-        <dd class="col">
-        @Html.DisplayFor(model => model.JobTitle)
-        </dd>
-    </dl>
-    <dl class="row mx-auto">
- <dt class="col">
-            @Html.DisplayNameFor(model => model.Salary)
-        </dt>
-        <dd class="col">
-            @Html.DisplayFor(model => model.Salary)
-        </dd>
-    </dl>
-    <dl class="row mx-auto">
-  <dt class="col">
-            @Html.DisplayNameFor(model => model.LabourGradeCode)
-        </dt>
-        <dd class="col">
-            @Html.DisplayFor(model => model.LabourGradeCode)
-        </dd>
-    </dl>
-    <dl class="row mx-auto">
-        <dt class="col">
-            @Html.DisplayNameFor(model => model.Supervisor)
-        </dt>
-        @if (Model.Supervisor != null)
-        {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <dd class="col">
-                @Html.DisplayFor(model => model.Supervisor!.FirstName) @Html.DisplayFor(model => model.Supervisor!.LastName)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </dd>
-        }
-        else
-        {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <dd class="col">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        No Supervisor assigned
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </dd>
-        }
-    </dl>
-    <dl class="row mx-auto">
-                <dt class="col">
-            @Html.DisplayNameFor(model => model.TimesheetApprover)
-        </dt>
-        @if (Model.TimesheetApprover != null)
-        {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <dd class="col">
-                @Html.DisplayFor(model => model.TimesheetApprover!.FirstName) @Html.DisplayFor(model =>
-            model.TimesheetApprover!.FirstName)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </dd>
-        }
-        else
-        {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <p>No Timesheet Approver assigned</p>
-        }
-    </dl>
-    <dl class="row mx-auto">
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.FirstName)
+            </dt>
+            <dd class="col">
+                @Html.DisplayFor(model => model.FirstName)
+            </dd>
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.LastName)
+            </dt>
+            <dd class="col">
+                @Html.DisplayFor(model => model.LastName)
+            </dd>
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.EmployeeNumber)
+            </dt>
+            <dd class="col">
+                @Html.DisplayFor(model => model.EmployeeNumber)
+            </dd>
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.SickDays)
+            </dt>
+            <dd class="col">
+                @Html.DisplayFor(model => model.SickDays)
+            </dd>
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.FlexTime)
+            </dt>
+            <dd class="col">
+                @Html.DisplayFor(model => model.FlexTime)
+            </dd>
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.JobTitle)
+            </dt>
+            <dd class="col">
+                @Html.DisplayFor(model => model.JobTitle)
+            </dd>
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.Salary)
+            </dt>
+            <dd class="col">
+                @Html.DisplayFor(model => model.Salary)
+            </dd>
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.LabourGradeCode)
+            </dt>
+            <dd class="col">
+                @Html.DisplayFor(model => model.LabourGradeCode)
+            </dd>
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.Supervisor)
+            </dt>
+            @if (Model.Supervisor != null)
+            {
+                <dd class="col">
+                    @Html.DisplayFor(model => model.Supervisor!.FirstName) @Html.DisplayFor(model => model.Supervisor!.LastName)
+                </dd>
+            }
+            else
+            {
+                <dd class="col">
+                    No Supervisor assigned
+                </dd>
+            }
+        </dl>
+        <dl class="row mx-auto">
+            <dt class="col">
+                @Html.DisplayNameFor(model => model.TimesheetApprover)
+            </dt>
+            @if (Model.TimesheetApprover != null)
+            {
+                <dd class="col">
+                    @Html.DisplayFor(model => model.TimesheetApprover!.FirstName) 
+                    @Html.DisplayFor(model => model.TimesheetApprover!.FirstName)
+                </dd>
+            }
+            else
+            {
+                <p>No Timesheet Approver assigned</p>
+            }
+        </dl>
     </div>
-        </div>
 </div>
