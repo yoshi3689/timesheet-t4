@@ -657,7 +657,7 @@ namespace TimesheetApp.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View("Error!");
+            return View("Error");
         }
         /// <summary>
         /// used to check if a WP id is unique for this project

@@ -9,11 +9,13 @@
     <div class="col-md-8">
         <section>
             <form id="account" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                
                 <div class="container">
                     <!-- ACCOUNT CREDENTIALS SECTION -->
                     <h1 class="text-center mb-4"><strong>Login to Your Account</strong></h1>
-                    <hr />
+                    <hr>
+                    
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
                     <div class="form-group mt-1">
                         <label for="email" class="col-form-label"><strong class="text-label">Email
