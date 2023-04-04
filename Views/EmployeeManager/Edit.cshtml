@@ -113,4 +113,26 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        const supervisorSelect = document.getElementById("SupervisorId");
+        const timesheetApproverSelect = document.getElementById("TimesheetApproverId");
+
+        supervisorSelect.addEventListener("change", () => {
+            const supervisorId = supervisorSelect.value;
+
+            fetch(`/EmployeeManager/GetTimesheetApprovers?supervisorId=${supervisorId}`)
+                .then(response => response.json())
+                .then(data => {
+                    timesheetApproverSelect.innerHTML = "";
+
+                    data.forEach(approver => {
+                        const option = document.createElement("option");
+                        option.value = approver.id;
+                        option.text = approver.name;
+                        timesheetApproverSelect.add(option);
+                    });
+                })
+                .catch(error => console.log(error));
+        });
+    </script>
 }

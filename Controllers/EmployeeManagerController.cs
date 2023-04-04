@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,14 @@ namespace TimesheetApp.Controllers
     public class EmployeeManagerController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-        public EmployeeManagerController(ApplicationDbContext context)
+        public EmployeeManagerController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _context = context;
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         /// <summary>
@@ -75,15 +80,49 @@ namespace TimesheetApp.Controllers
             {
                 return NotFound();
             }
+
             ViewData["LabourGradeCode"] = new SelectList(_context.LabourGrades.Where(c => c.Year == DateTime.Now.Year), "LabourCode", "LabourCode", applicationUser.LabourGradeCode);
-            var users = _context.Users.Select(c => new
+
+            // Get the list of supervisors
+            var employeesInRole = await _userManager.GetUsersInRoleAsync("Supervisor");
+            var supervisors = employeesInRole.Select(c => new
             {
                 Name = c.FirstName + " " + c.LastName,
                 Id = c.Id
             });
-            ViewData["SupervisorId"] = new SelectList(users, "Id", "Name", applicationUser.SupervisorId);
-            ViewData["TimesheetApproverId"] = new SelectList(users, "Id", "Name", applicationUser.TimesheetApproverId);
+            ViewData["SupervisorId"] = new SelectList(supervisors, "Id", "Name", applicationUser.SupervisorId);
+
+            // Get the list of timesheet approvers based on the selected supervisor
+            var selectedSupervisorId = applicationUser.SupervisorId;
+            var timesheetApprovers = _context.Users
+                .Where(c => c.SupervisorId == selectedSupervisorId || c.Id == selectedSupervisorId)
+                .Select(c => new
+                {
+                    Name = c.FirstName + " " + c.LastName,
+                    Id = c.Id
+                });
+            ViewData["TimesheetApproverId"] = new SelectList(timesheetApprovers, "Id", "Name", applicationUser.TimesheetApproverId);
+
             return View(applicationUser);
+        }
+
+        /// <summary>
+        /// Endpoint to get a list of timesheet approvers if you change the supervisor
+        /// </summary>
+        /// <param name="supervisorId"></param>
+        /// <returns></returns>
+        public IActionResult GetTimesheetApprovers(string supervisorId)
+        {
+            var timesheetApprovers = _context.Users
+                .Where(c => c.SupervisorId == supervisorId || c.Id == supervisorId)
+                .Select(c => new
+                {
+                    Name = c.FirstName + " " + c.LastName,
+                    Id = c.Id
+                })
+                .ToList();
+
+            return Json(timesheetApprovers);
         }
 
         /// <summary>
@@ -118,8 +157,15 @@ namespace TimesheetApp.Controllers
                         user.JobTitle = applicationUser.JobTitle;
                         user.Salary = applicationUser.Salary;
                         user.LabourGradeCode = applicationUser.LabourGradeCode;
-                        user.SupervisorId = applicationUser.SupervisorId;
-                        user.TimesheetApproverId = applicationUser.TimesheetApproverId;
+                        if (await _userManager.IsInRoleAsync(await _userManager.FindByIdAsync(applicationUser.SupervisorId!) ?? new ApplicationUser(), "Supervisors") && user.Id != applicationUser.SupervisorId)
+                        {
+                            user.SupervisorId = applicationUser.SupervisorId;
+                        }
+                        var approver = await _userManager.FindByIdAsync(applicationUser.TimesheetApproverId!);
+                        if (approver != null && applicationUser.TimesheetApproverId != user.Id && (approver.SupervisorId == user.SupervisorId || approver.Id == user.SupervisorId))
+                        {
+                            user.TimesheetApproverId = applicationUser.TimesheetApproverId;
+                        }
                         user.PhoneNumber = applicationUser.PhoneNumber;
                         user.LockoutEnd = applicationUser.LockoutEnd;
                         user.LockoutEnabled = applicationUser.LockoutEnabled;
