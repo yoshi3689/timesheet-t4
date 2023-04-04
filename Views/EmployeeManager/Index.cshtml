@@ -6,9 +6,16 @@
 
 <h1>Employees</h1>
 
-<div class="my-2">
-    Search: <input class="m-2" type="text" id="searchBox" />
+<div class="row">
+    <div class="col my-2">
+        Search: <input class="m-2" type="text" id="searchBox" />
+    </div>
+        
+    <div class="col text-end">
+        <a class="btn btn-primary rounded" asp-area="Identity" asp-page="/Account/Register">Add Employee</a>
+    </div>
 </div>
+
 <br />
 
 <table id="myTable" class="table table-bordered table-responsive table-striped ">
@@ -92,9 +99,6 @@
         }
     </tbody>
 </table>
-<p>
-    <a class="btn btn-primary rounded" asp-area="Identity" asp-page="/Account/Register">Add Employee</a>
-</p>
 
 @section scripts
     {
