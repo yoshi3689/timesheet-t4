@@ -21,7 +21,10 @@ namespace TimesheetApp.Controllers
             _context = context;
         }
 
-        // GET: EmployeeManage
+        /// <summary>
+        /// Get a page with a list of all the employees in the system.
+        /// </summary>
+        /// <returns>page with all employees</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Index()
         {
@@ -29,9 +32,12 @@ namespace TimesheetApp.Controllers
             return View(await applicationDbContext.ToListAsync());
         }
 
-        // GET: EmployeeManager/Details/5
+        /// <summary>
+        /// Get the details about an employee
+        /// </summary>
+        /// <param name="id">employee id</param>
+        /// <returns>details page</returns>
         [Authorize(Policy = "KeyRequirement")]
-
         public async Task<IActionResult> Details(string id)
         {
             if (id == null || _context.Users == null)
@@ -51,7 +57,11 @@ namespace TimesheetApp.Controllers
             return View(applicationUser);
         }
 
-        // GET: EmployeeManager/Edit/5
+        /// <summary>
+        /// get the page where you can edit the details about an employee
+        /// </summary>
+        /// <param name="id">id of employee to edit</param>
+        /// <returns>page to edit</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Edit(string id)
         {
@@ -66,14 +76,22 @@ namespace TimesheetApp.Controllers
                 return NotFound();
             }
             ViewData["LabourGradeCode"] = new SelectList(_context.LabourGrades.Where(c => c.Year == DateTime.Now.Year), "LabourCode", "LabourCode", applicationUser.LabourGradeCode);
-            ViewData["SupervisorId"] = new SelectList(_context.Users, "Id", "FirstName", applicationUser.SupervisorId);
-            ViewData["TimesheetApproverId"] = new SelectList(_context.Users, "Id", "FirstName", applicationUser.TimesheetApproverId);
+            var users = _context.Users.Select(c => new
+            {
+                Name = c.FirstName + " " + c.LastName,
+                Id = c.Id
+            });
+            ViewData["SupervisorId"] = new SelectList(users, "Id", "Name", applicationUser.SupervisorId);
+            ViewData["TimesheetApproverId"] = new SelectList(users, "Id", "Name", applicationUser.TimesheetApproverId);
             return View(applicationUser);
         }
 
-        // POST: EmployeeManager/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        /// <summary>
+        /// POST enddpoint where user is created with the details from the page
+        /// </summary>
+        /// <param name="id">id of the employee</param>
+        /// <param name="applicationUser">details to update</param>
+        /// <returns>redirect to index</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "KeyRequirement")]
@@ -130,7 +148,11 @@ namespace TimesheetApp.Controllers
             return View(applicationUser);
         }
 
-
+        /// <summary>
+        /// check if a user already exists
+        /// </summary>
+        /// <param name="id">id to check</param>
+        /// <returns>true if exists</returns>
         private bool ApplicationUserExists(string id)
         {
             return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();
@@ -162,6 +184,9 @@ namespace TimesheetApp.Controllers
         }
     }
 
+    /// <summary>
+    /// used to verify the length of a number.
+    /// </summary>
     public class IntLengthAttribute : ValidationAttribute
     {
         public int MinLength { get; set; }

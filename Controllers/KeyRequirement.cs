@@ -6,6 +6,9 @@ using TimesheetApp.Data;
 using TimesheetApp.Models;
 
 namespace TimesheetApp.Authorization;
+/// <summary>
+/// Object which stores the requirement value for if they need a key.
+/// </summary>
 public class KeyRequirement : IAuthorizationRequirement
 {
     public KeyRequirement(bool hasKey)
@@ -15,7 +18,9 @@ public class KeyRequirement : IAuthorizationRequirement
 
     public bool HasKey { get; }
 }
-
+/// <summary>
+/// verifies that the user has keys. They should not be allowed to view pages without having thier password set.
+/// </summary>
 public class KeyRequirementHandler : AuthorizationHandler<KeyRequirement>
 {
     private readonly ApplicationDbContext _dbContext;

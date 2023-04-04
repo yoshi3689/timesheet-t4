@@ -24,29 +24,30 @@ namespace TimesheetApp.Controllers
             _userManager = userManager;
         }
 
-        // GET: WorkPackage
+        /// <summary>
+        /// Get a page that contains a list of all the work packages an employee is responsible for.
+        /// </summary>
+        /// <returns>page of wps</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Index()
         {
-            // Console.WriteLine(User.Identity.Name);
             ApplicationUser user = (await _userManager.GetUserAsync(User))!;
-            // var applicationDbContext = _context.WorkPackages.Include(w => w.ParentWorkPackage).Include(w => w.Project).Include(w => w.ResponsibleUser);
             ViewData["name"] = user.FirstName;
             // fetch if the user is assigned to the wp as an novice emp or a RE
             var applicationDbContext = _context.WorkPackages.Where(wp => user.Id == wp.ResponsibleUserId && wp.IsBottomLevel).Include(w => w.Project);
             return View(await applicationDbContext.ToListAsync());
         }
 
+        /// <summary>
+        /// Endpoint to create the budget and estimmates.
+        /// </summary>
+        /// <param name="input">Takes model containing new budget and estimates</param>
+        /// <returns>redirection to index if successful</returns>
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult CreateBudgetsAndEstimates(LowestWorkPackageBAndEViewModel input)
         {
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors);
-                foreach (var error in errors)
-                {
-                    Console.WriteLine(error.ErrorMessage);
-                }
                 return View("Edit", input);
             }
             // add a new set of budgets
@@ -96,7 +97,11 @@ namespace TimesheetApp.Controllers
             return RedirectToAction("Index");
         }
 
-        // GET: WorkPackage/Details/5
+        /// <summary>
+        /// Get the details about a work package
+        /// </summary>
+        /// <param name="id">id of wp to get details for</param>
+        /// <returns>page with details</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Details(string id)
         {
@@ -119,7 +124,12 @@ namespace TimesheetApp.Controllers
         }
 
 
-        // GET: WorkPackage/Edit/5
+        /// <summary>
+        /// Gets the page to create the original budget and weekly estimates.
+        /// </summary>
+        /// <param name="id1">work package id</param>
+        /// <param name="id2">project id</param>
+        /// <returns>page to create budget and estimates</returns>
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult Edit(string id1, int id2)
         {
@@ -171,6 +181,11 @@ namespace TimesheetApp.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// check if a wp exists
+        /// </summary>
+        /// <param name="id">wp id</param>
+        /// <returns>true if exists</returns>
         private bool WorkPackageExists(string id)
         {
             return (_context.WorkPackages?.Any(e => e.WorkPackageId == id)).GetValueOrDefault();

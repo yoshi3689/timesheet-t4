@@ -163,7 +163,7 @@ ViewData["Title"] = "Manage Project";
 @if (Model.wps[0].Project!.IsClosed == false)
 {
 <div class="text-center">
-    <button class="btn btn-danger rounded position-absolute bottom-0" id='@("WP" + Model.wps[0].Project!.ProjectId)' data-bs-toggle="modal"
+    <button class="btn btn-danger rounded position-absolute bottom-0 wpButton" id='@("WP" + Model.wps[0].Project!.ProjectId)' data-bs-toggle="modal"
         data-bs-target="#confirmClose" onclick="closeProject(@Model.wps[0].Project!.ProjectId)">Close Project</button>
 </div>
 }
@@ -636,7 +636,10 @@ ViewData["Title"] = "Manage Project";
                     let element = null;
                     if (res.length !== 0) {
                         // if any emp assigned to btmLvlwpkg, hide the split workpkg btn
-                        div.querySelector("#SPLIT" + WorkPackageId).style.display = "none";
+                        var sb = div.querySelector("#SPLIT" + WorkPackageId);
+                        if (sb) {
+                            sb.style.display = "none";
+                        }
                         res.forEach(e => {
                             element = document.createElement("li");
                             element.innerHTML = e.firstName + " " + e.lastName;
@@ -994,7 +997,9 @@ ViewData["Title"] = "Manage Project";
             })
                 .then(async (response) => {
                     if (response.status == 200) {
-                        document.querySelector("#WP" + idToClose).style.display = "none";
+                        document.querySelectorAll(".wpButton").forEach((c) => {
+                            c.classList.add("hidden");
+                        });
                     }
                 });
         });
@@ -1017,8 +1022,7 @@ ViewData["Title"] = "Manage Project";
             .then(async (response) => {
                 if (response.status == 200) {
                     closedButtonStorage.classList.add("hidden");
-                    document.querySelectorAll(".wpButton").forEach((c) => {
-                        console.log("hide");
+                    closedButtonStorage.parentNode.querySelectorAll(".wpButton").forEach((c) => {
                         c.classList.add("hidden");
                     });
                 }

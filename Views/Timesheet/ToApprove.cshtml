@@ -27,16 +27,29 @@
                 <label for="privateKeyPassword">Signature Password</label>
                 <input type="password" id="privateKeyPassword" >
                 <label  id="passwordLabel" for="privateKeyPassword" class="text-danger font-weight-bold"></label>
-                <br/>
-                <br/>
-                <div>
-                    <label for="approverNotes" id="approverLabel">Notes</label>
-                    <input id="approverNotes" type="text" class="text-danger font-weight-bold" style="display: none;"/>
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button id="submitSignature" type="button" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal" tabindex="-1" role="dialog" id="declineModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Decline Timesheet</h5>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <label for="approverNotes" id="approverLabel">Notes</label>
+                    <input id="approverNotes" type="text" class="text-danger font-weight-bold"/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="submitDecline" type="button" class="btn btn-primary">Submit</button>
             </div>
         </div>
     </div>
@@ -123,14 +136,14 @@
         updateTotals(true);
 
         function approveTimesheet(){
-            document.querySelector("#passwordLabel").innerHTML = "";
-            document.querySelector("#approverNotes").style.display = "none";
-            document.querySelector("#approverLabel").style.display = "none";
             var myModalEl = document.getElementById('submitModal');
             var modal = new bootstrap.Modal(myModalEl);
             modal.show();
-            document.querySelector("#submitSignature").addEventListener("click", () => {
-                 fetch("/Timesheet/ApproveTimesheet", {
+        }
+
+         document.querySelector("#submitSignature").addEventListener("click", async (event) => {
+                 event.preventDefault()
+                 await fetch("/Timesheet/ApproveTimesheet", {
                     method: "POST",
                     headers: {
                         'Accept': 'application/json',
@@ -166,25 +179,24 @@
                     }
                 });
             });
-        }
+
 
         function declineTimesheet(){
-            document.querySelector("#passwordLabel").innerHTML = "";
-            document.querySelector("#approverNotes").style.display = "inline";
-            document.querySelector("#approverLabel").style.display = "inline";
-
-            var myModalEl = document.getElementById('submitModal');
+            var myModalEl = document.getElementById('declineModal');
             var modal = new bootstrap.Modal(myModalEl);
             modal.show();
-            document.querySelector("#submitSignature").addEventListener("click", () => {
-                 fetch("/Timesheet/DeclineTimesheet", {
+        }
+
+        document.querySelector("#submitDecline").addEventListener("click", async (event) => {
+                event.preventDefault()
+                await fetch("/Timesheet/DeclineTimesheet", {
                     method: "POST",
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        password: document.querySelector("#privateKeyPassword").value,
+                        password: "",
                         timesheet: document.querySelector("#currentTimesheetId").value,
                         approverNotes: document.querySelector("#approverNotes").value
                     }),
@@ -193,7 +205,7 @@
                     if(response.status == 401){
                         document.querySelector("#passwordLabel").innerHTML = "Incorrect Password";
                     } else {
-                        var myModalEl = document.getElementById('submitModal');
+                        var myModalEl = document.getElementById('declineModal');
                         var modal = bootstrap.Modal.getInstance(myModalEl)
                         modal.hide();
                         return await response.json();
@@ -213,7 +225,6 @@
                     }
                 });
             });
-        }
 
         function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, approverMessage, name, sickDays, ownerId) {
                 let timesheetsDiv = document.getElementById('timesheets');

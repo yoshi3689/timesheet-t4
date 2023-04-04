@@ -32,8 +32,9 @@ namespace TimesheetApp.Models
         [Display(Name = "Employee Number")]
         public long EmployeeNumber { get; set; }
         [Display(Name = "Sick Days")]
-        [Range(0, int.MaxValue, ErrorMessage = "Only positive number allowed.")]
+        [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
         public double SickDays { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
         [Display(Name = "Flex Time")]
         public double FlexTime { get; set; }
         [Required]

@@ -34,6 +34,11 @@ namespace TimesheetApp.Controllers
             _context = context;
             _userManager = userManager;
         }
+
+        /// <summary>
+        /// Index page of the timesheet. Gets all the users timesheets that aren't approved.
+        /// </summary>
+        /// <returns>a page for using timesheets.</returns>
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult Index()
         {
@@ -59,6 +64,7 @@ namespace TimesheetApp.Controllers
                 timesheet.CurrentlySelected = true;
             }
 
+            //update the timesheet to add rows for new wps
             createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
 
             var rows = _context.TimesheetRows
@@ -75,6 +81,11 @@ namespace TimesheetApp.Controllers
 
             return View(model);
         }
+
+        /// <summary>
+        /// Gets the page of timesheets to approve if the user is a timesheet approver. Also verifies that the timesheet signatures are legit.
+        /// </summary>
+        /// <returns>the page to approve timesheets.</returns>
         [Authorize(Policy = "KeyRequirement")]
         //Sends to page displaying list of timesheets to approve for the current user.
         public IActionResult ToApprove()
@@ -131,7 +142,12 @@ namespace TimesheetApp.Controllers
             return View(model);
         }
 
-        //update the rows on a timesheet to match thier wps, and create a timesheet if it doesnt exist.
+        /// <summary>
+        /// Create a new timesheet, or update an existing timesheet. Add a row for each work package that the user is a part of.
+        /// </summary>
+        /// <param name="endDate">Date of the timesheet.</param>
+        /// <param name="userId">id of the owner</param>
+        /// <returns>The new/updated timesheet object,</returns>
         private Timesheet? createUpdateTimesheetWithRows(DateTime endDate, string userId)
         {
             Timesheet? result = null;
@@ -174,7 +190,11 @@ namespace TimesheetApp.Controllers
             return result;
         }
 
-
+        /// <summary>
+        /// Create a new timesheet when you click the new timesheet button
+        /// </summary>
+        /// <param name="end">end date of the timesheet.</param>
+        /// <returns>the json of the new timesheet, to display it on the page</returns>
         [HttpPost]
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult CreateTimesheet([FromBody] string end)
@@ -209,6 +229,11 @@ namespace TimesheetApp.Controllers
             return Json(returnTimesheet);
         }
 
+        /// <summary>
+        /// update a row in the timesheet, and verify that the fields are all correct. Rounds to the nearest 1/4 of an hour.
+        /// </summary>
+        /// <param name="timesheetRow">the updated row</param>
+        /// <returns>an error in the form of a map if there is any, otherwise json of the new row.</returns>
         [HttpPost]
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult? UpdateRow([FromBody] TimesheetRow timesheetRow)
@@ -257,6 +282,11 @@ namespace TimesheetApp.Controllers
             return Json(new { oldRow.Timesheet.TotalHours, oldRow.Sun, oldRow.Mon, oldRow.Tue, oldRow.Wed, oldRow.Thu, oldRow.Fri, oldRow.Sat, oldRow.TotalHoursRow, oldRow.ProjectId, oldRow.WorkPackageId, oldRow.TimesheetRowId, oldRow.Notes });
         }
 
+        /// <summary>
+        /// Get the rows for a specific timesheet.
+        /// </summary>
+        /// <param name="timesheetId">the id you need rows for.</param>
+        /// <returns>json data of all the rows.</returns>
         [HttpPost]
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult? GetTimesheet([FromBody] string timesheetId)
@@ -272,13 +302,13 @@ namespace TimesheetApp.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == tid).FirstOrDefault();
-            if (timesheet == null)
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == tid).Include(c => c.User).FirstOrDefault();
+            if (timesheet == null || (timesheet.UserId != userId && timesheet.User!.TimesheetApproverId != userId))
             {
                 return BadRequest();
             }
 
-            createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), userId ?? "0");
+            createUpdateTimesheetWithRows(DateTime.Parse(timesheet!.EndDate.ToString()!), timesheet.UserId ?? "0");
 
             return Json(_context.TimesheetRows.Where(c => c.TimesheetId == tid).Include(c => c.WorkPackage).Select(c => new TimesheetRow
             {
@@ -298,6 +328,11 @@ namespace TimesheetApp.Controllers
             }).ToList());
         }
 
+        /// <summary>
+        /// submit a timesheet and create a signature using the password they gave. it dehashes the private key and creates it.
+        /// </summary>
+        /// <param name="model">takes in a model that contains the password and the timesheet</param>
+        /// <returns>the rows of the timesheet again</returns>
         [HttpPost]
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult?> SubmitTimesheetAsync([FromBody] SignTimesheetViewModel model)
@@ -319,13 +354,18 @@ namespace TimesheetApp.Controllers
             return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
         }
 
+        /// <summary>
+        /// Timesheet approver calls this to accept a timesheet.
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost]
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult?> ApproveTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
             var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).Include(c => c.TimesheetRows).Include(c => c.User).FirstOrDefault();
-            if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
+            if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null || timesheet.User == null || timesheet.User.TimesheetApproverId != user.Id)
             {
                 return BadRequest();
             }
@@ -348,24 +388,34 @@ namespace TimesheetApp.Controllers
             return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
         }
 
+        /// <summary>
+        /// used to decline a timesheet. Sets the approver note to the reason why, and removes all the signatures.
+        /// </summary>
+        /// <param name="model">takes the notes in the model</param>
+        /// <returns>Get the rows of the timesheet</returns>
         [HttpPost]
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult?> DeclineTimesheetAsync([FromBody] SignTimesheetViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
-            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).FirstOrDefault();
-            if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null)
+            var timesheet = _context.Timesheets.Where(c => c.TimesheetId == model.Timesheet).Include(c => c.TimesheetRows).Include(c => c.User).FirstOrDefault();
+            if (user == null || timesheet == null || model.Password == null || user.PrivateKey == null || timesheet.User == null || timesheet.User.TimesheetApproverId != user.Id)
             {
                 return BadRequest();
             }
             timesheet.ApproverHash = null;
             timesheet.EmployeeHash = null;
-            timesheet.ApproverNotes = model.ApproverNotes;
+            timesheet.ApproverNotes = model.ApproverNotes ?? " ";
             _context.Update(timesheet);
             _context.SaveChanges();
             return GetTimesheet(Convert.ToString(timesheet.TimesheetId));
         }
 
+        /// <summary>
+        /// Adds a custom row to the timesheet. For things like sick time, holidays, etc.
+        /// </summary>
+        /// <param name="model">takes the type and the timesheet it is for</param>
+        /// <returns>the json of the row</returns>
         [Authorize(Policy = "KeyRequirement")]
         [HttpPost]
         public async Task<IActionResult> AddCustomRowAsync([FromBody] CustomRowModel model)
@@ -399,6 +449,10 @@ namespace TimesheetApp.Controllers
             return Json(row);
         }
 
+        /// <summary>
+        /// get all the timesheets for the logged in user.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult GetAll()
@@ -414,6 +468,13 @@ namespace TimesheetApp.Controllers
             }));
         }
 
+        /// <summary>
+        /// creates a signature of the timesheet. Requires a password to decrypt the users private key to create the hash.
+        /// </summary>
+        /// <param name="timesheet">timesheet to sign</param>
+        /// <param name="password">password to decrypt the private key</param>
+        /// <param name="encryptedPrivateKey">the stored key to decrypt</param>
+        /// <returns></returns>
         [Authorize(Policy = "KeyRequirement")]
         public byte[]? hashTimesheet(Timesheet timesheet, string password, byte[] encryptedPrivateKey)
         {
@@ -431,6 +492,13 @@ namespace TimesheetApp.Controllers
             }
         }
 
+        /// <summary>
+        /// Verifies a signature using the public key of the signer.
+        /// </summary>
+        /// <param name="timesheet">timesheet to match</param>
+        /// <param name="publicKey">public key of signer</param>
+        /// <param name="hashedSignature">signature to verify</param>
+        /// <returns></returns>
         [Authorize(Policy = "KeyRequirement")]
         public bool verifySignature(Timesheet timesheet, byte[] publicKey, byte[] hashedSignature)
         {
@@ -443,6 +511,11 @@ namespace TimesheetApp.Controllers
             }
         }
 
+        /// <summary>
+        /// Creates a string using a timesheet, required in creating the hash.
+        /// </summary>
+        /// <param name="timesheet">timeshee to make string for</param>
+        /// <returns>string of all data</returns>
         private string createDataString(Timesheet timesheet)
         {
             StringBuilder dataBuilder = new StringBuilder();

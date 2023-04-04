@@ -178,6 +178,12 @@ namespace TimesheetApp.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Calculate the total budget and total remaining fields, for viewing on the front end.
+        /// </summary>
+        /// <param name="wps">a list of work packages that need their fields update</param>
+        /// <param name="budgets">a list of the budgets to get the values to update the fields</param>
+        /// <returns>a list of work packages with totalBudget and totalRemaining filled in</returns>
         private List<WorkPackage> getTotalMoney(List<WorkPackage> wps, List<Budget> budgets)
         {
             List<LabourGrade> lgs = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).ToList();
@@ -269,6 +275,7 @@ namespace TimesheetApp.Controllers
 
             var workPackageString = workPackageProjectId + "~" + workPackageId;
 
+            //send appropriate notifications
             foreach (var notifiedEmployeeId in notifiedAddedEmployeeIds)
             {
                 if (_context.Users.Any(e => e.Id == notifiedEmployeeId) && !_context.Notifications.Any(n => n.For == workPackageString + " Add"))
@@ -486,6 +493,11 @@ namespace TimesheetApp.Controllers
             return Json(result);
         }
 
+        /// <summary>
+        /// Used to close a work package. closing a work package will also close it's children if it has any.
+        /// </summary>
+        /// <param name="wp">the work package to close</param>
+        /// <returns>200 if it worked, 400 if you made a bad request</returns>
         [HttpPost]
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> CloseWPAsync([FromBody] WorkPackage wp)
@@ -518,7 +530,11 @@ namespace TimesheetApp.Controllers
 
         }
 
-        //get employees for a wp, and say if they are already assigned or not.
+        /// <summary>
+        /// Get all the employees that can be assigned to a work package. Also returns if they are currently already assigned.
+        /// </summary>
+        /// <param name="LowestLevelWp">The work package to get the employees for.</param>
+        /// <returns>a json object of the available employees</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> GetWPEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
@@ -567,7 +583,11 @@ namespace TimesheetApp.Controllers
         }
 
 
-        // get employees assigned to this lowest wpkg who are not a reponsible eng of this wpkg
+        /// <summary>
+        /// Get the employees that are able to become Responsible Engineer.
+        /// </summary>
+        /// <param name="LowestLevelWp">The work package that needs an RE</param>
+        /// <returns>json list of the employees</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> GetCandidateEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
@@ -589,7 +609,11 @@ namespace TimesheetApp.Controllers
             return new JsonResult(userIdsInLLWP.Select(e => new { e!.Id, FirstName = e.FirstName!, LastName = e.LastName!, JobTitle = e.JobTitle!, e.Selected }));
         }
 
-        // get employees with the project id
+        /// <summary>
+        /// Get the currently assigned employees for a work package
+        /// </summary>
+        /// <param name="LowestLevelWp">work package to get employees for</param>
+        /// <returns>employees in work package</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> GetAssignedEmployeesAsync([FromBody] WorkPackage LowestLevelWp)
         {
@@ -599,6 +623,11 @@ namespace TimesheetApp.Controllers
         }
 
 
+        /// <summary>
+        /// Close a project, which also closes all of the work packages that the project has.
+        /// </summary>
+        /// <param name="id">id of the project to close</param>
+        /// <returns>200 if it worked</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> CloseProject([FromBody] int id)
         {
@@ -621,6 +650,10 @@ namespace TimesheetApp.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Show an error if there is one
+        /// </summary>
+        /// <returns>error page</returns>
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
@@ -642,6 +675,11 @@ namespace TimesheetApp.Controllers
             return false;
         }
 
+        /// <summary>
+        /// Generate the report that covers all the wps, up to the end of the last month. Has estimate to complete also.
+        /// </summary>
+        /// <param name="id">id of the project to create a report for</param>
+        /// <returns>download of the report pdf</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Report(int id)
         {
@@ -890,6 +928,11 @@ namespace TimesheetApp.Controllers
             return fileStreamResult;
         }
 
+        /// <summary>
+        /// generate a report of everything that happened last week.
+        /// </summary>
+        /// <param name="id">id of the project to get a report for</param>
+        /// <returns>pdf download of the report</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> WeekReport(int id)
         {
@@ -1112,6 +1155,10 @@ namespace TimesheetApp.Controllers
             return fileStreamResult;
         }
 
+        /// <summary>
+        /// Get a list of all the employees, in order to chooose an assistant pm
+        /// </summary>
+        /// <returns></returns>
         [Authorize(Policy = "KeyRequirement")]
         [HttpGet]
         public async Task<IActionResult> GetAllEmployees()
@@ -1143,6 +1190,12 @@ namespace TimesheetApp.Controllers
 
             return Json(employees);
         }
+
+        /// <summary>
+        /// Assign the assistant PM
+        /// </summary>
+        /// <param name="asm">Assistant PM id</param>
+        /// <returns>200 if its good</returns>
         [Authorize(Policy = "KeyRequirement")]
         [HttpPost]
         public async Task<IActionResult> AssignASM([FromBody] String? asm)
@@ -1175,7 +1228,11 @@ namespace TimesheetApp.Controllers
             return new JsonResult("Error!");
         }
 
-
+        /// <summary>
+        /// Generate a PCBAC report to see the original budget vs the RE budget vs the cost to date
+        /// </summary>
+        /// <param name="id">id of the project you need a budget for</param>
+        /// <returns>a pdf download of the report</returns>
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> PCBAC(int id)
         {
@@ -1420,6 +1477,11 @@ namespace TimesheetApp.Controllers
             }
             return null;
         }
+
+        /// <summary>
+        /// Get the current user to see if the assign asm box should be hidden.
+        /// </summary>
+        /// <returns>the id of the current user</returns>
         [Authorize(Policy = "KeyRequirement")]
         [HttpGet]
         public async Task<IActionResult> FindPM()
