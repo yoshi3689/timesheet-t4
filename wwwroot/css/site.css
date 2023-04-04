@@ -58,17 +58,6 @@ li {
   border: 1px solid #3a4a61 !important;
   color: black !important;
 }
-.btn-secondary {
-  background-color: #ffbe3c !important;
-  border: 1px solid #ffbe3c !important;
-  color: white !important;
-}
-
-.btn-secondary:hover {
-  background-color: #d0aa5e !important;
-  border: 1px solid #d0aa5e !important;
-  color: black !important;
-}
 
 select-caret::after {
   content: '' !important;
