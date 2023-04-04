@@ -62,7 +62,7 @@ namespace TimesheetApp.Controllers
 
 
         /// <summary>
-        /// displays a page where a user can assign employee(s) to a project specified by the id
+        /// displays a page where a supervisor can assign employee(s) to a project specified by the id
         /// </summary>
         /// <param name="ProjectId">project id of a project to display</param>
         /// <returns>users available in a project</returns>
@@ -70,9 +70,19 @@ namespace TimesheetApp.Controllers
         [Authorize(Policy = "KeyRequirement")]
         public IActionResult Create(int ProjectId)
         {
+            var user = _context.Users.Where(c => c.UserName == User.Identity!.Name).Include(c => c.SupervisedUsers).FirstOrDefault();
+            if (user == null)
+            {
+                return BadRequest();
+            }
+            var SupervisedUsers = _context.Users.Where(c => c.SupervisorId == user.Id).Select(ep => ep.Id).ToList();
             var Project = _context.Projects.Find(ProjectId);
             var UsersInProject = _context.EmployeeProjects.Where(ep => ep.ProjectId == ProjectId).Select(ep => ep.UserId).ToList();
-            var UsersAvailable = _context.Users.Where(u => !UsersInProject.Contains(u.Id)).ToList();
+            var UsersAvailable = _context.Users.Where(u => u.SupervisorId == user.Id && !UsersInProject.Contains(u.Id)).ToList();
+            if (User.IsInRole("Admin") && !UsersInProject.Contains(user.Id))
+            {
+                UsersAvailable.Add(user);
+            }
             ViewData["Users"] = UsersAvailable;
             return View(UsersAvailable);
         }

@@ -867,7 +867,7 @@ namespace TimesheetApp.Controllers
                 double totalCostActual = 0;
                 foreach (var row in timesheetRows.Where(c => c.WorkPackageId == wp.WorkPackageId))
                 {
-                    totalPDActual += row.TotalHoursRow / 8;
+                    totalPDActual = totalPDActual + (row.TotalHoursRow / 8);
                     totalCostActual += (row.TotalHoursRow / 8) * labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode && c.Year == row.Timesheet!.EndDate!.Value.Year).First().Rate;
                 }
                 wpTable.AddCell(new Cell()
@@ -1087,7 +1087,10 @@ namespace TimesheetApp.Controllers
                     timesheetRows.AddRange(timesheet.TimesheetRows.Where(c => c.ProjectId == prj.ProjectId).ToList());
                 }
             }
-
+            double[] dayTotals = { 0, 0, 0, 0, 0, 0, 0 };
+            double[] dayTotalsMoney = { 0, 0, 0, 0, 0, 0, 0 };
+            double grandTotal = 0;
+            double grandTotalMoney = 0;
             foreach (var wp in _context.WorkPackages.Where(c => c.ProjectId == prj.ProjectId).Include(c => c.EmployeeWorkPackages!).ThenInclude(c => c.User).OrderBy(c => c.WorkPackageId).ToList())
             {
                 if (wp.EmployeeWorkPackages != null && wp.EmployeeWorkPackages.Count() > 0)
@@ -1114,8 +1117,12 @@ namespace TimesheetApp.Controllers
                             {
                                 hour = row.getHour(i);
                                 totalHour += hour;
+                                grandTotal += hour;
+                                dayTotals[i] += hour;
                                 money = hour * labourGrades.Where(c => c.Year == DateTime.Now.Year && c.LabourCode == row.OriginalLabourCode).First().Rate / 8;
                                 totalMoney += money;
+                                dayTotalsMoney[i] += money;
+                                grandTotalMoney += money;
                             }
 
                             wpTable.AddCell(new Cell()
@@ -1129,8 +1136,24 @@ namespace TimesheetApp.Controllers
                             .Add(new Paragraph(Convert.ToString(Math.Round(totalMoney, 2))).SetFontSize(fontSizeSH)));
                     }
                 }
-            }
 
+            }
+            wpTable.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .SetTextAlignment(TextAlignment.RIGHT)
+                .SetFontSize(fontSizeSH)
+                .Add(new Paragraph("Total")));
+            for (int i = 0; i < 7; i++)
+            {
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(Convert.ToString(Math.Round(dayTotals[i], 2))).SetFontSize(fontSizeSH)).SetBackgroundColor(ColorConstants.LIGHT_GRAY));
+                wpTable.AddCell(new Cell()
+                    .Add(new Paragraph(Convert.ToString(Math.Round(dayTotalsMoney[i], 2))).SetFontSize(fontSizeSH)).SetBackgroundColor(ColorConstants.LIGHT_GRAY));
+            }
+            wpTable.AddCell(new Cell()
+                .Add(new Paragraph(Convert.ToString(Math.Round(grandTotal, 2))).SetFontSize(fontSizeSH)).SetBackgroundColor(ColorConstants.LIGHT_GRAY));
+            wpTable.AddCell(new Cell()
+                .Add(new Paragraph(Convert.ToString(Math.Round(grandTotalMoney, 2))).SetFontSize(fontSizeSH)).SetBackgroundColor(ColorConstants.LIGHT_GRAY));
             document.Add(wpTable);
 
 
@@ -1404,31 +1427,37 @@ namespace TimesheetApp.Controllers
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .Add(new Paragraph(Convert.ToString(Math.Round(totalPMPD, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .Add(new Paragraph("$" + Convert.ToString(Math.Round(totalPM, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .Add(new Paragraph(Convert.ToString(Math.Round(totalREPD, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .Add(new Paragraph("$" + Convert.ToString(Math.Round(totalRE, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .Add(new Paragraph(Convert.ToString(Math.Round(totalActualPD, 2)))));
 
             wpTable.AddCell(new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(fontSizeSH)
+                .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .Add(new Paragraph("$" + Convert.ToString(Math.Round(totalActual, 2)))));
 
 

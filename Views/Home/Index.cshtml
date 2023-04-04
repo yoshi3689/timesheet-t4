@@ -35,34 +35,35 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model!.WorkPackages!)
-                {
-                    <tr>
-                        <td>
-                            @Html.DisplayFor(modelItem => item.WorkPackageId)
-                        </td>
-                        <td>
-                            @Html.DisplayFor(modelItem => item.Title)
-                        </td>
-                        <td>
-                            @Html.DisplayFor(modelItem => item.Project!.ProjectTitle)
-                        </td>
-                        <td>
-                            @Html.DisplayFor(modelItem => item.IsClosed)
-                        </td>
-                        <td>
-                            <a
-                                class="btn btn-primary rounded"
-                                asp-action="Edit"
-                                asp-route-id1="@item.WorkPackageId"
-                                asp-route-id2="@item.ProjectId"
-                                role="button">
-                                Set Budget/Weekly Est
-                            </a>
-                            @* @Html.ActionLink("Set Budget/Weekly Est", "Edit", new { id=item.ProjectId+"~"+item.WorkPackageId }) *@
-                            @* @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) | *@
-                        </td>
-                    </tr>
+                @if(Model != null && Model.WorkPackages != null){
+                    @foreach (var item in Model!.WorkPackages!)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.WorkPackageId)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Title)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Project!.ProjectTitle)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.IsClosed)
+                            </td>
+                            <td>
+                                <a
+                                    class="btn btn-primary rounded"
+                                    asp-controller="WorkPackage"
+                                    asp-action="Edit"
+                                    asp-route-id1="@item.WorkPackageId"
+                                    asp-route-id2="@item.ProjectId"
+                                    role="button">
+                                    Set Budget/Weekly Est
+                                </a>
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>
