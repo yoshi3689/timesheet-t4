@@ -3,88 +3,172 @@
 @{
     ViewData["Title"] = "All Projects";
 }
-<h1>Create a Project</h1>
+<h1 class="mb-4">Create a Project</h1>
 
-<div class="row">
-    <div class="col-md-10">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="project.ProjectTitle" class="control-label" id="ProjectTitleLabel"></label>
-                <input asp-for="project.ProjectTitle" class="form-control" placeholder="Enter a Project Name" id="ProjectTitleLabel"/>
-                <br />
-                <label asp-for="project.ProjectId" class="control-label" id="ProjectIdLabel"></label>
-                <input asp-for="project.ProjectId" class="form-control" type="number" value="" placeholder="Enter a Project Id" id="ProjectIdInput"/>
-                <br />
-                <span asp-validation-for="project.ProjectTitle" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                @*
-                <select asp-for="project.ProjectManagerId" class="form-control" asp-items="ViewBag.UserId"></select> *@
-                <label asp-for="project.ProjectManagerId" class="control-label"></label>
-                <input asp-for="project.ProjectManagerId" type="hidden" id="projectManagerIdInput" />
-                <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown"
-                    aria-expanded="false" onkeyup="filterDropdown(event)" id="employeeSearchBox" autocomplete="off"
-                    placeholder="Search Employee..." />
-                <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
-                    @foreach (ApplicationUser obj
-                    in (ViewData["users"] as List<ApplicationUser>) ?? new List<ApplicationUser>())
-                    {
-                        <li class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id" onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName';
-            document.querySelector('#projectManagerIdInput').value = '@obj.Id'">
-                            @obj.FirstName @obj.LastName
-                        </li>
-                    }
-                </ul>
-                <span asp-validation-for="project.ProjectManagerId" class="text-danger"></span>
-
-
-            </div>
-            <br />
-            <h1>Project Budget</h1>
-            @for (int i = 0; i < Model.budgets!.Count; i++)
-            {
-                <div class="form-group ">
-                    <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" />
-                    <span>@Model.budgets![i].LabourCode</span>
-                    <div class="d-flex align-items-center"
-                        style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-                        <input asp-for="budgets![i].People!" style="width: 15%;" class="form-control people"
-                            onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.value, this.parentNode.querySelector('.days').value, @Model.budgets![i].UnallocatedDays, @Model.budgets![i].UnallocatedPeople)" />
-                        <span asp-validation-for="budgets![i].People!" class="text-danger"></span>
-
-                        &nbsp;
-                        <label asp-for="budgets![i].People!" class="control-label"></label>
-                        &nbsp;x&nbsp;
-                        <input asp-for="budgets![i].Days!" style="width: 15%;" class="form-control days"
-                            onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, this.parentNode.querySelector('.people').value, this.value, @Model.budgets![i].UnallocatedDays, @Model.budgets![i].UnallocatedPeople)" />
-                        <span asp-validation-for="budgets![i].Days!" class="text-danger"></span>
-
-                        &nbsp;
-                        <label asp-for="budgets![i].Days!" class="control-label"></label>
-                        &nbsp;
-                        x $@Model.budgets![i]!.Rate/day = <span id="@Model.budgets![i].LabourCode"> $0</span>
-                        &nbsp;&nbsp;
+<div class="container">
+    <div>
+        <div class="col-md-10">
+            <form asp-action="Create">
+                <div class="row w-50 ms-3 mb-4">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                    <div class="form-group mb-4">
+                                        <label asp-for="project.ProjectTitle" class="control-label" id="ProjectTitleLabel">
+                                            <strong class="text-label">Project Name</strong>
+                                        </label>
+                                        <input asp-for="project.ProjectTitle" class="form-control" 
+                                               placeholder="Enter a Project Name" id="ProjectTitleLabel"/>
+                                        <span asp-validation-for="project.ProjectTitle" class="text-danger"></span>
+                                    </div>
+                                    
+                                    <div class="form-group mb-4">
+                                        <label asp-for="project.ProjectId" class="control-label" id="ProjectIdLabel"></label>
+                                        <input asp-for="project.ProjectId" class="form-control" type="number" value="" 
+                                               min="0"
+                                               placeholder="Enter a Project Id" id="ProjectIdInput"/>
+                                        <span asp-validation-for="project.ProjectId" class="text-danger"></span>
+                                    </div>
+                                    
+                    <div class="form-group mb-4">
+                        <label asp-for="project.ProjectManagerId" class="control-label"></label>
+                        
+                        @* Why is this needed? *@
+                        @* <input asp-for="project.ProjectManagerId" type="hidden" id="projectManagerIdInput" /> *@
+                                        
+                        @* <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown" *@
+                        @*     aria-expanded="false" id="employeeSearchBox" autocomplete="off" *@
+                        @*     placeholder="Search Employee..." /> *@
+                                        
+                        @*                 <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu"> *@
+                        @*                     @foreach (ApplicationUser obj *@
+                        @*                         in (ViewData["users"] as List<ApplicationUser>) ?? new List<ApplicationUser>()) *@
+                        @*                     { *@
+                        @*                         <li class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id" *@
+                        @*                             onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName'; *@
+                        @*                             document.querySelector('#projectManagerIdInput').value = '@obj.Id'"> *@
+                        @*                             @obj.FirstName @obj.LastName *@
+                        @*                         </li> *@
+                        @*                     } *@
+                        @*                 </ul> *@
+                                        
+                        <select asp-for="project.ProjectManagerId" class="form-select" aria-label="Select a manager">
+                            <option selected disabled value="null">Select a manager</option>
+                            @foreach (ApplicationUser obj
+                                in (ViewData["users"] as List<ApplicationUser>) ?? new List<ApplicationUser>())
+                            {
+                                <option class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id"
+                                        onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName';
+                                                    document.querySelector('#projectManagerIdInput').value = '@obj.Id'">
+                                    @obj.FirstName @obj.LastName
+                                </option>
+                            }
+                        </select>
+                                        
+                        <span asp-validation-for="project.ProjectManagerId" class="text-danger"></span>
                     </div>
                 </div>
-            }
-            <br>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+                
+                <div class="row ms-3 mb-4 w-100">
+                    <h2 class="mb-4">Project Budget</h2>
+                    
+                    @for (int i = 0; i < Model.budgets!.Count; i++)
+                    {
+                        
+                        <div class="row form-group ms-3 mb-4">
+                            @* <input type="hidden" asp-for="budgets![i].LabourCode" value="@Model.budgets![i].LabourCode" /> *@
+                            <span><strong class="text-label">@Model.budgets![i].LabourCode</strong></span>
+                            <span asp-validation-for="budgets![i].People!" class="text-danger"></span>
+                            <span asp-validation-for="budgets![i].Days!" class="text-danger"></span>
+
+                            <div class="input-group mb-3 col">
+                                <input asp-for="budgets![i].People!" type="number" min="0" id="peopleInput" class="form-control people"
+                                       onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, 
+                                       this.value, 
+                                       this.parentNode.parentNode.children[5].children[0].value)"/>
+
+                                <span class="input-group-text">People</span>
+
+                            </div>
+
+                            <p class="col-sm-auto"><strong>x</strong></p>
+
+                            <div class="input-group mb-3 col">
+                                <input asp-for="budgets![i].Days!" type="number" min="0" id="daysInput" class="form-control days"
+                                       onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate,
+                                         this.parentNode.parentNode.children[3].children[0].value,
+                                         this.value)"/>
+
+                                @* <input asp-for="budgets![i].Days!" type="number" min="0" class="form-control days" *@
+                                @*        onchange="getValue(this.parentNode.parentNode.children[0].classList, this.value)"/> *@
+                                <span class="input-group-text">Days</span>
+                            </div>
+
+                            <p class="col-sm-auto"><strong>x</strong></p>
+
+                            <div class="input-group mb-3 col">
+                                @* <label asp-for="budgets![i].Days!" class="control-label"></label> *@
+                                <input disabled class="form-control" value="@Model.budgets![i]!.Rate"/>
+
+                                <span class="input-group-text">$/day</span>
+                                @* x $@Model.budgets![i]!.Rate/day = <span id="@Model.budgets![i].LabourCode"> $0</span> *@
+                            </div>
+
+                            <p class="col-sm-auto"><strong>=</strong></p>
+
+                            <div class="input-group mb-3 col">
+                                @* <label asp-for="budgets![i].Days!" class="control-label"></label> *@
+
+                                <input disabled id="@Model.budgets![i].LabourCode" class="form-control" value=""/>
+                                @* <span id="@Model.budgets![i].LabourCode"> $0</span> *@
+
+                                <span class="input-group-text"><strong>Total</strong></span>
+                                @* x $@Model.budgets![i]!.Rate/day = <span id="@Model.budgets![i].LabourCode"> $0</span> *@
+                            </div>
+
+                        </div>
+                        
+                    }
+                    
+                    <div class="d-grid d-md-block pt-4">
+                        <a class="btn btn-danger me-4" asp-action="Index">Cancel</a>
+                    
+                        <input type="submit" value="Create" class="btn btn-primary" />
+                    </div>
+                    
+                </div>
+            </form>
+        </div>
     </div>
-</div>
-<br>
-<div>
-    <a class="btn btn-secondary" asp-action="Index">Back to List</a>
 </div>
 
 <script>
-    function setTotal(labourCode, rate, people, days, remain) {
+    function setTotal(labourCode, rate, people, days) {
         var element = document.querySelector("#" + labourCode);
-        element.innerHTML = " $" + (people * days * rate).toFixed(2);
+        element.value = " $" + (people * days * rate).toFixed(2);
     }
+    
+    // const peopleInput = document.getElementById("peopleInput");
+    // const daysInput = document.getElementById("daysInput");
+    
+    [document.getElementById("peopleInput"), document.getElementById("daysInput")].forEach(function(element) {
+       element.addEventListener("keypress", function(event) {
+          if(event.key === "." || event.key === "-" || event.key === "e"){
+                 event.preventDefault(); // Cancel the native operation       
+          }
+       });
+    });
+
+    // peopleInput.addEventListener("keypress", function(event){
+    //  if(event.key === "." || event.key === "-" || event.key === "e"){
+    //    event.preventDefault(); // Cancel the native operation
+    //  }
+    // });
+    //
+    // daysInput.addEventListener("keypress", function(event){
+    //  if(event.key === "." || event.key === "-" || event.key === "e"){
+    //    event.preventDefault(); // Cancel the native operation
+    //  }
+    // });
+    
     function filterDropdown(event) {
         const input = event.target;
         const dropdown = input.nextElementSibling;
@@ -98,12 +182,13 @@
             item.style.display = match ? "" : "none";
         }
     }
-    document.querySelector('#employeeSearchBox').addEventListener('focus', function () {
-        if (!document.querySelector('#employeeMenu').classList.contains('show')) {
-            var event = new Event('click');
-            this.dispatchEvent(event);
-        }
-    });
+    
+    // document.querySelector('#employeeSearchBox').addEventListener('focus', function () {
+    //     if (!document.querySelector('#employeeMenu').classList.contains('show')) {
+    //         var event = new Event('click');
+    //         this.dispatchEvent(event);
+    //     }
+    // });
 </script>
 @section Scripts {
     @{
