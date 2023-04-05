@@ -11,59 +11,44 @@
             <form asp-action="Create">
                 <div class="row w-50 ms-3 mb-4">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                                    <div class="form-group mb-4">
-                                        <label asp-for="project.ProjectTitle" class="control-label" id="ProjectTitleLabel">
-                                            <strong class="text-label">Project Name</strong>
-                                        </label>
-                                        <input asp-for="project.ProjectTitle" class="form-control" 
-                                               placeholder="Enter a Project Name" id="ProjectTitleLabel"/>
-                                        <span asp-validation-for="project.ProjectTitle" class="text-danger"></span>
-                                    </div>
-                                    
-                                    <div class="form-group mb-4">
-                                        <label asp-for="project.ProjectId" class="control-label" id="ProjectIdLabel"></label>
-                                        <input asp-for="project.ProjectId" class="form-control" type="number" value="" 
-                                               min="0"
-                                               placeholder="Enter a Project Id" id="ProjectIdInput"/>
-                                        <span asp-validation-for="project.ProjectId" class="text-danger"></span>
-                                    </div>
-                                    
+                    
                     <div class="form-group mb-4">
+                        <label asp-for="project.ProjectTitle" class="control-label" id="ProjectTitleLabel">
+                            <strong class="text-label">Project Name</strong>
+                        </label>
+                        <input asp-for="project.ProjectTitle" class="form-control" 
+                               placeholder="Enter a Project Name" id="ProjectTitleLabel"/>
+                        <span asp-validation-for="project.ProjectTitle" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label asp-for="project.ProjectId" class="control-label" id="ProjectIdLabel"></label>
+                        <input asp-for="project.ProjectId" class="form-control" type="number" value="" 
+                               min="0"
+                               placeholder="Enter a Project Id" id="ProjectIdInput"/>
+                        <span asp-validation-for="project.ProjectId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        @*
+                <select asp-for="project.ProjectManagerId" class="form-control" asp-items="ViewBag.UserId"></select> *@
                         <label asp-for="project.ProjectManagerId" class="control-label"></label>
-                        
-                        @* Why is this needed? *@
-                        @* <input asp-for="project.ProjectManagerId" type="hidden" id="projectManagerIdInput" /> *@
-                                        
-                        @* <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown" *@
-                        @*     aria-expanded="false" id="employeeSearchBox" autocomplete="off" *@
-                        @*     placeholder="Search Employee..." /> *@
-                                        
-                        @*                 <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu"> *@
-                        @*                     @foreach (ApplicationUser obj *@
-                        @*                         in (ViewData["users"] as List<ApplicationUser>) ?? new List<ApplicationUser>()) *@
-                        @*                     { *@
-                        @*                         <li class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id" *@
-                        @*                             onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName'; *@
-                        @*                             document.querySelector('#projectManagerIdInput').value = '@obj.Id'"> *@
-                        @*                             @obj.FirstName @obj.LastName *@
-                        @*                         </li> *@
-                        @*                     } *@
-                        @*                 </ul> *@
-                                        
-                        <select asp-for="project.ProjectManagerId" class="form-select" aria-label="Select a manager">
-                            <option selected disabled value="null">Select a manager</option>
+                        <input asp-for="project.ProjectManagerId" type="hidden" id="projectManagerIdInput" />
+                        <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown"
+                               aria-expanded="false" onkeyup="filterDropdown(event)" id="employeeSearchBox" autocomplete="off"
+                               placeholder="Search Employee..." />
+                        <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
                             @foreach (ApplicationUser obj
                                 in (ViewData["users"] as List<ApplicationUser>) ?? new List<ApplicationUser>())
                             {
-                                <option class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id"
-                                       >
-                                       @*  onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName';
-                                                    document.querySelector('#projectManagerIdInput').value = '@obj.Id'" *@
+                                <li class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id" 
+                                    onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName';
+            
+                                    document.querySelector('#projectManagerIdInput').value = '@obj.Id'">
                                     @obj.FirstName @obj.LastName
-                                </option>
+                                </li>
                             }
-                        </select>
-                                        
+                        </ul>
                         <span asp-validation-for="project.ProjectManagerId" class="text-danger"></span>
                     </div>
                 </div>
@@ -184,12 +169,12 @@
         }
     }
     
-    // document.querySelector('#employeeSearchBox').addEventListener('focus', function () {
-    //     if (!document.querySelector('#employeeMenu').classList.contains('show')) {
-    //         var event = new Event('click');
-    //         this.dispatchEvent(event);
-    //     }
-    // });
+    document.querySelector('#employeeSearchBox').addEventListener('focus', function () {
+        if (!document.querySelector('#employeeMenu').classList.contains('show')) {
+            var event = new Event('click');
+            this.dispatchEvent(event);
+        }
+    });
 </script>
 @section Scripts {
     @{
