@@ -37,6 +37,7 @@
                         <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown"
                                aria-expanded="false" onkeyup="filterDropdown(event)" id="employeeSearchBox" autocomplete="off"
                                placeholder="Search Employee..." />
+                        
                         <ul class="dropdown-menu" aria-labelledby="employeeDropdown" id="employeeMenu">
                             @foreach (ApplicationUser obj
                                 in (ViewData["users"] as List<ApplicationUser>) ?? new List<ApplicationUser>())
@@ -49,6 +50,7 @@
                                 </li>
                             }
                         </ul>
+                        
                         <span asp-validation-for="project.ProjectManagerId" class="text-danger"></span>
                     </div>
                 </div>
