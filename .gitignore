@@ -7,7 +7,7 @@ appsettings.Development.json
 Signature.png
 /dist/
 
-/Data/Migrations/
+# /Data/Migrations/
 
 # User-specific files
 *.rsuser
