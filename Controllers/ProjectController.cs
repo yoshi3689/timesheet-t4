@@ -119,7 +119,6 @@ namespace TimesheetApp.Controllers
                 _context.WorkPackages!.Add(newWP);
                 double totalBudget = 0;
                 var grades = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year);
-                Console.WriteLine(grades.Count());
 
                 //create the budget in the db, one row per labour code.
                 if (input.budgets != null)
