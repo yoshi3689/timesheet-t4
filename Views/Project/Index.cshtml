@@ -14,8 +14,13 @@
 <head>
     <title>@ViewData["Title"]</title>
 </head>
-<h1>@ViewData["Title"]</h1>
-
+<h1 class="mb-4">@ViewData["Title"]</h1>
+@if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
+{
+    <p>
+        <a class="btn btn-primary rounded" asp-action="Create">New Project</a>
+    </p>
+}
 <table class="table table-bordered table-responsive table-striped ">
     <thead>
         <tr>
@@ -62,12 +67,7 @@
         }
     </tbody>
 </table>
-@if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
-{
-    <p>
-        <a class="btn btn-primary rounded" asp-action="Create">New Project</a>
-    </p>
-}
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
