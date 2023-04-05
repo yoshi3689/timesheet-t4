@@ -498,7 +498,9 @@
                         },
                         body: JSON.stringify({
                             password: document.querySelector("#privateKeyPassword").value,
-                            timesheet: document.querySelector("#currentTimesheetId").value
+                            timesheet: document.querySelector("#currentTimesheetId").value,
+                            flextime: document.querySelector("#flextime").value,
+                            overtime: document.querySelector("#overtime").value
                         }),
                     })
                     .then(async (response) => {
