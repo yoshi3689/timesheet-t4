@@ -30,8 +30,6 @@
                     </div>
 
                     <div class="form-group">
-                        @*
-                <select asp-for="project.ProjectManagerId" class="form-control" asp-items="ViewBag.UserId"></select> *@
                         <label asp-for="project.ProjectManagerId" class="control-label"></label>
                         <input asp-for="project.ProjectManagerId" type="hidden" id="projectManagerIdInput" />
                         <input type="text" class="dropdown-toggle form-control w-100" data-bs-toggle="dropdown"
@@ -44,7 +42,6 @@
                             {
                                 <li class="dropdown-item" id='@(obj.FirstName + " " + obj.LastName)' value="@obj.Id" 
                                     onclick="document.querySelector('#employeeSearchBox').value = '@obj.FirstName @obj.LastName';
-            
                                     document.querySelector('#projectManagerIdInput').value = '@obj.Id'">
                                     @obj.FirstName @obj.LastName
                                 </li>
@@ -84,34 +81,22 @@
                                        onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate,
                                          this.parentNode.parentNode.children[4].children[0].value,
                                          this.value)"/>
-
-                                @* <input asp-for="budgets![i].Days!" type="number" min="0" class="form-control days" *@
-                                @*        onchange="getValue(this.parentNode.parentNode.children[0].classList, this.value)"/> *@
                                 <span class="input-group-text">Days</span>
                             </div>
 
                             <p class="col-sm-auto"><strong>x</strong></p>
 
                             <div class="input-group mb-3 col">
-                                @* <label asp-for="budgets![i].Days!" class="control-label"></label> *@
                                 <input disabled class="form-control" value="@Model.budgets![i]!.Rate"/>
-
                                 <span class="input-group-text">$/day</span>
-                                @* x $@Model.budgets![i]!.Rate/day = <span id="@Model.budgets![i].LabourCode"> $0</span> *@
                             </div>
 
                             <p class="col-sm-auto"><strong>=</strong></p>
 
                             <div class="input-group mb-3 col">
-                                @* <label asp-for="budgets![i].Days!" class="control-label"></label> *@
-
                                 <input disabled id="@Model.budgets![i].LabourCode" class="form-control" value=""/>
-                                @* <span id="@Model.budgets![i].LabourCode"> $0</span> *@
-
                                 <span class="input-group-text"><strong>Total</strong></span>
-                                @* x $@Model.budgets![i]!.Rate/day = <span id="@Model.budgets![i].LabourCode"> $0</span> *@
                             </div>
-
                         </div>
                         
                     }
@@ -134,9 +119,6 @@
         element.value = " $" + (people * days * rate).toFixed(2);
     }
     
-    // const peopleInput = document.getElementById("peopleInput");
-    // const daysInput = document.getElementById("daysInput");
-    
     document.querySelectorAll(".people, .days").forEach(function(element) {
        element.addEventListener("keypress", function(event) {
           if(event.key === "." || event.key === "-" || event.key === "e"){
@@ -145,18 +127,6 @@
        });
     });
 
-    // peopleInput.addEventListener("keypress", function(event){
-    //  if(event.key === "." || event.key === "-" || event.key === "e"){
-    //    event.preventDefault(); // Cancel the native operation
-    //  }
-    // });
-    //
-    // daysInput.addEventListener("keypress", function(event){
-    //  if(event.key === "." || event.key === "-" || event.key === "e"){
-    //    event.preventDefault(); // Cancel the native operation
-    //  }
-    // });
-    
     function filterDropdown(event) {
         const input = event.target;
         const dropdown = input.nextElementSibling;
@@ -178,6 +148,7 @@
         }
     });
 </script>
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
