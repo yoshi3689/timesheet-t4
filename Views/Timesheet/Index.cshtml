@@ -175,6 +175,9 @@
             $(function () {
                 $("#datepicker").datepicker();
             });
+            function containsOnlyNumbers(str) {
+              return /^[0-9]+$/.test(str);
+              }
 
             //Edit event handler.
            $("body").on("click", "#rowTable .Edit", function () {
@@ -197,12 +200,47 @@
                 var toHide = [];
                 var toShow = [];
                 var row = $(this).closest("tr");
+                const days = new Map([
+                            ["0", "Saturday"],
+                            ["1", "Sunday"],
+                            ["2", "Monday"],
+                            ["3", "Tuesday"],
+                            ["4", "Wednesday"],
+                            ["5", "Thursday"],
+                            ["6", "Friday"],
+                        ]);
+                var errors = "";
+                var isInputError = false;
                 var data = {}; // create an empty object
                 data["TimesheetRowId"] = row.attr('id') + "";
-                $("td", row).each(function () {
+                $("td", row).each(function (index) {
+                  var errorResponse = [];
                     var key = $(this).attr("class");
                     var value = $(this).find("input").val() || $(this).text();
                     data[key] = value; // add key-value pair to the object
+                    if (key.length < 4 && (value.length > 2 || !containsOnlyNumbers(value))) {
+                      value = 0;
+                      var errKey = `${index - 2}`;
+                      var error = {};
+                      error[errKey] = "invalid input";
+                      errorResponse.push(error);
+                      isInputError = true;
+                    }
+
+                    if (errorResponse.length != 0) {
+                      console.log(errorResponse)
+                      errorResponse.forEach(function(k, i){
+                        console.log(k)
+                        let objKey = Object.keys(k)[0];
+                            errors += days.get(objKey) + " has the error: " + Object.values(errorResponse[i])[0] + "<br/>";
+                        });
+                         document.querySelector("#timesheetError").innerHTML = errors;
+                        var myModalEl = document.querySelector("#timesheetErrorModal");
+                        var modal = new bootstrap.Modal(myModalEl);
+                        modal.show();
+                        return;
+                    }
+                    
                     if ($(this).find("input").length > 0) {
                         var span = $(this).find("span");
                         var input = $(this).find("input");
@@ -211,13 +249,13 @@
                         toHide.push(input);
                     }
                 });
-                data["TimesheetId"] = document.querySelector("#currentTimesheetId").value;
 
-                toShow.push(row.find(".Edit"));
+                data["TimesheetId"] = document.querySelector("#currentTimesheetId").value;
+                if (!isInputError) {
+                  toShow.push(row.find(".Edit"));
                 toShow.push(row.find(".Delete"));
                 toHide.push(row.find(".Cancel"));
                 toHide.push($(this));
-
                 fetch("/Timesheet/UpdateRow", {
                     method: "POST",
                     headers: {
@@ -227,16 +265,6 @@
                     body: JSON.stringify(data),
                 }).then(async (response) => {
                     if (response.status != 200) {
-                        const days = new Map([
-                            ["0", "Saturday"],
-                            ["1", "Sunday"],
-                            ["2", "Monday"],
-                            ["3", "Tuesday"],
-                            ["4", "Wednesday"],
-                            ["5", "Thursday"],
-                            ["6", "Friday"],
-                        ]);
-                        var errors = "";
                         var errorResponse = await response.json();
                         Object.keys(errorResponse).forEach(function(k){
                             errors += days.get(k) + " has the error: " + errorResponse[k] + "<br/>";
@@ -260,9 +288,11 @@
                             c.show();
                         });
                     }
+                    
                 });
-
-            });
+                }
+            }
+            );
 
             //Cancel event handler.
             $("body").on("click", "#rowTable .Cancel", function () {
