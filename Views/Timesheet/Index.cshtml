@@ -230,15 +230,9 @@
                     if (errorResponse.length != 0) {
                       console.log(errorResponse)
                       errorResponse.forEach(function(k, i){
-                        console.log(k)
-                        let objKey = Object.keys(k)[0];
-                            errors += days.get(objKey) + " has the error: " + Object.values(errorResponse[i])[0] + "<br/>";
-                        });
-                         document.querySelector("#timesheetError").innerHTML = errors;
-                        var myModalEl = document.querySelector("#timesheetErrorModal");
-                        var modal = new bootstrap.Modal(myModalEl);
-                        modal.show();
-                        return;
+                        var objKey = Object.keys(k)[0];
+                        errors += days.get(objKey) + " has the error: " + Object.values(errorResponse[i])[0] + "<br/>";
+                      });
                     }
                     
                     if ($(this).find("input").length > 0) {
@@ -249,7 +243,13 @@
                         toHide.push(input);
                     }
                 });
-
+                if(errors.length > 0){
+                    document.querySelector("#timesheetError").innerHTML = errors;
+                    var myModalEl = document.querySelector("#timesheetErrorModal");
+                    var modal = new bootstrap.Modal(myModalEl);
+                    modal.show();
+                     return;
+                }
                 data["TimesheetId"] = document.querySelector("#currentTimesheetId").value;
                 if (!isInputError) {
                   toShow.push(row.find(".Edit"));

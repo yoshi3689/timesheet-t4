@@ -28,7 +28,7 @@ namespace TimesheetApp.Models.TimesheetModels
         [Display(Name = "Labour Grade")]
         public string? LabourCode { get; set; }
         public double UnallocatedDays { get; set; }
-        public double UnallocatedPeople { get; set; }
+        public int UnallocatedPeople { get; set; }
         public double RemainingPDs
         {
             get

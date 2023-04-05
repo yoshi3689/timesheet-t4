@@ -92,11 +92,17 @@ namespace TimesheetApp.Controllers
         /// <param name="input">View model that contains the new project</param>
         /// <returns>Same page if errors, home page if not.</returns>
         [HttpPost]
-        [Authorize(Roles = "HR,Admin")]
-        [Authorize(Policy = "KeyRequirement")]
+        [Authorize(Roles = "HR,Admin", Policy = "KeyRequirement")]
         [ValidateAntiForgeryToken]
         public IActionResult Create(CreateProjectViewModel input)
         {
+            if (_context.Projects.Find(input.project.ProjectId) != null)
+            {
+                ModelState.AddModelError("project.ProjectId", "Project ID must be unique.");
+                Response.StatusCode = 400;
+                ViewData["users"] = _context.Users.ToList(); ;
+                return View(input);
+            }
             if (ModelState.IsValid)
             {
                 _context.Projects!.Add(input.project);
@@ -139,10 +145,7 @@ namespace TimesheetApp.Controllers
                 _context.SaveChanges();
                 return RedirectToAction("Index");
             }
-
-            var users = _context.Users.ToList();
-
-            ViewData["users"] = users;
+            ViewData["users"] = _context.Users.ToList();
             return View(input);
         }
 
@@ -428,8 +431,8 @@ namespace TimesheetApp.Controllers
                         People = budget.People,
                         Days = budget.Days,
                         LabourCode = budget.LabourCode,
-                        UnallocatedDays = budget.People,
-                        UnallocatedPeople = budget.Days
+                        UnallocatedDays = budget.Days,
+                        UnallocatedPeople = budget.People
                     };
                     _context.Budgets!.Add(newBudget);
                     parentB = parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First();
