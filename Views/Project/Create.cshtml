@@ -68,7 +68,7 @@
                             <span asp-validation-for="budgets![i].Days!" class="text-danger"></span>
 
                             <div class="input-group mb-3 col">
-                                <input asp-for="budgets![i].People!" type="number" min="0" id="peopleInput" class="form-control people"
+                                <input asp-for="budgets![i].People!" type="number" min="0" class="form-control people"
                                        onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate, 
                                        this.value, 
                                        this.parentNode.parentNode.children[6].children[0].value)"/>
@@ -80,7 +80,7 @@
                             <p class="col-sm-auto"><strong>x</strong></p>
 
                             <div class="input-group mb-3 col">
-                                <input asp-for="budgets![i].Days!" type="number" min="0" id="daysInput" class="form-control days"
+                                <input asp-for="budgets![i].Days!" type="number" min="0" class="form-control days"
                                        onchange="setTotal('@Model.budgets![i].LabourCode', @Model.budgets![i].Rate,
                                          this.parentNode.parentNode.children[4].children[0].value,
                                          this.value)"/>
@@ -137,7 +137,7 @@
     // const peopleInput = document.getElementById("peopleInput");
     // const daysInput = document.getElementById("daysInput");
     
-    [document.getElementById("peopleInput"), document.getElementById("daysInput")].forEach(function(element) {
+    document.querySelectorAll(".people, .days").forEach(function(element) {
        element.addEventListener("keypress", function(event) {
           if(event.key === "." || event.key === "-" || event.key === "e"){
                  event.preventDefault(); // Cancel the native operation       
