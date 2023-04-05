@@ -73,6 +73,7 @@
                 <th>Name</th>
                 <th>Employee Number</th>
                 <th>Remaining Sick Days</th>
+                <th>Remaining flextime</th>
                 <th>Week Number</th>
                 <th>Week Ends</th>
             </tr>
@@ -80,6 +81,7 @@
                 <td id="name"></td>
                 <td id="EmployeeNumber"></td>
                 <td id="sickDays"></td>
+                <td id="remainingFlextime"></td>
                 <td id="weekNumber"></td>
                 <td id="weekEnds"></td>
             </tr>
@@ -106,8 +108,22 @@
                 <th>Flextime</th>
             </tr>
             <tr>
-                <td id="overtime"></td>
-                <td id="flextime"></td>
+                @if(Model.Timesheets != null && Model.Timesheets.Count() > 0 && Model.TimesheetRows != null && Model.TimesheetRows.Count() > 0){
+                    var timesheet = Model.Timesheets.Where(c => c.TimesheetId == Model.TimesheetRows.First().TimesheetId).First();
+                    <td>
+                        <input id="overtime" type="number" value="@timesheet.Overtime" disabled>
+                    </td>
+                    <td>
+                        <input id="flextime" type="number" value="@timesheet.FlexHours" disabled>
+                    </td>
+                } else {
+                    <td>
+                        <input id="overtime" type="number" value="0" disabled>
+                    </td>
+                    <td>
+                        <input id="flextime" type="number" value="0" disabled>
+                    </td>
+                }
             </tr>
         </table>
 
@@ -170,7 +186,19 @@
                         if(sibling == null || sibling.id == "Timesheet" + document.querySelector("#currentTimesheetId").value){
                            sibling = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).parentElement.querySelector("a:last-child");
                         }
-                        document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).remove();
+                        var currentTimesheetObj = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value);
+                        if(sibling != null){
+                            var children  = document.querySelector("#timesheets").children;
+                            for (c of children){
+                                var empNum = c.querySelector(":scope * .ownerid").innerHTML.substring(9);
+                                if (empNum == currentTimesheetObj.querySelector(":scope * .ownerid").innerHTML.substring(9)) {
+                                    var oldVal = parseFloat(c.querySelector(":scope * .remainingFlex").innerHTML);
+                                    var add = parseFloat(document.querySelector("#flextime").value);
+                                    c.querySelector(":scope * .remainingFlex").innerHTML = oldVal + add;
+                                }
+                            }
+                        }
+                        currentTimesheetObj.remove();
                         if(sibling != null){
                             updateTotals(true);
                             setTimesheet(sibling);
@@ -226,7 +254,7 @@
                 });
             });
 
-        function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, approverMessage, name, sickDays, ownerId) {
+        function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, approverMessage, name, sickDays, ownerId, flexhours, overtime, remainingFlex) {
                 let timesheetsDiv = document.getElementById('timesheets');
                 let newTimesheet = document.createElement('a');
                 newTimesheet.id = "Timesheet" + timesheetId;
@@ -257,6 +285,7 @@
                     document.querySelector("#name").innerHTML = name;
                     document.querySelector("#EmployeeNumber").innerHTML = ownerId;
                     document.querySelector("#sickDays").innerHTML = sickDays;
+                    document.querySelector("#remainingFlextime").innerHTML = flexhours;
                 }
                 newTimesheet.addEventListener('click', function() {
                     setTimesheet(this)
@@ -282,7 +311,22 @@
                 sickDiv.className = "sick";
                 sickDiv.innerHTML = sickDays;
                 sickDiv.style.display = "none";
+                let flexDiv = document.createElement("div");
+                flexDiv.className = "flex";
+                flexDiv.innerHTML = flexhours;
+                flexDiv.style.display = "none";
+                let remainingFlexDiv = document.createElement("div");
+                remainingFlexDiv.className = "remainingFlex";
+                remainingFlexDiv.innerHTML = remainingFlex;
+                remainingFlexDiv.style.display = "none";
+                let otDiv = document.createElement("div");
+                otDiv.className = "overtime";
+                otDiv.innerHTML = overtime;
+                otDiv.style.display = "none";
                 timesheetDiv.appendChild(sickDiv);
+                timesheetDiv.appendChild(flexDiv);
+                timesheetDiv.appendChild(remainingFlexDiv);
+                timesheetDiv.appendChild(otDiv);
                 timesheetDiv.appendChild(timesheetOwnerDiv);
                 timesheetDiv.appendChild(idDiv);
                 timesheetDiv.appendChild(endDateDiv);
@@ -348,6 +392,15 @@
 
                     var sickDays = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .sick").innerHTML;
                     document.querySelector("#sickDays").innerHTML = sickDays;
+
+                    var flexhours = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .flex").innerHTML;
+                    document.querySelector("#flextime").value = flexhours;
+
+                    var remainingFlexhours = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .remainingFlex").innerHTML;
+                    document.querySelector("#remainingFlextime").value = remainingFlexhours;
+
+                    var overtime = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .overtime").innerHTML;
+                    document.querySelector("#overtime").value = overtime;
                 }
             });
         }
@@ -356,7 +409,7 @@
             @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
             {
                 <text>
-                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, "@timesheet.ApproverNotes", "@timesheet.User!.FirstName @timesheet.User.LastName", "@timesheet.User.SickDays", "@timesheet.User.EmployeeNumber");
+                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, "@timesheet.ApproverNotes", "@timesheet.User!.FirstName @timesheet.User.LastName", "@timesheet.User.SickDays", "@timesheet.User.EmployeeNumber", "@timesheet.FlexHours", "@timesheet.Overtime", "@timesheet.User!.FlexTime");
                 </text>
             }
         } else {
@@ -473,24 +526,11 @@
                         }
                     }
                 }
-                var flexTime = 0;
                 // Update total cells in totals row
                 for (var j = 2; j <= 9; j++) {
                     var totalCell = totalsRow.cells[j];
                     totalCell.innerHTML = "<span>" + totalHours[j - 2] + "</span>";
-                    if(totalHours[j-2] < 8 && totalHours[j-2] > 0 && j != 9){
-                        flexTime += 8 - totalHours[j-2];
-                    }
                 }
-                var totalOfTotals = totalHours[7];
-                if(totalOfTotals > 40){
-                    totalOfTotals -= 40;
-                } else {
-                    totalOfTotals = 0;
-                }
-                document.querySelector("#overtime").innerHTML = totalOfTotals;
-                document.querySelector("#flextime").innerHTML = flexTime;
-
             }
     </script>
 }

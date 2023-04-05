@@ -37,6 +37,9 @@ namespace TimesheetApp.Models
         [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
         [Display(Name = "Flex Time")]
         public double FlexTime { get; set; }
+
+        [Range(0, double.MaxValue, ErrorMessage = "Only positive number allowed.")]
+        public double Overtime { get; set; }
         [Required]
         [Display(Name = "Job Title")]
         public string? JobTitle { get; set; }

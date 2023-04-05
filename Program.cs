@@ -184,6 +184,11 @@ internal partial class Program
             {
                 DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "SHOL", ProjectId = project!.ProjectId, Title = "Statutory Holiday" });
             }
+            var flex = DbContext.WorkPackages.Where(c => c.WorkPackageId == "FLEX").FirstOrDefault();
+            if (flex == null)
+            {
+                DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "FLEX", ProjectId = project!.ProjectId, Title = "Flextime" });
+            }
             DbContext.SaveChanges();
         }
         app.Run();
