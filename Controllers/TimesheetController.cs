@@ -138,7 +138,13 @@ namespace TimesheetApp.Controllers
                 Timesheets = verifiedSheets,
                 TimesheetRows = rows,
             };
+            foreach (var sheet in model.Timesheets)
+            {
 
+                Console.WriteLine(sheet.Overtime);
+                Console.WriteLine(sheet.FlexHours);
+                Console.WriteLine("****************************************************************************************");
+            }
             return View(model);
         }
 
@@ -224,7 +230,9 @@ namespace TimesheetApp.Controllers
                 TotalHours = createdTimesheet.TotalHours,
                 EndDate = createdTimesheet.EndDate,
                 TimesheetId = createdTimesheet.TimesheetId,
-                EmployeeHash = createdTimesheet.EmployeeHash
+                EmployeeHash = createdTimesheet.EmployeeHash,
+                FlexHours = createdTimesheet.FlexHours,
+                Overtime = createdTimesheet.Overtime
             };
             return Json(returnTimesheet);
         }
@@ -343,6 +351,15 @@ namespace TimesheetApp.Controllers
             {
                 return BadRequest();
             }
+            timesheet.FlexHours = model.Flexhours ?? 0;
+            timesheet.Overtime = model.Overtime ?? 0;
+            user.Overtime += model.Overtime ?? 0;
+            user.FlexTime += model.Flexhours ?? 0;
+            if (timesheet.TotalHours != model.Flexhours + model.Overtime + 40)
+            {
+                Response.StatusCode = 400;
+                return Json("You cannot have more flexhours and overtime then you worked.");
+            }
             byte[]? timesheetHash = hashTimesheet(timesheet, model.Password, user.PrivateKey);
             if (timesheetHash == null)
             {
@@ -379,6 +396,10 @@ namespace TimesheetApp.Controllers
                 if (row.WorkPackageProjectId == 010 && row.WorkPackageId == "SICK")
                 {
                     timesheet.User!.SickDays -= row.TotalHoursRow / 8;
+                }
+                if (row.WorkPackageProjectId == 010 && row.WorkPackageId == "FLEX")
+                {
+                    timesheet.User!.FlexTime -= row.TotalHoursRow;
                 }
             }
             timesheet.ApproverHash = timesheetHash;
@@ -464,7 +485,9 @@ namespace TimesheetApp.Controllers
                 TotalHours = createdTimesheet.TotalHours,
                 EndDate = createdTimesheet.EndDate,
                 TimesheetId = createdTimesheet.TimesheetId,
-                EmployeeHash = createdTimesheet.EmployeeHash
+                EmployeeHash = createdTimesheet.EmployeeHash,
+                FlexHours = createdTimesheet.FlexHours,
+                Overtime = createdTimesheet.Overtime
             }));
         }
 

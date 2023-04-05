@@ -34,5 +34,8 @@ namespace TimesheetApp.Models
         public string? Password { get; set; }
         public int Timesheet { get; set; }
         public string? ApproverNotes { get; set; }
+
+        public double? Overtime { get; set; }
+        public double? Flexhours { get; set; }
     }
 }

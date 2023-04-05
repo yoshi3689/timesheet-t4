@@ -26,7 +26,8 @@
             <div class="modal-body" id="timesheetError">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="SHOL" onclick="addExtraRow(this.id)">Add Statutory Holiday Row</button><br/><br/>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="SICK" onclick="addExtraRow(this.id)">Add Sick Time Row</button><br/><br/>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="VACN" onclick="addExtraRow(this.id)">Add Vacation Time Row</button><br/>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="VACN" onclick="addExtraRow(this.id)">Add Vacation Time Row</button><br/><br/>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="FLEX" onclick="addExtraRow(this.id)">Add Flextime Row</button><br/>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -76,6 +77,7 @@
                 <th>Name</th>
                 <th>Employee Number</th>
                 <th>Remaining Sick Days</th>
+                <th>Remaining Flextime</th>
                 <th>Week Number</th>
                 <th>Week Ends</th>
             </tr>
@@ -95,10 +97,16 @@
                         @Model.CurrentUser.EmployeeNumber
                     }
                 </td>
-                <td>
+                <td id="SickdaysDisplay">
                     @if (@Model.CurrentUser != null)
                     {
                         @Model.CurrentUser.SickDays
+                    }
+                </td>
+                <td id="FlexhourDisplay">
+                    @if (@Model.CurrentUser != null)
+                    {
+                        @Model.CurrentUser.FlexTime
                     }
                 </td>
                 <td id="weekNumber"></td>
@@ -123,12 +131,36 @@
         </table>
         <table class="table table-responsive" cellpadding="0" cellspacing="0">
             <tr>
+                <th>Weekly Overage</th>
+            </tr>
+            <tr>
+                <td id="weeklyOverage">
+                    0
+                </td>
+            </tr>
+        </table>
+        <table class="table table-responsive" cellpadding="0" cellspacing="0">
+            <tr>
                 <th>Overtime</th>
                 <th>Flextime</th>
             </tr>
             <tr>
-                <td id="overtime"></td>
-                <td id="flextime"></td>
+                @if(Model.Timesheets != null && Model.Timesheets.Count() > 0 && Model.TimesheetRows != null && Model.TimesheetRows.Count() > 0){
+                    var timesheet = Model.Timesheets.Where(c => c.TimesheetId == Model.TimesheetRows.First().TimesheetId).First();
+                    <td>
+                        <input id="overtime" type="number" value="@timesheet.Overtime" @((timesheet.EmployeeHash != null) ? "disabled" : "")>
+                    </td>
+                    <td>
+                        <input id="flextime" type="number" value="@timesheet.FlexHours" @((timesheet.EmployeeHash != null) ? "disabled" : "")>
+                    </td>
+                } else {
+                    <td>
+                        <input id="overtime" type="number" value="0">
+                    </td>
+                    <td>
+                        <input id="flextime" type="number" value="0">
+                    </td>
+                }
             </tr>
         </table>
         <h3 id="messageHeader" style="display: none;">Approver Message</h3>
@@ -143,6 +175,7 @@
         <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
         <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
         <script>
+            let globalTotals = 0;
             let readonlyExists = false;
 
             function createTimesheet() {
@@ -167,7 +200,7 @@
                     return await response.json();
                 }).then((response) => {
                     if(response){
-                        addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, false, null);
+                        addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, false, null, response.flexHours, response.overtime);
                     }
                 });
             }
@@ -313,7 +346,7 @@
             });
 
 
-            function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, approverMessage) {
+            function addTimesheet(endDate, totalHours, timesheetId, active, readonly, accepted, approverMessage, flexhours, overtime) {
                 let timesheetsDiv = document.getElementById('timesheets');
                 let newTimesheet = document.createElement('a');
                 newTimesheet.id = "Timesheet" + timesheetId;
@@ -323,6 +356,16 @@
                 message.className = "message";
                 message.innerHTML = approverMessage;
                 newTimesheet.appendChild(message);
+                let overtimeHidden = document.createElement('a');
+                overtimeHidden.style.display = "none";
+                overtimeHidden.className = "overtime";
+                overtimeHidden.innerHTML = overtime;
+                newTimesheet.appendChild(overtimeHidden);
+                let flexhoursHidden = document.createElement('a');
+                flexhoursHidden.style.display = "none";
+                flexhoursHidden.className = "flexhours";
+                flexhoursHidden.innerHTML = flexhours;
+                newTimesheet.appendChild(flexhoursHidden);
                 if(readonly) {
                     newTimesheet.className = 'list-group-item list-group-item-secondary readonly';
                 }
@@ -386,7 +429,6 @@
                             response.forEach((cell) => {
                                 addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow || cell.workPackage.isClosed);
                             });
-                            updateTotals(readonlyRow);
                             var message = document.querySelector("#Timesheet" + this.value + " > .message").innerHTML;
                             if(message == ""){
                                 document.querySelector("#messageHeader").style.display = "none";
@@ -398,6 +440,17 @@
                             var date = document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value + " * .endDate").innerHTML.substring(10);
                             document.querySelector("#weekEnds").innerHTML = date;
                             document.querySelector("#weekNumber").innerHTML = getWeek(new Date(date));
+                            if (readonlyRow){
+                                document.querySelector("#overtime").disabled = true;
+                                document.querySelector("#flextime").disabled = true;
+                            } else {
+                                document.querySelector("#overtime").disabled = false;
+                                document.querySelector("#flextime").disabled = false;
+                            }
+                            document.querySelector("#overtime").value = this.querySelector(".overtime").innerHTML;
+                            document.querySelector("#flextime").value = this.querySelector(".flexhours").innerHTML;
+                            updateTotals(readonlyRow);
+                            updateWeeklyOverage();
                         }
                     });
                 });
@@ -428,7 +481,7 @@
             @foreach (TimesheetApp.Models.TimesheetModels.Timesheet timesheet in Model.Timesheets!)
             {
                 <text>
-                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, "@timesheet.ApproverNotes");
+                        addTimesheet("@timesheet.EndDate", "@timesheet.TotalHours", "@timesheet.TimesheetId", "@timesheet.CurrentlySelected" == "True", "@timesheet.EmployeeHash" != "", false, "@timesheet.ApproverNotes", "@timesheet.FlexHours", "@timesheet.Overtime");
                 </text>
             }
 
@@ -504,7 +557,21 @@
                 var myModalEl = document.getElementById('submitModal');
                 var modal = new bootstrap.Modal(myModalEl);
                 modal.show();
+
+                var old_element = document.querySelector("#submitSignature");
+                var new_element = old_element.cloneNode(true);
+                old_element.parentNode.replaceChild(new_element, old_element);
+
+                console.log("Before click");
                 document.querySelector("#submitSignature").addEventListener("click", () => {
+                    var overtime = document.querySelector("#overtime").value;
+                    var flexhours = document.querySelector("#flextime").value;
+                    if (overtime == null || overtime == "") {
+                        overtime = 0;
+                    }
+                    if (flexhours == null || flexhours == "") {
+                        flexhours = 0;
+                    }
                      fetch("/Timesheet/SubmitTimesheet", {
                         method: "POST",
                         headers: {
@@ -513,21 +580,31 @@
                         },
                         body: JSON.stringify({
                             password: document.querySelector("#privateKeyPassword").value,
-                            timesheet: document.querySelector("#currentTimesheetId").value
+                            timesheet: document.querySelector("#currentTimesheetId").value,
+                            flexhours: flexhours,
+                            overtime: overtime
                         }),
                     })
                     .then(async (response) => {
                         if(response.status == 401){
                             document.querySelector("#passwordLabel").innerHTML = "Incorrect Password";
+                        } else if (response.status == 400) {
+                            var myModalEl = document.querySelector("#timesheetErrorModal");
+                            myModalEl.querySelector("#timesheetError").innerHTML = await response.text();
+                            var submitModal = document.getElementById('submitModal');
+                            var modal1 = bootstrap.Modal.getInstance(submitModal)
+                            modal1.hide();
+                            var modal = new bootstrap.Modal(myModalEl);
+                            modal.show();
                         } else {
                             var myModalEl = document.getElementById('submitModal');
                             var modal = bootstrap.Modal.getInstance(myModalEl)
                             modal.hide();
                             return await response.json();
-                        }
+                        } 
                     }).then((response) => {
-                        document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).className = "list-group-item list-group-item-secondary readonly";
                         if(response != null){
+                            document.querySelector("#Timesheet" + document.querySelector("#currentTimesheetId").value).className = "list-group-item list-group-item-secondary readonly";    
                             document.querySelectorAll(".TSButtons").forEach((c) => {
                                 c.style.display = "none";
                             });
@@ -539,6 +616,8 @@
                             response.forEach((cell) => {
                                 addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, true);
                             });
+                            document.querySelector("#overtime").disabled = true;
+                            document.querySelector("#flextime").disabled = true;
                             updateTotals(true);
                         }
                     });
@@ -552,12 +631,13 @@
                     }).then((c) => {
                         obj.style.display = "none";
                         c.forEach((response) => {
-                            addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, true, null);
+                            addTimesheet(response.endDate, response.totalHours, response.timesheetId, false, response.employeeHash != null, true, null, response.flexTime, response.overtime);
                         });
                     });
             }
 
             function updateTotals(readonly) {
+                globalTotals = 0;
                 var table = document.getElementById("rowTable");
                 var rowCount = table.rows.length;
                 var totalsRow = null;
@@ -606,19 +686,15 @@
                 for (var j = 2; j <= 9; j++) {
                     var totalCell = totalsRow.cells[j];
                     totalCell.innerHTML = "<span>" + totalHours[j - 2] + "</span>";
-                    if(totalHours[j-2] < 8 && totalHours[j-2] > 0 && j != 9){
-                        flexTime += 8 - totalHours[j-2];
-                    }
                 }
                 var totalOfTotals = totalHours[7];
                 if(totalOfTotals > 40){
                     totalOfTotals -= 40;
+                    globalTotals = totalOfTotals;
                 } else {
                     totalOfTotals = 0;
                 }
-                document.querySelector("#overtime").innerHTML = totalOfTotals;
-                document.querySelector("#flextime").innerHTML = flexTime;
-
+                updateWeeklyOverage();
             }
 
             function addExtraRow(type){
@@ -643,7 +719,19 @@
                 });
             }
 
+            document.querySelector("#overtime").addEventListener("input", () => {
+                updateWeeklyOverage();
+            })
 
+            document.querySelector("#flextime").addEventListener("input", () => {
+                updateWeeklyOverage();
+            })
+
+            function updateWeeklyOverage(){
+                var flextime = document.querySelector("#flextime").value;
+                var overtime = document.querySelector("#overtime").value;
+                document.querySelector("#weeklyOverage").innerHTML = globalTotals - flextime - overtime;
+            }
         </script>
           @{
     await Html.RenderPartialAsync("_ValidationScriptsPartial");

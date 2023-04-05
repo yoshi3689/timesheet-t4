@@ -54,13 +54,13 @@ namespace TimesheetApp.Controllers
         {
             if (User.Identity!.IsAuthenticated && (User.IsInRole("HR") || User.IsInRole("Admin")))
             {
-                var projects = _context.Projects!.Include(s => s.ProjectManager).OrderBy(c => c.ProjectId);
+                var projects = _context.Projects!.Where(p => p.ProjectId != 10).Include(s => s.ProjectManager).OrderBy(c => c.ProjectId);
                 return View(projects);
             }
             else
             {
                 var userId = _userManager.GetUserId(HttpContext.User);
-                var project = _context.Projects!.Where(s => s.ProjectManager!.Id == userId || s.AssistantProjectManagerId == userId).OrderBy(c => c.ProjectId).Include(s => s.ProjectManager);
+                var project = _context.Projects!.Where(s => (s.ProjectManager!.Id == userId || s.AssistantProjectManagerId == userId) && s.ProjectId != 10).OrderBy(c => c.ProjectId).Include(s => s.ProjectManager);
                 return View(project);
             }
         }
@@ -84,68 +84,6 @@ namespace TimesheetApp.Controllers
                 }).ToList()
             };
             return View(proj);
-        }
-
-        /// <summary>
-        /// For dealing with submitting the creation of a new project. Only HR or Admin may create a project.
-        /// </summary>
-        /// <param name="input">View model that contains the new project</param>
-        /// <returns>Same page if errors, home page if not.</returns>
-        [HttpPost]
-        [Authorize(Roles = "HR,Admin", Policy = "KeyRequirement")]
-        [ValidateAntiForgeryToken]
-        public IActionResult Create(CreateProjectViewModel input)
-        {
-            if (_context.Projects.Find(input.project.ProjectId) != null)
-            {
-                ModelState.AddModelError("project.ProjectId", "Project ID must be unique.");
-                Response.StatusCode = 400;
-                ViewData["users"] = _context.Users.ToList(); ;
-                return View(input);
-            }
-            if (ModelState.IsValid)
-            {
-                _context.Projects!.Add(input.project);
-                _context.SaveChanges();
-
-                //create a high level work package
-                var newWP = new WorkPackage
-                {
-                    WorkPackageId = "0",
-                    ProjectId = input.project.ProjectId,
-                    IsBottomLevel = true,
-                    Title = input.project.ProjectTitle
-                };
-                _context.WorkPackages!.Add(newWP);
-                double totalBudget = 0;
-                var grades = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year);
-
-                //create the budget in the db, one row per labour code.
-                if (input.budgets != null)
-                {
-                    foreach (var budget in input.budgets)
-                    {
-                        Budget newBudget = new Budget
-                        {
-                            WPProjectId = input.project.ProjectId + "~0",
-                            People = budget.People,
-                            Days = budget.Days,
-                            LabourCode = budget.LabourCode,
-                            UnallocatedDays = budget.Days,
-                            UnallocatedPeople = budget.People
-                        };
-                        totalBudget += budget.BudgetAmount * grades.Where(c => budget.LabourCode == c.LabourCode).First().Rate;
-                        _context.Budgets!.Add(newBudget);
-                    }
-                }
-                input.project.TotalBudget = totalBudget;
-                var projectString = input.project.ProjectId;
-                _context.Notifications.Add(new Notification { UserId = input.project.ProjectManagerId, Message = "You have been added to the project " + input.project!.ProjectTitle + " as a Project Manager.", For = projectString + " Add", Importance = 1 });
-                _context.SaveChanges();
-                return RedirectToAction("Index");
-            }
-            ViewData["users"] = _context.Users.ToList();
-            return View(input);
         }
 
         /// <summary>
@@ -526,11 +464,72 @@ namespace TimesheetApp.Controllers
                     }
                     closingwp.IsClosed = true;
                 }
-
                 _context.SaveChanges();
                 return Ok();
             }
 
+        }
+
+        /// <summary>
+        /// For dealing with submitting the creation of a new project. Only HR or Admin may create a project.
+        /// </summary>
+        /// <param name="input">View model that contains the new project</param>
+        /// <returns>Same page if errors, home page if not.</returns>
+        [HttpPost]
+        [Authorize(Roles = "HR,Admin", Policy = "KeyRequirement")]
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(CreateProjectViewModel input)
+        {
+            if (_context.Projects.Find(input.project.ProjectId) != null)
+            {
+                ModelState.AddModelError("project.ProjectId", "Project ID must be unique.");
+                Response.StatusCode = 400;
+                ViewData["users"] = _context.Users.ToList(); ;
+                return View(input);
+            }
+            if (ModelState.IsValid)
+            {
+                _context.Projects!.Add(input.project);
+                _context.SaveChanges();
+
+                //create a high level work package
+                var newWP = new WorkPackage
+                {
+                    WorkPackageId = "0",
+                    ProjectId = input.project.ProjectId,
+                    IsBottomLevel = true,
+                    Title = input.project.ProjectTitle
+                };
+                _context.WorkPackages!.Add(newWP);
+                double totalBudget = 0;
+                var grades = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year);
+
+                //create the budget in the db, one row per labour code.
+                if (input.budgets != null)
+                {
+                    foreach (var budget in input.budgets)
+                    {
+                        Budget newBudget = new Budget
+                        {
+                            WPProjectId = input.project.ProjectId + "~0",
+                            People = budget.People,
+                            Days = budget.Days,
+                            LabourCode = budget.LabourCode,
+                            UnallocatedDays = budget.Days,
+                            UnallocatedPeople = budget.People
+                        };
+                        totalBudget += budget.BudgetAmount * grades.Where(c => budget.LabourCode == c.LabourCode).First().Rate;
+                        _context.Budgets!.Add(newBudget);
+                    }
+                }
+                input.project.TotalBudget = totalBudget;
+                var projectString = input.project.ProjectId;
+                _context.Notifications.Add(new Notification { UserId = input.project.ProjectManagerId, Message = "You have been added to the project " + input.project!.ProjectTitle + " as a Project Manager.", For = projectString + " Add", Importance = 1 });
+                _context.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            ViewData["users"] = _context.Users.ToList();
+            return View(input);
         }
 
         /// <summary>
