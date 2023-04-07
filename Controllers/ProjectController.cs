@@ -328,6 +328,12 @@ namespace TimesheetApp.Controllers
                 Response.StatusCode = 400;
                 return PartialView("_CreateWorkPackagePartial", p);
             }
+            if (p.WorkPackage.WorkPackageId.Length != 1)
+            {
+                ModelState.AddModelError("WorkPackage.WorkPackageId", "Work Package ID must be 1 character longer");
+                Response.StatusCode = 400;
+                return PartialView("_CreateWorkPackagePartial", p);
+            }
             string newWPID = (p.WorkPackage!.ParentWorkPackageId == "0") ? p.WorkPackage.WorkPackageId : p.WorkPackage!.ParentWorkPackageId + p.WorkPackage!.WorkPackageId;
             if (p.WorkPackage != null && checkWorkPackage(newWPID))
             {
