@@ -33,7 +33,7 @@ namespace TimesheetApp.Controllers
         [Authorize(Policy = "KeyRequirement")]
         public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
         {
-            var applicationDbContext = _context.Users.Include(a => a.Supervisor).Include(a => a.TimesheetApprover);
+            var applicationDbContext = _context.Users.Include(a => a.Supervisor).Include(a => a.TimesheetApprover).OrderBy(a => a.FirstName); ;
 
             // Calculate the number of users to skip based on the current page and page size
             int skip = (page - 1) * pageSize;

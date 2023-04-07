@@ -183,7 +183,7 @@ internal partial class Program
                     JobTitle = "HR Manager",
                     EmailConfirmed = true,
                     LabourGradeCode = "P5",
-                    EmployeeNumber = 10023420000 + i,
+                    EmployeeNumber = 1002342000 + i,
                     SupervisorId = admin.Id,
                     SickDays = 7,
                     TimesheetApproverId = admin.Id,
