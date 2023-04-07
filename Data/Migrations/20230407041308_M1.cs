@@ -521,9 +521,9 @@ namespace TimesheetApp.Data.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "3cda0aad-9ba5-4fb2-b758-b429d040b51b", null, "HR", "HR" },
-                    { "7ef2ec3e-67ef-4fac-a0a2-65521a9dcd2e", null, "Supervisor", "SUPERVISOR" },
-                    { "c9c43cb7-a9a9-4874-9367-97ee04932f5a", null, "Admin", "ADMIN" }
+                    { "01f2a3b2-a052-4656-ad13-60354021925d", null, "Supervisor", "SUPERVISOR" },
+                    { "d042b05d-34f4-488e-b9ac-30fa5f73be38", null, "Admin", "ADMIN" },
+                    { "e830da53-b175-4a57-9e55-2c1573a96026", null, "HR", "HR" }
                 });
 
             migrationBuilder.InsertData(

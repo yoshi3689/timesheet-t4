@@ -13,13 +13,15 @@
     .Include(u => u.SupervisedWorkPackage)
     .Include(u => u.ManagedProjects)
     .Include(u => u.ApprovableUsers)
+    .Include(u => u.AssistantManagedProjects)
     .Where(u => u.UserName == User.Identity.Name)
     .Select(c => new
     {
         wps = c.SupervisedWorkPackage.Count(),
         projects = c.ManagedProjects.Count(),
         users = c.ApprovableUsers.Count(),
-        key = c.PublicKey
+        key = c.PublicKey,
+        aProjects = c.AssistantManagedProjects.Count()
     })
     .FirstOrDefault();
 }
@@ -34,7 +36,6 @@
 </head>
 
 <body>
-
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
@@ -65,7 +66,7 @@
                                    asp-controller="Timesheet" asp-action="ToApprove">Timesheet Approval</a>
                             </li>
                         }
-                        @if (User.IsInRole("Admin") || User.IsInRole("HR") || (user != null && user.projects > 0))
+                        @if (User.IsInRole("Admin") || User.IsInRole("HR") || (user != null && user.projects > 0) || (user != null && user.aProjects > 0))
                         {
                             <li class="nav-item p-4">
                                 <a class="nav-item  text-dark p-0 text-decoration-none" asp-area="" asp-controller="Project"
