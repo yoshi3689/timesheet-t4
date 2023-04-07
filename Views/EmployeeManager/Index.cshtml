@@ -2,6 +2,9 @@
 
 @{
     ViewData["Title"] = "Index";
+    int totalPages = (int)ViewData["TotalPages"];
+    int currentPage = (int)ViewData["CurrentPage"];
+    int pageSize = (int)ViewData["PageSize"];
 }
 
 <h1>Employees</h1>
@@ -10,13 +13,121 @@
     <div class="col my-2">
         Search: <input class="m-2" type="text" id="searchBox" />
     </div>
-        
+
     <div class="col text-end">
         <a class="btn btn-primary rounded" asp-area="Identity" asp-page="/Account/Register">Add Employee</a>
     </div>
 </div>
 
 <br />
+
+<div class="pagination-container">
+    <nav aria-label="Users Pagination">
+        <ul class="pagination">
+            @if (totalPages > 1)
+            {
+                if (currentPage != 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("Index", new { page = 1 })" aria-label="First">
+                            <span aria-hidden="true">&laquo;</span>
+                            <span class="sr-only">First</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1 })" aria-label="Previous">
+                            <span aria-hidden="true">&lsaquo;</span>
+                            <span class="sr-only">Previous</span>
+                        </a>
+                    </li>
+                }
+
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    if (i == 1 || i == totalPages || (i >= currentPage - 2 && i <= currentPage + 2))
+                    {
+                        if (i == currentPage)
+                        {
+                            <li class="page-item active"><a class="page-link">@i</a></li>
+                        }
+                        else
+                        {
+                            <li class="page-item"><a class="page-link" href="@Url.Action("Index", new { page = i })">@i</a></li>
+                        }
+                    }
+                    else if ((i == currentPage - 3 && i > 1) || (i == currentPage + 3 && i < totalPages))
+                    {
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    }
+                }
+
+                if (currentPage != totalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1 })" aria-label="Next">
+                            <span aria-hidden="true">&rsaquo;</span>
+                            <span class="sr-only">Next</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("Index", new { page = totalPages })" aria-label="Last">
+                            <span aria-hidden="true">&raquo;</span>
+                            <span class="sr-only">Last</span>
+                        </a>
+                    </li>
+                }
+
+                <li class="page-item">
+                    <form action="@Url.Action("Index")" method="get" class="input-form">
+                        <input type="number" name="page" class="form-control" placeholder="Enter page number" min="1"
+                            max="@totalPages" required>
+                        <span class="input-group-btn">
+                            <button class="btn btn-primary" type="submit">Go</button>
+                        </span>
+                    </form>
+                </li>
+            }
+
+        </ul>
+
+    </nav>
+
+
+</div>
+
+
+<style>
+    .page-item {
+        margin-right: 5px;
+        border-radius: 0px !important;
+    }
+
+    .page-link {
+        color: #000;
+        background-color: #fff;
+        border: 1px solid #ddd;
+    }
+
+    .page-link:hover {
+        color: #000;
+        background-color: #e9ecef;
+        border-color: #ddd;
+    }
+
+    .page-link:focus {
+        box-shadow: none;
+    }
+
+    .active .page-link {
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .input-form {
+        display: flex;
+    }
+</style>
 
 <table id="myTable" class="table table-bordered table-responsive table-striped ">
     <thead>

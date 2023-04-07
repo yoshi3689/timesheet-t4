@@ -31,10 +31,24 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <returns>page with all employees</returns>
         [Authorize(Policy = "KeyRequirement")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
         {
             var applicationDbContext = _context.Users.Include(a => a.Supervisor).Include(a => a.TimesheetApprover);
-            return View(await applicationDbContext.ToListAsync());
+
+            // Calculate the number of users to skip based on the current page and page size
+            int skip = (page - 1) * pageSize;
+
+            // Retrieve the subset of users based on the page size and skip count
+            var users = await applicationDbContext.Skip(skip).Take(pageSize).ToListAsync();
+
+            // Calculate the total number of pages based on the total number of users and page size
+            int totalPages = (int)Math.Ceiling(applicationDbContext.Count() / (double)pageSize);
+
+            // Pass the users and pagination information to the view
+            ViewData["TotalPages"] = totalPages;
+            ViewData["CurrentPage"] = page;
+            ViewData["PageSize"] = pageSize;
+            return View(users);
         }
 
         /// <summary>

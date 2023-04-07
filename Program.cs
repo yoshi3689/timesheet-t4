@@ -130,37 +130,94 @@ internal partial class Program
                 admin = adminExist;
             }
 
-            RSA rsa2 = RSA.Create();
-            ApplicationUser newHR = new ApplicationUser
+            // RSA rsa2 = RSA.Create();
+            // ApplicationUser newHR = new ApplicationUser
+            // {
+            //     Email = "hr@hr.com",
+            //     UserName = "hr@hr.com",
+            //     FirstName = "HR",
+            //     LastName = "Manager",
+            //     JobTitle = "HR Manager",
+            //     EmailConfirmed = true,
+            //     LabourGradeCode = "P5",
+            //     EmployeeNumber = 1000000001,
+            //     SupervisorId = admin.Id,
+            //     SickDays = 7,
+            //     TimesheetApproverId = admin.Id,
+            //     PublicKey = rsa2.ExportRSAPublicKey(),
+            //     PrivateKey = KeyHelper.Encrypt(rsa2.ExportRSAPrivateKey(), "Password123!")
+            // };
+            // var hrExists = await UserManager.FindByEmailAsync(newHR.Email);
+            // if (hrExists == null)
+            // {
+            //     await UserManager.CreateAsync(newHR, "Password123!");
+            //     var newHRExists = await UserManager.FindByEmailAsync("hr@hr.com");
+            //     if (newHRExists != null)
+            //     {
+            //         await UserManager.AddToRoleAsync(newHR, "HR");
+            //         await UserManager.AddToRoleAsync(newHR, "Supervisor");
+            //     }
+            //     admin.SupervisorId = newHR.Id;
+            //     admin.TimesheetApproverId = newHR.Id;
+            //     DbContext.SaveChanges();
+            // }
+
+            // Define the number of HR users you want to create
+            int numHRUsers = 50;
+
+            // Create an array to store the HR users
+            ApplicationUser[] hrUsers = new ApplicationUser[numHRUsers];
+
+            // Create a loop to create the HR users
+            RSA rsa2;
+            for (int i = 1; i < numHRUsers; i++)
             {
-                Email = "hr@hr.com",
-                UserName = "hr@hr.com",
-                FirstName = "HR",
-                LastName = "Manager",
-                JobTitle = "HR Manager",
-                EmailConfirmed = true,
-                LabourGradeCode = "P5",
-                EmployeeNumber = 1000000001,
-                SupervisorId = admin.Id,
-                SickDays = 7,
-                TimesheetApproverId = admin.Id,
-                PublicKey = rsa2.ExportRSAPublicKey(),
-                PrivateKey = KeyHelper.Encrypt(rsa2.ExportRSAPrivateKey(), "Password123!")
-            };
-            var hrExists = await UserManager.FindByEmailAsync(newHR.Email);
-            if (hrExists == null)
-            {
-                await UserManager.CreateAsync(newHR, "Password123!");
-                var newHRExists = await UserManager.FindByEmailAsync("hr@hr.com");
-                if (newHRExists != null)
+                rsa2 = RSA.Create();
+
+                ApplicationUser newHR = new ApplicationUser
                 {
-                    await UserManager.AddToRoleAsync(newHR, "HR");
-                    await UserManager.AddToRoleAsync(newHR, "Supervisor");
-                }
-                admin.SupervisorId = newHR.Id;
-                admin.TimesheetApproverId = newHR.Id;
-                DbContext.SaveChanges();
+                    Email = $"hr{i + 1}@hr.com",
+                    UserName = $"hr{i + 1}@hr.com",
+                    FirstName = "HR",
+                    LastName = $"Manager{i + 1}",
+                    JobTitle = "HR Manager",
+                    EmailConfirmed = true,
+                    LabourGradeCode = "P5",
+                    EmployeeNumber = 10023420000 + i,
+                    SupervisorId = admin.Id,
+                    SickDays = 7,
+                    TimesheetApproverId = admin.Id,
+                    PublicKey = rsa.ExportRSAPublicKey(),
+                    PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey(), "Password123!")
+                };
+
+                hrUsers[i] = newHR;
             }
+
+            // Save the HR users to the database
+            foreach (var hrUser in hrUsers)
+            {
+                if (hrUser == null)
+                {
+                    continue;
+                }
+                var hrExists = await UserManager.FindByEmailAsync(hrUser.Email);
+                if (hrExists == null)
+                {
+                    await UserManager.CreateAsync(hrUser, "Password123!");
+                    var newHRExists = await UserManager.FindByEmailAsync(hrUser.Email);
+                    if (newHRExists != null)
+                    {
+                        await UserManager.AddToRoleAsync(hrUser, "HR");
+                        await UserManager.AddToRoleAsync(hrUser, "Supervisor");
+                    }
+                }
+            }
+
+            // Save the changes to the database
+            await DbContext.SaveChangesAsync();
+
+
 
             var project = DbContext.Projects.Where(c => c.ProjectId == 010).FirstOrDefault();
             if (project == null)
@@ -184,12 +241,8 @@ internal partial class Program
             {
                 DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "SHOL", ProjectId = project!.ProjectId, Title = "Statutory Holiday" });
             }
-            var flex = DbContext.WorkPackages.Where(c => c.WorkPackageId == "FLEX").FirstOrDefault();
-            if (flex == null)
-            {
-                DbContext.WorkPackages.Add(new WorkPackage { WorkPackageId = "FLEX", ProjectId = project!.ProjectId, Title = "Flextime" });
-            }
             DbContext.SaveChanges();
+
         }
         app.Run();
     }
