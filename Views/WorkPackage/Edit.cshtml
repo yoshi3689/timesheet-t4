@@ -12,7 +12,7 @@
     @if (Model.budgets != null && Model.budgets[0].isREBudget == false)
     {
       <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-      <h1>Work Package Budget</h1>
+      <h1>Work Package Initial Estimate</h1>
       <h3>Person Days per Labour Grade</h3>
       @for (int i = 0; i < Model.budgets!.Count; i++)
       {
@@ -57,7 +57,11 @@
           <span>@Model.estimates[i].LabourCode</span>
           <div class="d-flex align-items-center"
             style="display:flex; flex-direction: row; overflow: hidden; white-space: nowrap;">
-            <input asp-for="estimates![i].EstimatedCost!" style="width: 10%;" class="form-control people" />
+            @if((Model.budgets != null && Model.budgets[0].isREBudget == false)){
+              <input asp-for="estimates![i].EstimatedCost!" id="@("WE" + Model.estimates[i].LabourCode)" style="width: 10%;" class="form-control people" disabled/>
+            } else {
+              <input asp-for="estimates![i].EstimatedCost!" id="@("WE" + Model.estimates[i].LabourCode)" style="width: 10%;" class="form-control people" /> 
+            }
             &nbsp;
             <label asp-for="estimates![i].EstimatedCost!" class="control-label"></label>
             &nbsp;&nbsp;
@@ -95,5 +99,8 @@ else
   function setTotal(labourCode, rate, people, days, remain) {
     var element = document.querySelector("#" + labourCode);
     element.innerHTML = " $" + (people * days * rate).toFixed(2);
+
+    var weLabourCode = document.querySelector("#WE" + labourCode);
+    weLabourCode.value = people * days;
   }
 </script>
