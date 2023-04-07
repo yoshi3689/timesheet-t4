@@ -11,7 +11,7 @@ using TimesheetApp.Data;
 namespace TimesheetApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230405073030_M1")]
+    [Migration("20230407041308_M1")]
     partial class M1
     {
         /// <inheritdoc />
@@ -50,19 +50,19 @@ namespace TimesheetApp.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "3cda0aad-9ba5-4fb2-b758-b429d040b51b",
+                            Id = "e830da53-b175-4a57-9e55-2c1573a96026",
                             Name = "HR",
                             NormalizedName = "HR"
                         },
                         new
                         {
-                            Id = "c9c43cb7-a9a9-4874-9367-97ee04932f5a",
+                            Id = "d042b05d-34f4-488e-b9ac-30fa5f73be38",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "7ef2ec3e-67ef-4fac-a0a2-65521a9dcd2e",
+                            Id = "01f2a3b2-a052-4656-ad13-60354021925d",
                             Name = "Supervisor",
                             NormalizedName = "SUPERVISOR"
                         });
