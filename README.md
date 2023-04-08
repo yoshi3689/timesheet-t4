@@ -2,13 +2,16 @@ Default admin account:
     Username: admin@admin.com
     Password: Password123!
     Roles: Admin, Supervisor, HR
+    Supervisor: Last HR account
 
-Default HR account:
-    Username: hr@hr.com
+Default HR accounts:
+    Username: hr#@hr.com
     Password: Password123!
     Roles: HR, Supervisor
+    Supervisor: Admin
 
-The default accounts are supervisors for eachother.
+    # = 1-6
+
 
 
 Labour grade rates:

@@ -31,7 +31,7 @@ namespace TimesheetApp.Controllers
         /// </summary>
         /// <returns>page with all employees</returns>
         [Authorize(Policy = "KeyRequirement")]
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(int page = 1, int pageSize = 50)
         {
             var applicationDbContext = _context.Users.Include(a => a.Supervisor).Include(a => a.TimesheetApprover).OrderBy(a => a.FirstName); ;
 

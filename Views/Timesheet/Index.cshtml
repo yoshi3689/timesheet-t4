@@ -427,7 +427,7 @@
                                 c.remove();
                             });
                             response.forEach((cell) => {
-                                addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow || cell.workPackage.isClosed);
+                                addTableRow(cell.projectId, cell.workPackageId, cell.sat + cell.sun + cell.mon + cell.tue + cell.wed + cell.thu + cell.fri, cell.sat, cell.sun, cell.mon, cell.tue, cell.wed, cell.thu, cell.fri, cell.notes, cell.timesheetRowId, readonlyRow);
                             });
                             var message = document.querySelector("#Timesheet" + this.value + " > .message").innerHTML;
                             if(message == ""){
@@ -547,7 +547,7 @@
                                 c.style.display = "none";
                             });
                         }
-                        addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonlyExists || "@row.WorkPackage!.IsClosed" == "True");
+                        addTableRow("@row.ProjectId", "@row.WorkPackageId", @row.TotalHoursRow, @row.Sat, @row.Sun, @row.Mon, @row.Tue, @row.Wed, @row.Thu, @row.Fri, "@row.Notes", "@row.TimesheetRowId", readonlyExists);
                 </text>
             }
 

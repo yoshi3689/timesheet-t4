@@ -700,7 +700,7 @@ ViewData["Title"] = "Manage Project";
 
             let budgetRow = body.querySelectorAll(":scope * .budgetRow > td");
             let tremain = document.createElement("span");
-            tremain.innerHTML = "$" + (parseFloat(budgetRow[1].innerHTML.replace(/[^0-9.-]+/g,"")) - c.totalBudget);
+            tremain.innerHTML = "$" + (parseFloat(budgetRow[1].innerHTML.replace(/[^0-9.-]+/g,"")) - c.totalBudget).toFixed(2);
             budgetRow[3].innerHTML = tremain.outerHTML;
             budgetRow[2].innerHTML = "Unallocated Budget:"
 

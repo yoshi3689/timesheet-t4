@@ -138,13 +138,6 @@ namespace TimesheetApp.Controllers
                 Timesheets = verifiedSheets,
                 TimesheetRows = rows,
             };
-            foreach (var sheet in model.Timesheets)
-            {
-
-                Console.WriteLine(sheet.Overtime);
-                Console.WriteLine(sheet.FlexHours);
-                Console.WriteLine("****************************************************************************************");
-            }
             return View(model);
         }
 
@@ -259,12 +252,6 @@ namespace TimesheetApp.Controllers
                 return BadRequest();
             }
             Dictionary<int, string> validationErrors = new Dictionary<int, string>();
-            if (oldRow.WorkPackage != null && oldRow.WorkPackage.IsClosed == true)
-            {
-                validationErrors.Add(0, "Row can no longer be edited, this work package is closed.");
-                Response.StatusCode = 400;
-                return Json(validationErrors);
-            }
             oldRow.Timesheet.TotalHours += timesheetRow.TotalHoursRow - oldRow.TotalHoursRow;
             oldRow.packedHours = timesheetRow.packedHours;
             oldRow.Notes = timesheetRow.Notes;

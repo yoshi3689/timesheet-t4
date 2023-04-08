@@ -130,40 +130,8 @@ internal partial class Program
                 admin = adminExist;
             }
 
-            // RSA rsa2 = RSA.Create();
-            // ApplicationUser newHR = new ApplicationUser
-            // {
-            //     Email = "hr@hr.com",
-            //     UserName = "hr@hr.com",
-            //     FirstName = "HR",
-            //     LastName = "Manager",
-            //     JobTitle = "HR Manager",
-            //     EmailConfirmed = true,
-            //     LabourGradeCode = "P5",
-            //     EmployeeNumber = 1000000001,
-            //     SupervisorId = admin.Id,
-            //     SickDays = 7,
-            //     TimesheetApproverId = admin.Id,
-            //     PublicKey = rsa2.ExportRSAPublicKey(),
-            //     PrivateKey = KeyHelper.Encrypt(rsa2.ExportRSAPrivateKey(), "Password123!")
-            // };
-            // var hrExists = await UserManager.FindByEmailAsync(newHR.Email);
-            // if (hrExists == null)
-            // {
-            //     await UserManager.CreateAsync(newHR, "Password123!");
-            //     var newHRExists = await UserManager.FindByEmailAsync("hr@hr.com");
-            //     if (newHRExists != null)
-            //     {
-            //         await UserManager.AddToRoleAsync(newHR, "HR");
-            //         await UserManager.AddToRoleAsync(newHR, "Supervisor");
-            //     }
-            //     admin.SupervisorId = newHR.Id;
-            //     admin.TimesheetApproverId = newHR.Id;
-            //     DbContext.SaveChanges();
-            // }
-
             // Define the number of HR users you want to create
-            int numHRUsers = 50;
+            int numHRUsers = 6;
 
             // Create an array to store the HR users
             ApplicationUser[] hrUsers = new ApplicationUser[numHRUsers];
@@ -176,10 +144,10 @@ internal partial class Program
 
                 ApplicationUser newHR = new ApplicationUser
                 {
-                    Email = $"hr{i + 1}@hr.com",
-                    UserName = $"hr{i + 1}@hr.com",
+                    Email = $"hr{i}@hr.com",
+                    UserName = $"hr{i}@hr.com",
                     FirstName = "HR",
-                    LastName = $"Manager{i + 1}",
+                    LastName = $"Manager{i}",
                     JobTitle = "HR Manager",
                     EmailConfirmed = true,
                     LabourGradeCode = "P5",
@@ -197,7 +165,7 @@ internal partial class Program
             // Save the HR users to the database
             foreach (var hrUser in hrUsers)
             {
-                if (hrUser == null)
+                if (hrUser == null || hrUser.Email == null)
                 {
                     continue;
                 }
@@ -210,14 +178,14 @@ internal partial class Program
                     {
                         await UserManager.AddToRoleAsync(hrUser, "HR");
                         await UserManager.AddToRoleAsync(hrUser, "Supervisor");
+                        admin.SupervisorId = newHRExists.Id;
+                        admin.TimesheetApproverId = newHRExists.Id;
                     }
                 }
             }
 
             // Save the changes to the database
             await DbContext.SaveChangesAsync();
-
-
 
             var project = DbContext.Projects.Where(c => c.ProjectId == 010).FirstOrDefault();
             if (project == null)

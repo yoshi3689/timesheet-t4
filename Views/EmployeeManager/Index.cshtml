@@ -2,9 +2,9 @@
 
 @{
     ViewData["Title"] = "Index";
-    int totalPages = (int)ViewData["TotalPages"];
-    int currentPage = (int)ViewData["CurrentPage"];
-    int pageSize = (int)ViewData["PageSize"];
+    int totalPages = (int)(ViewData["TotalPages"] ?? 0);
+    int currentPage = (int)(ViewData["CurrentPage"] ?? 0);
+    int pageSize = (int)(ViewData["PageSize"] ?? 0);
 }
 
 <h1>Employees</h1>
@@ -87,12 +87,8 @@
                     </form>
                 </li>
             }
-
         </ul>
-
     </nav>
-
-
 </div>
 
 
