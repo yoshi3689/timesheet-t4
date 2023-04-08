@@ -230,7 +230,7 @@ namespace TimesheetApp.Controllers
         protected override ValidationResult? IsValid(
             object? value, ValidationContext validationContext)
         {
-            int num = Convert.ToInt32(value);
+            long num = Convert.ToInt64(value);
             var _context = (ApplicationDbContext)validationContext.GetService(typeof(ApplicationDbContext))!;
             var user = _context.Users.Where(c => c.EmployeeNumber == num);
             if (user.Count() == 0)

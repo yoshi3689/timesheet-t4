@@ -342,7 +342,7 @@ namespace TimesheetApp.Controllers
             timesheet.Overtime = model.Overtime ?? 0;
             user.Overtime += model.Overtime ?? 0;
             user.FlexTime += model.Flexhours ?? 0;
-            if (timesheet.TotalHours != model.Flexhours + model.Overtime + 40)
+            if (timesheet.TotalHours > 40 && timesheet.TotalHours != model.Flexhours + model.Overtime + 40)
             {
                 Response.StatusCode = 400;
                 return Json("You cannot have more flexhours and overtime then you worked.");
