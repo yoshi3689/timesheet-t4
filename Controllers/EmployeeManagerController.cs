@@ -171,7 +171,7 @@ namespace TimesheetApp.Controllers
                         user.JobTitle = applicationUser.JobTitle;
                         user.Salary = applicationUser.Salary;
                         user.LabourGradeCode = applicationUser.LabourGradeCode;
-                        if (await _userManager.IsInRoleAsync(await _userManager.FindByIdAsync(applicationUser.SupervisorId!) ?? new ApplicationUser(), "Supervisors") && user.Id != applicationUser.SupervisorId)
+                        if (await _userManager.IsInRoleAsync(await _userManager.FindByIdAsync(applicationUser.SupervisorId!) ?? new ApplicationUser(), "Supervisor") && user.Id != applicationUser.SupervisorId)
                         {
                             user.SupervisorId = applicationUser.SupervisorId;
                         }
