@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using TimesheetApp.Data;
 using TimesheetApp.Models;
-using static Program;
+
 
 namespace TimesheetApp.Controllers;
 /// <summary>
@@ -22,13 +22,15 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IConfiguration _configuration;
 
 
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager, IConfiguration configuration)
     {
         _context = context;
         _userManager = userManager;
         _logger = logger;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -113,7 +115,11 @@ public class HomeController : Controller
         process.StartInfo.FileName = "mysqldump";
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.RedirectStandardOutput = true;
-        process.StartInfo.Arguments = $"--user=root --password={GlobalData.DBPassword} --host={GlobalData.DBHost} --port={GlobalData.DBPort} {GlobalData.DBName}";
+        var dbPassword = _configuration["DBPASSWORD"];
+        var dbHost = _configuration["DBHOST"];
+        var dbPort = _configuration["DBPORT"];
+        var dbName = _configuration["DBNAME"];
+        process.StartInfo.Arguments = $"--user=root --password={dbPassword} --host={dbHost} --port={dbPort} {dbName}";
 
         // Start the process and capture the output as a stream
         process.Start();

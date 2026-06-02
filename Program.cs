@@ -13,17 +13,15 @@ internal partial class Program
     private static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-        var host = builder.Configuration["DBHOST"] ?? "localhost";
-        var port = builder.Configuration["DBPORT"] ?? "3333";
-        var password = builder.Configuration["DBPASSWORD"] ?? "password123";
-        var db = builder.Configuration["DBNAME"] ?? "db";
+        var isDev = builder.Environment.IsDevelopment();
+
+        var host = builder.Configuration["DBHOST"] ?? (isDev ? "localhost" : throw new InvalidOperationException("DBHOST environment variable is required in production."));
+        var port = builder.Configuration["DBPORT"] ?? (isDev ? "3333" : throw new InvalidOperationException("DBPORT environment variable is required in production."));
+        var password = builder.Configuration["DBPASSWORD"] ?? (isDev ? "password123" : throw new InvalidOperationException("DBPASSWORD environment variable is required in production."));
+        var db = builder.Configuration["DBNAME"] ?? (isDev ? "db" : throw new InvalidOperationException("DBNAME environment variable is required in production."));
 
         string connectionString = $"server={host}; userid=root; pwd={password};"
                 + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";
-        GlobalData.DBHost = host;
-        GlobalData.DBPassword = password;
-        GlobalData.DBPort = port;
-        GlobalData.DBName = db;
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -47,7 +45,11 @@ internal partial class Program
             options.IdleTimeout = TimeSpan.FromHours(12);
             options.Cookie.Name = ".ProjectManagement.Session";
             options.Cookie.IsEssential = true;
+            options.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+            options.Cookie.HttpOnly = true;
         });
+
+        builder.Services.AddHealthChecks();
 
         var app = builder.Build();
 
@@ -77,9 +79,10 @@ internal partial class Program
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
         app.MapRazorPages();
+        app.MapHealthChecks("/health");
 
         app.UseSession();
-        //get the needed services to add roles and update db
+        // Seed initial data and apply pending migrations on startup
         var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         using (var scope = scopeFactory.CreateScope())
         {
@@ -218,13 +221,5 @@ internal partial class Program
 
         }
         app.Run();
-    }
-
-    public static class GlobalData
-    {
-        public static string? DBPassword { get; set; }
-        public static string? DBHost { get; set; }
-        public static string? DBPort { get; set; }
-        public static string? DBName { get; set; }
     }
 }
