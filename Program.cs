@@ -58,6 +58,17 @@ internal partial class Program
 
         builder.Services.AddHealthChecks();
 
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("Frontend", policy =>
+            {
+                policy.WithOrigins("http://localhost:3000")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+            });
+        });
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -78,6 +89,8 @@ internal partial class Program
         app.UseStaticFiles();
 
         app.UseRouting();
+
+        app.UseCors("Frontend");
 
         app.UseAuthentication();
         app.UseAuthorization();
