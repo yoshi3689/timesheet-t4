@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using TimesheetApp.Helpers;
 using TimesheetApp.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using TimesheetApp.Services;
 
 internal partial class Program
 {
@@ -37,6 +38,12 @@ internal partial class Program
             options.AddPolicy("KeyRequirement", policy => policy.Requirements.Add(new KeyRequirement(true)));
         });
         builder.Services.AddScoped<IAuthorizationHandler, KeyRequirementHandler>();
+        builder.Services.AddScoped<ISignatureService, SignatureService>();
+        builder.Services.AddScoped<INotificationService, NotificationService>();
+        builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+        builder.Services.AddScoped<ITimesheetService, TimesheetService>();
+        builder.Services.AddScoped<IWorkPackageService, WorkPackageService>();
+        builder.Services.AddScoped<IProjectService, ProjectService>();
         builder.Services.AddControllersWithViews();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddDistributedMemoryCache();
