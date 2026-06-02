@@ -33,6 +33,25 @@ internal partial class Program
         builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
+        builder.Services.ConfigureApplicationCookie(options =>
+        {
+            options.Events.OnRedirectToLogin = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                else
+                    context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                else
+                    context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            };
+        });
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("KeyRequirement", policy => policy.Requirements.Add(new KeyRequirement(true)));
@@ -44,7 +63,12 @@ internal partial class Program
         builder.Services.AddScoped<ITimesheetService, TimesheetService>();
         builder.Services.AddScoped<IWorkPackageService, WorkPackageService>();
         builder.Services.AddScoped<IProjectService, ProjectService>();
-        builder.Services.AddControllersWithViews();
+        builder.Services.AddControllersWithViews()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler =
+                    System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+            });
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddDistributedMemoryCache();
         builder.Services.AddSession(options =>
@@ -57,6 +81,9 @@ internal partial class Program
         });
 
         builder.Services.AddHealthChecks();
+
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
 
         builder.Services.AddCors(options =>
         {
@@ -76,7 +103,8 @@ internal partial class Program
         {
             app.UseMigrationsEndPoint();
             app.UseHsts();
-
+            app.UseSwagger();
+            app.UseSwaggerUI();
         }
         else
         {
