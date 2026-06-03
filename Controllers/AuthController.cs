@@ -83,6 +83,9 @@ namespace TimesheetApp.Controllers
             if (!user.HasTempPassword)
                 return BadRequest(new { success = false, message = "Account already activated." });
 
+            if (string.IsNullOrWhiteSpace(request.SignaturePassword))
+                return BadRequest(new { success = false, message = "Signature password cannot be empty." });
+
             using var rsa = RSA.Create(2048);
 
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
