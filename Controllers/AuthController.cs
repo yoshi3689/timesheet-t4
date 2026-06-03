@@ -1,6 +1,8 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using TimesheetApp.Helpers;
 using TimesheetApp.Models;
 
 namespace TimesheetApp.Controllers
@@ -63,8 +65,40 @@ namespace TimesheetApp.Controllers
                 roles,
                 employeeNumber = user.EmployeeNumber,
                 labourGradeCode = user.LabourGradeCode,
-                supervisorId = user.SupervisorId
+                supervisorId = user.SupervisorId,
+                hasTempPassword = user.HasTempPassword,
+                timesheetApproverId = user.TimesheetApproverId
             });
+        }
+        public record ActivateRequest(string AccountPassword, string SignaturePassword);
+
+        // POST /api/auth/activate
+        [HttpPost("activate")]
+        [Authorize]
+        public async Task<IActionResult> Activate([FromBody] ActivateRequest request)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            if (!user.HasTempPassword)
+                return BadRequest(new { success = false, message = "Account already activated." });
+
+            using var rsa = RSA.Create(2048);
+
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var passwordResult = await _userManager.ResetPasswordAsync(user, resetToken, request.AccountPassword);
+            if (!passwordResult.Succeeded)
+                return BadRequest(new { success = false, message = passwordResult.Errors.First().Description });
+
+            user.PublicKey = rsa.ExportRSAPublicKey();
+            user.PrivateKey = KeyHelper.Encrypt(rsa.ExportRSAPrivateKey(), request.SignaturePassword);
+            user.HasTempPassword = false;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+                return StatusCode(500, new { success = false, message = "Failed to save user." });
+
+            return Ok(new { success = true, message = "Account activated." });
         }
     }
 }
