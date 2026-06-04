@@ -32,7 +32,41 @@ namespace TimesheetApp.Controllers.Api
         {
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isHrOrAdmin = User.IsInRole("HR") || User.IsInRole("Admin");
-            return Ok(_projectService.GetProjectsForUser(userId!, isHrOrAdmin));
+            var projects = _projectService.GetProjectsForUser(userId!, isHrOrAdmin);
+            return Ok(projects.Select(p => new {
+                p.ProjectId,
+                p.ProjectTitle,
+                p.ProjectManagerId,
+                p.AssistantProjectManagerId,
+                p.TotalBudget,
+                p.ActualCost,
+                p.IsClosed,
+                ProjectManager = p.ProjectManager == null ? null : (object)new {
+                    p.ProjectManager.FirstName,
+                    p.ProjectManager.LastName
+                }
+            }));
+        }
+
+        // GET /api/projects/{id}
+        [HttpGet("{id}")]
+        public IActionResult GetById(int id)
+        {
+            var project = _projectService.GetProjectById(id);
+            if (project == null) return NotFound();
+            return Ok(new {
+                project.ProjectId,
+                project.ProjectTitle,
+                project.ProjectManagerId,
+                project.AssistantProjectManagerId,
+                project.TotalBudget,
+                project.ActualCost,
+                project.IsClosed,
+                ProjectManager = project.ProjectManager == null ? null : (object)new {
+                    project.ProjectManager.FirstName,
+                    project.ProjectManager.LastName
+                }
+            });
         }
 
         // POST /api/projects
