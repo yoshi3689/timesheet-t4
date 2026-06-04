@@ -16,8 +16,8 @@ public static class SeedData
 
         var users = await SeedUsersAsync(db, userManager);
         var projects = await SeedProjectsAsync(db, users);
-        await SeedWorkPackagesAsync(db, users, projects);
-        await SeedTimesheetsAsync(db, users, projects);
+        await SeedWorkPackagesAsync(db, users);
+        await SeedTimesheetsAsync(db, users);
     }
 
     // ── Users ─────────────────────────────────────────────────────────────────
@@ -150,12 +150,17 @@ public static class SeedData
 
     private static async Task SeedWorkPackagesAsync(
         ApplicationDbContext db,
-        Dictionary<string, ApplicationUser> users,
-        Dictionary<int, Project> projects)
+        Dictionary<string, ApplicationUser> users)
     {
+        var existingWps = (await db.WorkPackages
+            .Select(w => new { w.WorkPackageId, w.ProjectId })
+            .ToListAsync())
+            .Select(w => $"{w.ProjectId}:{w.WorkPackageId}")
+            .ToHashSet();
+
         void Add(string id, int projectId, string title, string? parentId, bool isBottom, bool isClosed, string? eng = null)
         {
-            if (db.WorkPackages.Any(w => w.WorkPackageId == id && w.ProjectId == projectId)) return;
+            if (existingWps.Contains($"{projectId}:{id}")) return;
             db.WorkPackages.Add(new WorkPackage
             {
                 WorkPackageId = id, ProjectId = projectId, Title = title,
@@ -204,8 +209,7 @@ public static class SeedData
 
     private static async Task SeedTimesheetsAsync(
         ApplicationDbContext db,
-        Dictionary<string, ApplicationUser> users,
-        Dictionary<int, Project> projects)
+        Dictionary<string, ApplicationUser> users)
     {
         var sup1Id = users["sup1@sheet.dev"].Id;
         var dummy = new byte[] { 1 };
@@ -215,7 +219,7 @@ public static class SeedData
             params (int proj, string wp, float sat, float sun, float mon, float tue, float wed, float thu, float fri)[] rowDefs)
         {
             var userId = users[email].Id;
-            if (db.Timesheets.Any(t => t.UserId == userId && t.EndDate == endDate)) return;
+            if (await db.Timesheets.AnyAsync(t => t.UserId == userId && t.EndDate == endDate)) return;
 
             var ts = new Timesheet
             {
