@@ -52,7 +52,10 @@ namespace TimesheetApp.Controllers.Api
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var project = _projectService.GetProjectById(id);
+            var userId = _userManager.GetUserId(HttpContext.User);
+            bool isHrOrAdmin = User.IsInRole("HR") || User.IsInRole("Admin");
+            var project = _projectService.GetProjectsForUser(userId!, isHrOrAdmin)
+                .FirstOrDefault(p => p.ProjectId == id);
             if (project == null) return NotFound();
             return Ok(new {
                 project.ProjectId,
