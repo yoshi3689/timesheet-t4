@@ -146,19 +146,150 @@ public static class SeedData
         return result;
     }
 
-    // ── Work Packages (stub — filled in Task 2) ───────────────────────────────
+    // ── Work Packages ─────────────────────────────────────────────────────────
 
-    private static Task SeedWorkPackagesAsync(
+    private static async Task SeedWorkPackagesAsync(
         ApplicationDbContext db,
         Dictionary<string, ApplicationUser> users,
-        Dictionary<int, Project> projects) => Task.CompletedTask;
+        Dictionary<int, Project> projects)
+    {
+        void Add(string id, int projectId, string title, string? parentId, bool isBottom, bool isClosed, string? eng = null)
+        {
+            if (db.WorkPackages.Any(w => w.WorkPackageId == id && w.ProjectId == projectId)) return;
+            db.WorkPackages.Add(new WorkPackage
+            {
+                WorkPackageId = id, ProjectId = projectId, Title = title,
+                ParentWorkPackageId = parentId,
+                ParentWorkPackageProjectId = parentId != null ? projectId : 0,
+                IsBottomLevel = isBottom, IsClosed = isClosed,
+                ResponsibleUserId = eng != null ? users[eng].Id : null
+            });
+        }
 
-    // ── Timesheets (stub — filled in Task 2) ──────────────────────────────────
+        // Project 101 — Cloud Migration
+        Add("A",  101, "Discovery",             null, false, false);
+        Add("AA", 101, "Requirements Gathering", "A", true,  false, "eng1@sheet.dev");
+        Add("AB", 101, "Architecture Design",    "A", true,  false, "eng6@sheet.dev");
+        Add("B",  101, "Development",           null, false, false);
+        Add("BA", 101, "Frontend",               "B", true,  false, "eng7@sheet.dev");
+        Add("BB", 101, "API Layer",              "B", true,  false, "eng8@sheet.dev");
+        Add("BC", 101, "Database Migration",     "B", true,  false, "eng4@sheet.dev");
+        Add("C",  101, "Testing",               null, false, false);
+        Add("CA", 101, "Unit Testing",           "C", true,  false, "eng2@sheet.dev");
+        Add("CB", 101, "Integration Testing",    "C", true,  false, "eng3@sheet.dev");
+        Add("D",  101, "Deployment",            null, true,  false, "eng6@sheet.dev");
+        await db.SaveChangesAsync();
 
-    private static Task SeedTimesheetsAsync(
+        // Project 102 — Mobile App
+        Add("A",  102, "Planning",       null, false, false);
+        Add("AA", 102, "Wireframes",      "A", true,  false, "eng5@sheet.dev");
+        Add("AB", 102, "Sprint Planning", "A", true,  false, "eng5@sheet.dev");
+        Add("B",  102, "Implementation", null, false, false);
+        Add("BA", 102, "iOS",             "B", true,  false, "eng1@sheet.dev");
+        Add("BB", 102, "Android",         "B", true,  false, "eng2@sheet.dev");
+        Add("BC", 102, "Backend API",     "B", true,  false, "eng4@sheet.dev");
+        Add("C",  102, "QA",             null, false, false);
+        Add("CA", 102, "Testing",         "C", true,  false, "eng3@sheet.dev");
+        await db.SaveChangesAsync();
+
+        // Project 103 — Security Audit (all closed)
+        Add("A",  103, "Assessment",        null, false, true);
+        Add("AA", 103, "Vulnerability Scan", "A", true,  true, "eng6@sheet.dev");
+        Add("AB", 103, "Penetration Test",   "A", true,  true, "eng6@sheet.dev");
+        Add("B",  103, "Remediation",       null, true,  true, "eng4@sheet.dev");
+        await db.SaveChangesAsync();
+    }
+
+    // ── Timesheets ────────────────────────────────────────────────────────────
+
+    private static async Task SeedTimesheetsAsync(
         ApplicationDbContext db,
         Dictionary<string, ApplicationUser> users,
-        Dictionary<int, Project> projects) => Task.CompletedTask;
+        Dictionary<int, Project> projects)
+    {
+        var sup1Id = users["sup1@sheet.dev"].Id;
+        var dummy = new byte[] { 1 };
+
+        async Task Add(string email, DateOnly endDate,
+            byte[]? empHash, byte[]? appHash, string? appNotes,
+            params (int proj, string wp, float sat, float sun, float mon, float tue, float wed, float thu, float fri)[] rowDefs)
+        {
+            var userId = users[email].Id;
+            if (db.Timesheets.Any(t => t.UserId == userId && t.EndDate == endDate)) return;
+
+            var ts = new Timesheet
+            {
+                UserId = userId,
+                TimesheetApproverId = sup1Id,
+                EndDate = endDate,
+                EmployeeHash = empHash,
+                ApproverHash = appHash,
+                ApproverNotes = appNotes,
+            };
+
+            foreach (var r in rowDefs)
+            {
+                var row = new TimesheetRow
+                {
+                    WorkPackageId = r.wp,
+                    WorkPackageProjectId = r.proj,
+                    packedHours = PackHours(r.sat, r.sun, r.mon, r.tue, r.wed, r.thu, r.fri)
+                };
+                row.TotalHoursRow = row.getSum();
+                ts.TimesheetRows.Add(row);
+            }
+
+            ts.TotalHours = ts.TimesheetRows.Sum(r => r.TotalHoursRow);
+            db.Timesheets.Add(ts);
+            await db.SaveChangesAsync();
+        }
+
+        // approved — week ending May 16
+        await Add("eng1@sheet.dev", new DateOnly(2026, 5, 16), dummy, dummy, null,
+            (101, "BA", 0, 0, 8, 8, 4, 0, 0),
+            (101, "BB", 0, 0, 0, 0, 4, 8, 8));
+
+        await Add("eng2@sheet.dev", new DateOnly(2026, 5, 16), dummy, dummy, null,
+            (101, "AA", 0, 0, 8, 8, 8, 0, 0),
+            (101, "AB", 0, 0, 0, 0, 0, 8, 8));
+
+        // approved — week ending May 23
+        await Add("eng4@sheet.dev", new DateOnly(2026, 5, 23), dummy, dummy, null,
+            (101, "BC", 0, 0, 8, 8, 8, 8, 0),
+            (101, "CA", 0, 0, 0, 0, 0, 0, 8));
+
+        await Add("eng3@sheet.dev", new DateOnly(2026, 5, 23), dummy, dummy, "Approved — short week noted",
+            (101, "BA", 0, 0, 8, 8, 0, 0, 0),
+            (101, "CB", 0, 0, 0, 0, 8, 8, 0));
+
+        // submitted — week ending May 30
+        await Add("eng6@sheet.dev", new DateOnly(2026, 5, 30), dummy, null, null,
+            (101, "BB", 0, 0, 8, 8, 8, 0, 0),
+            (101, "BC", 0, 0, 0, 0, 0, 8, 8));
+
+        await Add("eng5@sheet.dev", new DateOnly(2026, 5, 30), dummy, null, null,
+            (101, "CA", 0, 0, 8, 8, 0, 0, 0),
+            (101, "CB", 0, 0, 0, 0, 8, 8, 8));
+
+        // rejected — week ending May 30
+        // status='rejected' because ApproverNotes set + both hashes null (see timesheetUtils.ts deriveStatus)
+        await Add("eng8@sheet.dev", new DateOnly(2026, 5, 30), null, null,
+            "Hours not matching project log — please revise",
+            (101, "BA", 0, 0, 7, 7, 7, 7, 7));
+
+        // draft — week ending Jun 6
+        await Add("eng7@sheet.dev", new DateOnly(2026, 6, 6), null, null, null,
+            (101, "AA", 0, 0, 8, 8, 8, 0, 0));
+
+        await Add("eng3@sheet.dev", new DateOnly(2026, 6, 6), null, null, null,
+            (101, "BB", 0, 0, 8, 8, 0, 0, 0),
+            (101, "BA", 0, 0, 0, 0, 8, 8, 8));
+
+        // submitted — week ending Jun 6
+        await Add("eng4@sheet.dev", new DateOnly(2026, 6, 6), dummy, null, null,
+            (101, "CB", 0, 0, 8, 8, 8, 0, 0),
+            (101, "D",  0, 0, 0, 0, 0, 8, 8));
+    }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
