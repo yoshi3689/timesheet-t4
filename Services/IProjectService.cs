@@ -7,6 +7,7 @@ namespace TimesheetApp.Services;
 public interface IProjectService
 {
     IEnumerable<Project> GetProjectsForUser(string userId, bool isHrOrAdmin);
+    Project? GetProjectById(int id);
     (bool valid, string? error) ValidateNewProject(CreateProjectViewModel input);
     void CreateProject(CreateProjectViewModel input);
     Task<bool> VerifyProjectManagerAsync(int projectId, string userId);

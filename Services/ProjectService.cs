@@ -52,6 +52,13 @@ public class ProjectService : IProjectService
             .ToList();
     }
 
+    public Project? GetProjectById(int id)
+    {
+        return _context.Projects
+            .Include(p => p.ProjectManager)
+            .FirstOrDefault(p => p.ProjectId == id);
+    }
+
     public (bool valid, string? error) ValidateNewProject(CreateProjectViewModel input)
     {
         if (_context.Projects.Find(input.project.ProjectId) != null)
