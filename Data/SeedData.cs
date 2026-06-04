@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using TimesheetApp.Helpers;
 using TimesheetApp.Models;
@@ -33,7 +34,10 @@ public static class SeedData
 
             using var rsa = RSA.Create();
             var user = factory(rsa);
-            await userManager.CreateAsync(user, "Password123!");
+            var createResult = await userManager.CreateAsync(user, "Password123!");
+            if (!createResult.Succeeded)
+                throw new InvalidOperationException(
+                    $"Failed to seed user '{email}': {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
             var created = (await userManager.FindByEmailAsync(email))!;
             if (role != null) await userManager.AddToRoleAsync(created, role);
             result[email] = created;
@@ -109,7 +113,7 @@ public static class SeedData
 
         async Task<Project> Upsert(int id, Func<Project> factory)
         {
-            var existing = db.Projects.FirstOrDefault(p => p.ProjectId == id);
+            var existing = await db.Projects.FirstOrDefaultAsync(p => p.ProjectId == id);
             if (existing != null) { result[id] = existing; return existing; }
             var p = factory();
             db.Projects.Add(p);
@@ -164,7 +168,8 @@ public static class SeedData
         long packed = 0;
         for (int d = 0; d < 7; d++)
         {
-            int decihour = (int)Math.Round(hours[d] * 10);
+            float normalized = MathF.Floor(hours[d]) + MathF.Round((hours[d] - MathF.Floor(hours[d])) / 0.25f) / 10f;
+            int decihour = (int)Math.Round(normalized * 10);
             packed |= (long)decihour << (d * 8);
         }
         return packed;
