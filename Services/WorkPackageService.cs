@@ -159,7 +159,8 @@ public class WorkPackageService : IWorkPackageService
             double remaining = 0;
             foreach (var lg in lgs)
             {
-                var budget = budgets.Where(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
+                var budget = budgets.FirstOrDefault(c => c.WPProjectId == (wp.ProjectId + "~" + wp.WorkPackageId) && c.LabourCode == lg.LabourCode);
+                if (budget == null) continue;
                 total += budget.BudgetAmount * lg.Rate;
                 remaining += budget.UnallocatedDays * budget.UnallocatedPeople * lg.Rate;
             }
