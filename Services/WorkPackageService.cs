@@ -230,7 +230,7 @@ public class WorkPackageService : IWorkPackageService
                     UnallocatedPeople = budget.People
                 };
                 _context.Budgets!.Add(newBudget);
-                parentB = parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First();
+                parentB = parentBudgets.FirstOrDefault(c => c.LabourCode == budget.LabourCode);
                 if (parentB != null)
                 {
                     parentB.UnallocatedDays -= newBudget.UnallocatedDays;
@@ -258,7 +258,8 @@ public class WorkPackageService : IWorkPackageService
         double remaining = 0;
         foreach (var lg in lgs)
         {
-            var budget = budgets.Where(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId) && c.LabourCode == lg.LabourCode).First();
+            var budget = budgets.FirstOrDefault(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId) && c.LabourCode == lg.LabourCode);
+            if (budget == null) continue;
             total += budget.BudgetAmount * lg.Rate;
             remaining += budget.BudgetAmount * lg.Rate;
         }
