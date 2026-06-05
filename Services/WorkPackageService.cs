@@ -258,7 +258,7 @@ public class WorkPackageService : IWorkPackageService
         double remaining = 0;
         foreach (var lg in lgs)
         {
-            var budget = budgets.FirstOrDefault(c => c.WPProjectId == (newChild.ProjectId + "~" + newChild.WorkPackageId) && c.LabourCode == lg.LabourCode);
+            var budget = budgets.FirstOrDefault(c => c.LabourCode == lg.LabourCode);
             if (budget == null) continue;
             total += budget.BudgetAmount * lg.Rate;
             remaining += budget.BudgetAmount * lg.Rate;
