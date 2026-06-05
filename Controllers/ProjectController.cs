@@ -152,19 +152,7 @@ namespace TimesheetApp.Controllers
                 return PartialView("_CreateWorkPackagePartial", p);
             }
 
-            var (valid, error) = _workPackageService.ValidateNewWorkPackage(p, projectId);
-            if (!valid)
-            {
-                ModelState.AddModelError("WorkPackage.WorkPackageId", error!);
-                Response.StatusCode = 400;
-                return PartialView("_CreateWorkPackagePartial", p);
-            }
-
             // check parent is not closed
-            string newWPID = (p.WorkPackage!.ParentWorkPackageId == "0")
-                ? p.WorkPackage.WorkPackageId
-                : p.WorkPackage!.ParentWorkPackageId + p.WorkPackage!.WorkPackageId;
-
             var wps = _workPackageService.GetProjectWorkPackagesTree(projectId);
             var parent = wps.FirstOrDefault(c => c.WorkPackageId == p.WorkPackage!.ParentWorkPackageId);
             if (parent != null && parent.IsClosed) return BadRequest();
