@@ -74,9 +74,6 @@ namespace TimesheetApp.Controllers.Api
             bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
             if (!isPM) return Forbid();
 
-            var (valid, error) = _workPackageService.ValidateNewWorkPackage(p, projectId);
-            if (!valid) return BadRequest(new { error });
-
             var wps = _workPackageService.GetProjectWorkPackagesTree(projectId);
             var parent = wps.FirstOrDefault(c => c.WorkPackageId == p.WorkPackage!.ParentWorkPackageId);
             if (parent != null && parent.IsClosed) return BadRequest();

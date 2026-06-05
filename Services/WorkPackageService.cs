@@ -171,31 +171,12 @@ public class WorkPackageService : IWorkPackageService
 
     public (bool valid, string? error) ValidateNewWorkPackage(WorkPackageViewModel p, int projectId)
     {
-        if (p.WorkPackage.WorkPackageId.Length != 1)
-        {
-            return (false, "Work Package ID must be 1 character longer");
-        }
-
-        string newWPID = (p.WorkPackage!.ParentWorkPackageId == "0")
-            ? p.WorkPackage.WorkPackageId
-            : p.WorkPackage!.ParentWorkPackageId + p.WorkPackage!.WorkPackageId;
-
-        var exists = _context.WorkPackages!
-            .Any(c => c.ProjectId == projectId && c.WorkPackageId == newWPID);
-
-        if (exists)
-        {
-            return (false, "Work Package ID must be unique for this project");
-        }
-
         return (true, null);
     }
 
     public WorkPackage CreateChildWorkPackage(WorkPackageViewModel p, int projectId)
     {
-        string newWPID = (p.WorkPackage!.ParentWorkPackageId == "0")
-            ? p.WorkPackage.WorkPackageId
-            : p.WorkPackage!.ParentWorkPackageId + p.WorkPackage!.WorkPackageId;
+        string newWPID = Guid.NewGuid().ToString();
 
         var parent = _context.WorkPackages!.FirstOrDefault(c => c.ProjectId == projectId && c.WorkPackageId == p.WorkPackage!.ParentWorkPackageId);
         if (parent != null)
