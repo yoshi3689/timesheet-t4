@@ -183,6 +183,7 @@ public class WorkPackageService : IWorkPackageService
         if (parent != null)
         {
             parent.IsBottomLevel = false;
+            _context.Entry(parent).State = EntityState.Modified;
         }
 
         var newChild = new WorkPackage
