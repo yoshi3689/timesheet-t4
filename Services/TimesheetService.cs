@@ -19,6 +19,7 @@ public class TimesheetService : ITimesheetService
         _signatureService = signatureService;
     }
 
+    // Returns sheets the employee has not yet submitted (EmployeeHash == null), newest first.
     public List<Timesheet> GetUnapprovedTimesheets(string userId)
     {
         return _context.Timesheets!
@@ -27,9 +28,13 @@ public class TimesheetService : ITimesheetService
             .ToList();
     }
 
+    // Finds or creates the timesheet for the week containing endDate, then adds one row per
+    // assigned open WP that doesn't already have a row in this sheet.
+    // Returns the newly created Timesheet, or null if the sheet already existed (or was already submitted).
     public Timesheet? CreateOrUpdateTimesheetWithRows(DateTime endDate, string userId)
     {
         Timesheet? result = null;
+        // Snap the given date forward to the nearest Friday (the week's end boundary).
         int offset = (7 - (int)endDate.DayOfWeek + (int)DayOfWeek.Friday) % 7;
         DateTime nextFriday = endDate.AddDays(offset);
         var sheet = _context.Timesheets.Where(c => c.EndDate == DateOnly.FromDateTime(nextFriday) && c.UserId == userId).FirstOrDefault();
@@ -46,10 +51,13 @@ public class TimesheetService : ITimesheetService
         }
         else if (sheet.EmployeeHash != null)
         {
+            // Sheet is already submitted — don't add rows to a locked sheet.
             return sheet;
         }
-        var currentUser = _context.Users.Where(c => c.Id == userId).First();
+        var currentUser = _context.Users.Where(c => c.Id == userId).FirstOrDefault();
+        if (currentUser == null) return null;
         var myWps = _context.EmployeeWorkPackages.Where(c => c.UserId == userId).Include(c => c.WorkPackage);
+        // Load existing rows across all sheets to check for duplicates efficiently.
         var myExistingRows = _context.TimesheetRows.Where(c => c.Timesheet!.UserId == userId).Select(c => new TimesheetRow { WorkPackageId = c.WorkPackageId, WorkPackageProjectId = c.WorkPackageProjectId, TimesheetId = c.TimesheetId }).ToList();
         foreach (var wp in myWps)
         {
@@ -82,6 +90,7 @@ public class TimesheetService : ITimesheetService
         return _context.Timesheets.Find(timesheetId);
     }
 
+    // Loads the sheet with its User navigation property. Needed when the approver's identity is required.
     public Timesheet? GetTimesheetWithDetails(int timesheetId)
     {
         return _context.Timesheets
@@ -90,6 +99,10 @@ public class TimesheetService : ITimesheetService
             .FirstOrDefault();
     }
 
+    // Updates a single row's hours. Rejects if the sheet is already submitted (EmployeeHash != null).
+    // Validates that no single day column exceeds 24h across all rows in the sheet.
+    // Updates Timesheet.TotalHours incrementally (new total - old total) rather than recomputing the full sum.
+    // Returns (errors, null) on validation failure, or (null, updatedRowFields) on success.
     public (Dictionary<int, string>? errors, object? result) UpdateRow(TimesheetRow timesheetRow)
     {
         var timesheetRows = _context.TimesheetRows
@@ -132,6 +145,8 @@ public class TimesheetService : ITimesheetService
         return (null, new { oldRow.Timesheet.TotalHours, oldRow.Sun, oldRow.Mon, oldRow.Tue, oldRow.Wed, oldRow.Thu, oldRow.Fri, oldRow.Sat, oldRow.TotalHoursRow, oldRow.ProjectId, oldRow.WorkPackageId, oldRow.TimesheetRowId, oldRow.Notes });
     }
 
+    // Returns a lightweight projection with only the fields the frontend needs.
+    // Avoids loading full entity graphs — WorkPackage is projected to 3 fields only.
     public List<TimesheetRow> GetTimesheetRowDtos(int timesheetId)
     {
         return _context.TimesheetRows
@@ -156,6 +171,9 @@ public class TimesheetService : ITimesheetService
             .ToList();
     }
 
+    // Returns all submitted-but-not-approved sheets for the approver's assigned employees.
+    // Each sheet's RSA signature is verified before inclusion — sheets with invalid or missing
+    // signatures are silently dropped. N+1 query: one DB round-trip per employee (known backlog item).
     public List<Timesheet> GetTimesheetsToApprove(string approverId)
     {
         var empsApproving = _context.ApplicationUsers!
@@ -200,6 +218,9 @@ public class TimesheetService : ITimesheetService
             .ToList();
     }
 
+    // Signs the timesheet with the employee's RSA private key (decrypted using their password).
+    // Also records flex and overtime designations on both the sheet and the user's running totals.
+    // Validates that flex + overtime does not exceed hours worked above 40.
     public async Task<(bool success, string? error, byte[]? hash)> SubmitTimesheetAsync(int timesheetId, string userId, string password, double? flexhours, double? overtime)
     {
         var user = await _userManager.FindByIdAsync(userId);
@@ -218,6 +239,7 @@ public class TimesheetService : ITimesheetService
         user.Overtime += overtime ?? 0;
         user.FlexTime += flexhours ?? 0;
 
+        // Float comparison — can be imprecise for values like 7.1 + 7.1 + ... See backlog.
         if (timesheet.TotalHours > 40 && timesheet.TotalHours != flexhours + overtime + 40)
         {
             return (false, "You cannot have more flexhours and overtime then you worked.", null);
@@ -235,6 +257,8 @@ public class TimesheetService : ITimesheetService
         return (true, null, timesheetHash);
     }
 
+    // Signs the sheet with the approver's RSA private key, marking it approved.
+    // Also deducts SICK and FLEX special rows from the employee's running balances.
     public async Task<(bool success, string? error, byte[]? hash)> ApproveTimesheetAsync(int timesheetId, string approverId, string password)
     {
         var user = await _userManager.FindByIdAsync(approverId);
@@ -257,11 +281,12 @@ public class TimesheetService : ITimesheetService
 
         foreach (var row in timesheet.TimesheetRows)
         {
-            if (row.WorkPackageProjectId == 010 && row.WorkPackageId == "SICK")
+            // Project 10 ("Extras") holds all special row types: SICK, FLEX, VACN, SHOL.
+            if (row.WorkPackageProjectId == 10 && row.WorkPackageId == "SICK")
             {
                 timesheet.User!.SickDays -= row.TotalHoursRow / 8;
             }
-            if (row.WorkPackageProjectId == 010 && row.WorkPackageId == "FLEX")
+            if (row.WorkPackageProjectId == 10 && row.WorkPackageId == "FLEX")
             {
                 timesheet.User!.FlexTime -= row.TotalHoursRow;
             }
@@ -274,6 +299,9 @@ public class TimesheetService : ITimesheetService
         return (true, null, timesheetHash);
     }
 
+    // Clears both hashes, returning the sheet to Draft state.
+    // ApproverNotes is set to a space " " when no message is provided — a non-null value
+    // is what signals "declined" in status derivation (null = not yet acted on).
     public async Task<bool> DeclineTimesheetAsync(int timesheetId, string approverId, string password, string? approverNotes)
     {
         var user = await _userManager.FindByIdAsync(approverId);
@@ -296,6 +324,8 @@ public class TimesheetService : ITimesheetService
         return true;
     }
 
+    // Adds a special "custom" row for non-project time: SICK, VACN, SHOL, or FLEX.
+    // These rows always belong to Project 10 ("Extras") — the hardcoded special-purpose project.
     public TimesheetRow? AddCustomRow(int timesheetId, string userId, string type, string? labourGradeCode)
     {
         var timesheet = _context.Timesheets
@@ -310,7 +340,7 @@ public class TimesheetService : ITimesheetService
         TimesheetRow row = new TimesheetRow
         {
             WorkPackageId = type,
-            WorkPackageProjectId = 010,
+            WorkPackageProjectId = 10, // Project 10 = "Extras" (SICK/VACN/SHOL/FLEX rows live here)
             OriginalLabourCode = labourGradeCode,
             TimesheetId = timesheetId
         };

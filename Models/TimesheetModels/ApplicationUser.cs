@@ -16,16 +16,18 @@ namespace TimesheetApp.Models
     /// These fields are added to existing fields in the AspNetUsers table.
     /// </summary>
     [Index(nameof(EmployeeNumber), IsUnique = true)]
+    [Index(nameof(SupervisorId))]
+    [Index(nameof(TimesheetApproverId))]
     public class ApplicationUser : IdentityUser
     {
         [Required]
         [MaxLength(100), MinLength(2)]
         [Display(Name = "First Name")]
-        public string? FirstName { get; set; }
+        public string FirstName { get; set; } = null!;
         [Required]
         [MaxLength(100), MinLength(2)]
         [Display(Name = "Last Name")]
-        public string? LastName { get; set; }
+        public string LastName { get; set; } = null!;
         [Required]
         [IntLength(5, 10)]
         [Range(0, long.MaxValue, ErrorMessage = "Only positive number allowed.")]
@@ -42,7 +44,7 @@ namespace TimesheetApp.Models
         public double Overtime { get; set; }
         [Required]
         [Display(Name = "Job Title")]
-        public string? JobTitle { get; set; }
+        public string JobTitle { get; set; } = null!;
         public bool HasTempPassword { get; set; }
         [Display(Name = "Salary")]
         public double Salary { get; set; }
@@ -50,7 +52,7 @@ namespace TimesheetApp.Models
         public byte[]? PrivateKey { get; set; }
         [Required]
         [Display(Name = "Labour Grade")]
-        public string? LabourGradeCode { get; set; }
+        public string LabourGradeCode { get; set; } = null!;
         [Display(Name = "Supervisor")]
         public string? SupervisorId { get; set; }
         [Display(Name = "Timesheet Approver")]

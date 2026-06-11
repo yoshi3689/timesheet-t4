@@ -19,10 +19,10 @@ namespace TimesheetApp.Models.TimesheetModels
     {
         [Required]
         [Display(Name = "Work Package ID")]
-        [RegularExpression("^[a-zA-Z0-9]*$", ErrorMessage = "Only letters and numbers are allowed.")]
+        [RegularExpression("^[a-zA-Z0-9-]*$", ErrorMessage = "Only letters, numbers, and hyphens are allowed.")]
         public string WorkPackageId { get; set; } = "";
         [Required]
-        public int? ProjectId { get; set; }
+        public int ProjectId { get; set; }
         [Display(Name = "Work Package Title")]
         [Required]
         public string? Title { get; set; }

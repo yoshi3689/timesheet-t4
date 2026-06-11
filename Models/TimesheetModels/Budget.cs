@@ -4,15 +4,18 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace TimesheetApp.Models.TimesheetModels
 {
+    [Index(nameof(WPProjectId))]
     public class Budget
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int BudgetId { get; set; }
         public string WPProjectId { get; set; } = "";
+        [NotMapped]
         [Display(Name = "Effort in Hours")]
         public double BudgetAmount
         {
@@ -29,6 +32,7 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? LabourCode { get; set; }
         public double UnallocatedDays { get; set; }
         public int UnallocatedPeople { get; set; }
+        [NotMapped]
         public double RemainingPDs
         {
             get

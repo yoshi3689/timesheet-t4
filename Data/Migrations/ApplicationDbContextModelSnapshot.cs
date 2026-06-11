@@ -16,7 +16,7 @@ namespace TimesheetApp.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.4")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -47,19 +47,19 @@ namespace TimesheetApp.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "e830da53-b175-4a57-9e55-2c1573a96026",
+                            Id = "37e7120e-5609-4a75-bec4-908ecb7497c2",
                             Name = "HR",
                             NormalizedName = "HR"
                         },
                         new
                         {
-                            Id = "d042b05d-34f4-488e-b9ac-30fa5f73be38",
+                            Id = "8ba1a177-5c9e-4b6c-87a7-44c8f44d0e5f",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "01f2a3b2-a052-4656-ad13-60354021925d",
+                            Id = "ef38ee2e-5e03-462f-9254-2cc57c51eebf",
                             Name = "Supervisor",
                             NormalizedName = "SUPERVISOR"
                         });
@@ -313,12 +313,14 @@ namespace TimesheetApp.Data.Migrations
 
                     b.Property<string>("WPProjectId")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<bool>("isREBudget")
                         .HasColumnType("tinyint(1)");
 
                     b.HasKey("BudgetId");
+
+                    b.HasIndex("WPProjectId");
 
                     b.ToTable("Budgets");
                 });
@@ -328,7 +330,7 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<int?>("ProjectId")
+                    b.Property<int>("ProjectId")
                         .HasColumnType("int");
 
                     b.HasKey("UserId", "ProjectId");
@@ -346,7 +348,7 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("WorkPackageId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<int?>("WorkPackageProjectId")
+                    b.Property<int>("WorkPackageProjectId")
                         .HasColumnType("int");
 
                     b.HasKey("UserId", "WorkPackageId", "WorkPackageProjectId");
@@ -969,8 +971,7 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<byte[]>("EmployeeHash")
                         .HasColumnType("longblob");
 
-                    b.Property<DateOnly?>("EndDate")
-                        .IsRequired()
+                    b.Property<DateOnly>("EndDate")
                         .HasColumnType("date");
 
                     b.Property<double>("FlexHours")
@@ -1047,7 +1048,7 @@ namespace TimesheetApp.Data.Migrations
                     b.Property<string>("WorkPackageId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<int?>("ProjectId")
+                    b.Property<int>("ProjectId")
                         .HasColumnType("int");
 
                     b.Property<double>("ActualCost")

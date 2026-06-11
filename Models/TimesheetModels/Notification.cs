@@ -20,6 +20,6 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public ApplicationUser? User { get; set; } = null!;
+        public ApplicationUser User { get; set; } = null!;
     }
 }

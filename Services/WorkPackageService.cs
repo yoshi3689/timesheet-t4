@@ -78,7 +78,7 @@ public class WorkPackageService : IWorkPackageService
 
         foreach (var item in budgets)
         {
-            item.Rate = lgs.Where(c => c.LabourCode == item.LabourCode).First().Rate;
+            item.Rate = lgs.Where(c => c.LabourCode == item.LabourCode).FirstOrDefault()?.Rate ?? 0;
         }
 
         return new LowestWorkPackageBAndEViewModel
@@ -109,7 +109,7 @@ public class WorkPackageService : IWorkPackageService
                     isREBudget = true
                 };
                 _context.Budgets!.Add(newBudget);
-                parentB = parentBudgets.Where(c => c.LabourCode == budget.LabourCode).First();
+                parentB = parentBudgets.Where(c => c.LabourCode == budget.LabourCode).FirstOrDefault();
                 if (parentB != null)
                 {
                     parentB.UnallocatedDays -= newBudget.UnallocatedDays;
@@ -230,8 +230,8 @@ public class WorkPackageService : IWorkPackageService
         {
             newChild.ResponsibleUser = new ApplicationUser
             {
-                FirstName = null,
-                LastName = null
+                FirstName = "",
+                LastName = ""
             };
         }
 
@@ -261,7 +261,7 @@ public class WorkPackageService : IWorkPackageService
         var lgs = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).ToList();
         foreach (var budget in budgets)
         {
-            budget.Rate = lgs.Where(c => c.LabourCode == budget.LabourCode).First().Rate;
+            budget.Rate = lgs.Where(c => c.LabourCode == budget.LabourCode).FirstOrDefault()?.Rate ?? 0;
         }
         return budgets;
     }
@@ -382,6 +382,7 @@ public class WorkPackageService : IWorkPackageService
 
     public object AssignEmployees(List<EmployeeWorkPackage> ewps)
     {
+        if (!ewps.Any()) return "Error";
         var workPackageId = ewps[0].WorkPackageId;
         var workPackageProjectId = ewps[0].WorkPackageProjectId;
 
@@ -393,7 +394,8 @@ public class WorkPackageService : IWorkPackageService
         var currentWp = _context.WorkPackages
             .Where(c => c.WorkPackageId == workPackageId)
             .Include(c => c.Project)
-            .First();
+            .FirstOrDefault();
+        if (currentWp == null) return "Error";
         if (currentWp.IsClosed) return null!;
 
         var removedEmployeeIds = _context.EmployeeWorkPackages
@@ -451,7 +453,8 @@ public class WorkPackageService : IWorkPackageService
             .Where(c => c.UserId == ewp.UserId && c.WorkPackageId == ewp.WorkPackageId)
             .Include(c => c.WorkPackage)
             .Include(c => c.WorkPackage!.Project)
-            .First();
+            .FirstOrDefault();
+        if (fullEwp == null) return null;
 
         var workPackageString = fullEwp.WorkPackageProjectId + "~" + fullEwp.WorkPackageId;
 
@@ -474,13 +477,15 @@ public class WorkPackageService : IWorkPackageService
         List<Budget> emptyBudgets = new List<Budget>();
         foreach (var item in _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).ToList())
         {
+            var matchingBudget = projectBudget.FirstOrDefault(c => c.LabourCode == item.LabourCode);
+            if (matchingBudget == null) continue;
             emptyBudgets.Add(new Budget
             {
                 LabourCode = item.LabourCode,
                 isREBudget = false,
                 Rate = item.Rate,
-                UnallocatedDays = projectBudget.Where(c => c.LabourCode == item.LabourCode).First().UnallocatedDays,
-                UnallocatedPeople = projectBudget.Where(c => c.LabourCode == item.LabourCode).First().UnallocatedPeople
+                UnallocatedDays = matchingBudget.UnallocatedDays,
+                UnallocatedPeople = matchingBudget.UnallocatedPeople
             });
         }
         return emptyBudgets;

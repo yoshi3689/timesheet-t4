@@ -16,11 +16,11 @@ namespace TimesheetApp.Models.TimesheetModels
     public class EmployeeWorkPackage
     {
         [Required]
-        public string? UserId { get; set; }
+        public string UserId { get; set; } = null!;
         [Required]
-        public string? WorkPackageId { get; set; }
+        public string WorkPackageId { get; set; } = null!;
         [Required]
-        public int? WorkPackageProjectId { get; set; }
+        public int WorkPackageProjectId { get; set; }
 
         [ForeignKey("UserId")]
         public virtual ApplicationUser? User { get; set; }
