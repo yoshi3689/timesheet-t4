@@ -63,7 +63,7 @@ public class WorkPackageService : IWorkPackageService
         estimates.Clear();
 
         var lgs = _context.LabourGrades.Where(c => c.Year == DateTime.Now.Year).ToList();
-        for (int i = 0; i < labourGradeCount; i++)
+        for (int i = 0; i < budgets.Count; i++)
         {
             budgets[i].Days = 0;
             budgets[i].People = 0;
@@ -139,14 +139,17 @@ public class WorkPackageService : IWorkPackageService
 
     public List<WorkPackage> GetProjectWorkPackagesTree(int projectId)
     {
-        var workpackages = _context.WorkPackages!
+        // Load all WPs at once — EF relationship fixup wires up ChildWorkPackages
+        // for the full tree, so FindAllChildren traverses in memory with no N+1.
+        var all = _context.WorkPackages!
             .Where(c => c.ProjectId == projectId)
             .Include(c => c.ResponsibleUser)
             .Include(c => c.ParentWorkPackage)
             .Include(c => c.ChildWorkPackages)
-            .Include(c => c.Project);
+            .Include(c => c.Project)
+            .ToList();
 
-        var top = workpackages.FirstOrDefault(c => c.ParentWorkPackage == null)!;
+        var top = all.FirstOrDefault(c => c.ParentWorkPackage == null)!;
         return FindAllChildren(top);
     }
 
@@ -505,26 +508,9 @@ public class WorkPackageService : IWorkPackageService
 
     private List<WorkPackage> FindAllChildren(WorkPackage top)
     {
-        List<WorkPackage> wps = new List<WorkPackage>();
-        wps.Add(top);
-        if (top.ChildWorkPackages == null || top.ChildWorkPackages.Count() == 0)
-        {
-            top = _context.WorkPackages!
-                .Include(c => c.ChildWorkPackages)
-                .Include(c => c.ResponsibleUser)
-                .Include(c => c.Project)
-                .FirstOrDefault(c => c.ProjectId == top.ProjectId && c.WorkPackageId == top.WorkPackageId)!;
-        }
-        if (top.ChildWorkPackages != null && top.ChildWorkPackages.Count() != 0)
-        {
-            foreach (var wp in top.ChildWorkPackages)
-            {
-                foreach (var item in FindAllChildren(wp))
-                {
-                    wps.Add(item);
-                }
-            }
-        }
+        var wps = new List<WorkPackage> { top };
+        foreach (var child in top.ChildWorkPackages)
+            wps.AddRange(FindAllChildren(child));
         return wps;
     }
 }

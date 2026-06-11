@@ -304,7 +304,6 @@ public class ProjectService : IProjectService
 
         document.Close();
         byte[] byteInfo = ms.ToArray();
-        ms.Write(byteInfo, 0, byteInfo.Length);
         ms.Position = 0;
         return byteInfo;
     }
@@ -458,7 +457,6 @@ public class ProjectService : IProjectService
 
         document.Close();
         byte[] byteInfo = ms.ToArray();
-        ms.Write(byteInfo, 0, byteInfo.Length);
         ms.Position = 0;
         return byteInfo;
     }
@@ -589,7 +587,6 @@ public class ProjectService : IProjectService
 
         document.Close();
         byte[] byteInfo = ms.ToArray();
-        ms.Write(byteInfo, 0, byteInfo.Length);
         ms.Position = 0;
         return byteInfo;
     }

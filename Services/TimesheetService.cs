@@ -176,21 +176,14 @@ public class TimesheetService : ITimesheetService
     // signatures are silently dropped. N+1 query: one DB round-trip per employee (known backlog item).
     public List<Timesheet> GetTimesheetsToApprove(string approverId)
     {
-        var empsApproving = _context.ApplicationUsers!
-            .Where(c => c.TimesheetApproverId == approverId)
+        var approveSheets = _context.Timesheets!
+            .Where(t => t.User!.TimesheetApproverId == approverId &&
+                        t.EmployeeHash != null &&
+                        t.ApproverHash == null)
+            .Include(c => c.User)
+            .Include(c => c.TimesheetRows)
+            .OrderBy(c => c.EndDate)
             .ToList();
-
-        var approveSheets = new List<Timesheet>();
-        foreach (var emp in empsApproving)
-        {
-            approveSheets.AddRange(
-                _context.Timesheets!
-                    .Where(t => t.UserId == emp.Id && t.EmployeeHash != null && t.ApproverHash == null)
-                    .Include(c => c.User)
-                    .Include(c => c.TimesheetRows)
-                    .OrderBy(c => c.EndDate)
-            );
-        }
 
         var verifiedSheets = new List<Timesheet>();
         foreach (var sheet in approveSheets)

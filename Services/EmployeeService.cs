@@ -32,11 +32,7 @@ public class EmployeeService : IEmployeeService
 
     public int GetTotalEmployeeCount()
     {
-        return _context.Users
-            .Include(a => a.Supervisor)
-            .Include(a => a.TimesheetApprover)
-            .OrderBy(a => a.FirstName)
-            .Count();
+        return _context.Users.Count();
     }
 
     public async Task<ApplicationUser?> GetEmployeeDetailsAsync(string id)
@@ -159,10 +155,12 @@ public class EmployeeService : IEmployeeService
         if (futureTSA == null)
             return;
 
-        foreach (var s in supervisor.SupervisedUsers)
-        {
+        var supervisedUsers = _context.Users
+            .Where(u => u.SupervisorId == supervisor.Id)
+            .ToList();
+        foreach (var s in supervisedUsers)
             s.TimesheetApproverId = futureApproverId;
-        }
+
         futureTSA.TimesheetApproverId = supervisor.Id;
         _context.SaveChanges();
     }
