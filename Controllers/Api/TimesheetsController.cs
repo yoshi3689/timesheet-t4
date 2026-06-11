@@ -90,8 +90,10 @@ namespace TimesheetApp.Controllers.Api
         [HttpPost("rows/update")]
         public IActionResult UpdateRow([FromBody] TimesheetRow timesheetRow)
         {
-            if (timesheetRow.ValidationErrors != null)
-                return BadRequest(timesheetRow.ValidationErrors);
+            var callerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var timesheet = _timesheetService.GetTimesheetById(timesheetRow.TimesheetId);
+            if (timesheet == null || timesheet.UserId != callerId)
+                return Forbid();
 
             var (errors, result) = _timesheetService.UpdateRow(timesheetRow);
             if (result == null && errors == null) return BadRequest();
@@ -103,18 +105,14 @@ namespace TimesheetApp.Controllers.Api
         [HttpPost("get")]
         public IActionResult GetTimesheet([FromBody] string timesheetId)
         {
-            int tid;
-            try { tid = Convert.ToInt32(timesheetId); }
-            catch { return BadRequest(); }
+            if (!int.TryParse(timesheetId, out int tid)) return BadRequest();
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var timesheet = _timesheetService.GetTimesheetWithDetails(tid);
             if (timesheet == null ||
-                (timesheet.UserId != userId && timesheet.User!.TimesheetApproverId != userId))
+                (timesheet.UserId != userId && timesheet.User?.TimesheetApproverId != userId))
                 return BadRequest();
 
-            _timesheetService.CreateOrUpdateTimesheetWithRows(
-                DateTime.Parse(timesheet.EndDate.ToString()!), timesheet.UserId ?? "0");
             return Ok(_timesheetService.GetTimesheetRowDtos(tid));
         }
 
@@ -173,15 +171,11 @@ namespace TimesheetApp.Controllers.Api
         [HttpPost("rows/custom")]
         public async Task<IActionResult> AddCustomRow([FromBody] CustomRowModel model)
         {
-            int timesheetIdInt;
-            try { timesheetIdInt = Convert.ToInt32(model.TimesheetId); }
-            catch { return BadRequest(); }
-
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return BadRequest();
 
             var row = _timesheetService.AddCustomRow(
-                timesheetIdInt, user.Id, model.Type!, user.LabourGradeCode);
+                model.TimesheetId, user.Id, model.Type!, user.LabourGradeCode);
             if (row == null) return BadRequest();
             return Ok(row);
         }

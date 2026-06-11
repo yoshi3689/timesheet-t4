@@ -46,9 +46,20 @@ namespace TimesheetApp.Controllers.Api
 
         // POST /api/workpackages/budgets-and-estimates
         [HttpPost("budgets-and-estimates")]
-        public IActionResult CreateBudgetsAndEstimates([FromBody] LowestWorkPackageBAndEViewModel input)
+        public async Task<IActionResult> CreateBudgetsAndEstimates([FromBody] LowestWorkPackageBAndEViewModel input)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            // Extract projectId from WPProjectId (format: "{projectId}~{wpId}")
+            string? wpProjectId = input.budgets?.FirstOrDefault()?.WPProjectId
+                ?? input.estimates?.FirstOrDefault()?.WPProjectId;
+            if (wpProjectId == null) return BadRequest();
+            if (!int.TryParse(wpProjectId.Split('~')[0], out int projectId)) return BadRequest();
+
+            string userId = _userManager.GetUserId(HttpContext.User)!;
+            bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId);
+            if (!isPM) return Forbid();
+
             _workPackageService.CreateBudgetsAndEstimates(input);
             return Ok();
         }
@@ -73,9 +84,10 @@ namespace TimesheetApp.Controllers.Api
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
             if (!isPM) return Forbid();
+            if (p.WorkPackage == null) return BadRequest();
 
             var wps = _workPackageService.GetProjectWorkPackagesTree(projectId);
-            var parent = wps.FirstOrDefault(c => c.WorkPackageId == p.WorkPackage!.ParentWorkPackageId);
+            var parent = wps.FirstOrDefault(c => c.WorkPackageId == p.WorkPackage.ParentWorkPackageId);
             if (parent != null && parent.IsClosed) return BadRequest();
 
             return Ok(_workPackageService.CreateChildWorkPackage(p, projectId));
@@ -147,10 +159,13 @@ namespace TimesheetApp.Controllers.Api
             bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
             if (!isPM) return Forbid();
             if (ewps.Count == 0) return BadRequest();
-            for (int i = 1; i < ewps.Count; i++)
+            for (int i = 0; i < ewps.Count; i++)
             {
-                if (ewps[i].WorkPackageId != ewps[0].WorkPackageId ||
-                    ewps[i].WorkPackageProjectId != ewps[0].WorkPackageProjectId)
+                // Reject body items that reference a different project than the route
+                if (ewps[i].WorkPackageProjectId != projectId)
+                    return BadRequest();
+                if (i > 0 && (ewps[i].WorkPackageId != ewps[0].WorkPackageId ||
+                    ewps[i].WorkPackageProjectId != ewps[0].WorkPackageProjectId))
                     return BadRequest();
             }
             var result = _workPackageService.AssignEmployees(ewps);

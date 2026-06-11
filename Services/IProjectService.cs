@@ -8,6 +8,7 @@ public interface IProjectService
 {
     IEnumerable<Project> GetProjectsForUser(string userId, bool isHrOrAdmin);
     Project? GetProjectById(int id);
+    Project? GetProjectByIdForUser(int id, string userId, bool isHrOrAdmin);
     (bool valid, string? error) ValidateNewProject(CreateProjectViewModel input);
     void CreateProject(CreateProjectViewModel input);
     Task<bool> VerifyProjectManagerAsync(int projectId, string userId);

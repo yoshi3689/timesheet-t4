@@ -59,6 +59,19 @@ public class ProjectService : IProjectService
             .FirstOrDefault(p => p.ProjectId == id);
     }
 
+    public Project? GetProjectByIdForUser(int id, string userId, bool isHrOrAdmin)
+    {
+        if (isHrOrAdmin)
+            return _context.Projects
+                .Include(p => p.ProjectManager)
+                .FirstOrDefault(p => p.ProjectId == id && p.ProjectId != 10);
+
+        return _context.Projects
+            .Include(p => p.ProjectManager)
+            .FirstOrDefault(p => p.ProjectId == id &&
+                (p.ProjectManagerId == userId || p.AssistantProjectManagerId == userId));
+    }
+
     public (bool valid, string? error) ValidateNewProject(CreateProjectViewModel input)
     {
         if (_context.Projects.Find(input.project.ProjectId) != null)
@@ -98,7 +111,7 @@ public class ProjectService : IProjectService
                     UnallocatedDays = budget.Days,
                     UnallocatedPeople = budget.People
                 };
-                totalBudget += budget.BudgetAmount * grades.Where(c => budget.LabourCode == c.LabourCode).First().Rate;
+                totalBudget += budget.BudgetAmount * (grades.Where(c => budget.LabourCode == c.LabourCode).FirstOrDefault()?.Rate ?? 0);
                 _context.Budgets!.Add(newBudget);
             }
         }
@@ -250,7 +263,7 @@ public class ProjectService : IProjectService
             foreach (var row in timesheetRows.Where(c => c.WorkPackageId == wp.WorkPackageId))
             {
                 totalPDActual = totalPDActual + (row.TotalHoursRow / 8);
-                totalCostActual += (row.TotalHoursRow / 8) * labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode && c.Year == row.Timesheet!.EndDate!.Value.Year).First().Rate;
+                totalCostActual += (row.TotalHoursRow / 8) * (labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode && c.Year == row.Timesheet!.EndDate.Year).FirstOrDefault()?.Rate ?? 0);
             }
             wpTable.AddCell(new Cell()
                 .Add(new Paragraph(Convert.ToString(Math.Round(totalPDActual, 2))).SetFontSize(fontSizeSH))
@@ -261,7 +274,7 @@ public class ProjectService : IProjectService
             foreach (var estimate in estimates.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId).ToList())
             {
                 pDEstimate += estimate.EstimatedCost;
-                costEstimate += estimate.EstimatedCost * labourGrades.Where(c => c.LabourCode == estimate.LabourCode && c.Year == DateTime.Now.Year).First().Rate;
+                costEstimate += estimate.EstimatedCost * (labourGrades.Where(c => c.LabourCode == estimate.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
             }
             wpTable.AddCell(new Cell()
                 .Add(new Paragraph(Convert.ToString(Math.Round(pDEstimate, 2))).SetFontSize(fontSizeSH))
@@ -413,7 +426,7 @@ public class ProjectService : IProjectService
                             totalHour += hour;
                             grandTotal += hour;
                             dayTotals[i] += hour;
-                            money = hour * labourGrades.Where(c => c.Year == DateTime.Now.Year && c.LabourCode == row.OriginalLabourCode).First().Rate / 8;
+                            money = hour * (labourGrades.Where(c => c.Year == DateTime.Now.Year && c.LabourCode == row.OriginalLabourCode).FirstOrDefault()?.Rate ?? 0) / 8;
                             totalMoney += money;
                             dayTotalsMoney[i] += money;
                             grandTotalMoney += money;
@@ -528,7 +541,7 @@ public class ProjectService : IProjectService
             foreach (var budget in budgets.Where(c => c.isREBudget == false && c.LabourCode == lg.LabourCode))
             {
                 totalPDPM += budget.BudgetAmount;
-                totalCostPM += budget.BudgetAmount * labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).First().Rate;
+                totalCostPM += budget.BudgetAmount * (labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
             }
             totalPM += totalCostPM;
             totalPMPD += totalPDPM;
@@ -539,7 +552,7 @@ public class ProjectService : IProjectService
             foreach (var budget in budgets.Where(c => c.isREBudget == true && c.LabourCode == lg.LabourCode))
             {
                 totalPDRE += budget.BudgetAmount;
-                totalCostRE += budget.BudgetAmount * labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).First().Rate;
+                totalCostRE += budget.BudgetAmount * (labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
             }
             totalRE += totalCostRE;
             totalREPD += totalPDRE;
@@ -550,7 +563,7 @@ public class ProjectService : IProjectService
             foreach (var row in timesheetRows.Where(c => c.OriginalLabourCode == lg.LabourCode))
             {
                 totalPDActual += row.TotalHoursRow / 8;
-                totalCostActual += (row.TotalHoursRow / 8) * labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode && c.Year == row.Timesheet!.EndDate!.Value.Year).First().Rate;
+                totalCostActual += (row.TotalHoursRow / 8) * (labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode && c.Year == row.Timesheet!.EndDate.Year).FirstOrDefault()?.Rate ?? 0);
             }
             totalActualPD += totalPDActual;
             totalActual += totalCostActual;

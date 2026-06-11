@@ -12,6 +12,7 @@ namespace TimesheetApp.Controllers.Api
     [Authorize(Policy = "KeyRequirement")]
     public class ProjectsController : ControllerBase
     {
+        private const int ExtrasProjectId = 10;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IProjectService _projectService;
         private readonly IWorkPackageService _workPackageService;
@@ -54,8 +55,7 @@ namespace TimesheetApp.Controllers.Api
         {
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isHrOrAdmin = User.IsInRole("HR") || User.IsInRole("Admin");
-            var project = _projectService.GetProjectsForUser(userId!, isHrOrAdmin)
-                .FirstOrDefault(p => p.ProjectId == id);
+            var project = _projectService.GetProjectByIdForUser(id, userId!, isHrOrAdmin);
             if (project == null) return NotFound();
             return Ok(new {
                 project.ProjectId,
@@ -77,9 +77,9 @@ namespace TimesheetApp.Controllers.Api
         [Authorize(Roles = "HR,Admin")]
         public IActionResult Create([FromBody] CreateProjectViewModel input)
         {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
             var (valid, error) = _projectService.ValidateNewProject(input);
             if (!valid) return BadRequest(new { error });
-            if (!ModelState.IsValid) return BadRequest(ModelState);
             _projectService.CreateProject(input);
             return Ok();
         }
@@ -101,7 +101,7 @@ namespace TimesheetApp.Controllers.Api
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isPM = await _projectService.VerifyProjectManagerAsync(id, userId!);
             if (!isPM) return Forbid();
-            if (id == 10) return BadRequest();
+            if (id == ExtrasProjectId) return BadRequest();
             _workPackageService.CloseProject(id);
             return Ok();
         }
@@ -110,9 +110,10 @@ namespace TimesheetApp.Controllers.Api
         [HttpPost("{id}/asm")]
         public async Task<IActionResult> AssignASM(int id, [FromBody] string asm)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
-            bool success = await _projectService.AssignAssistantProjectManagerAsync(id, asm, user.Id);
+            var userId = _userManager.GetUserId(HttpContext.User);
+            bool isPM = await _projectService.VerifyProjectManagerAsync(id, userId!);
+            if (!isPM) return Forbid();
+            bool success = await _projectService.AssignAssistantProjectManagerAsync(id, asm, userId!);
             if (!success) return BadRequest();
             return Ok();
         }

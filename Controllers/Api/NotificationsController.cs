@@ -35,9 +35,7 @@ namespace TimesheetApp.Controllers.Api
         [HttpPost("dismiss")]
         public async Task<IActionResult> Dismiss([FromBody] string id)
         {
-            int newId;
-            try { newId = Convert.ToInt32(id); }
-            catch { return BadRequest(); }
+            if (!int.TryParse(id, out int newId)) return BadRequest();
 
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
