@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using TimesheetApp.DTOs.Employees;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
 using TimesheetApp.Services;
@@ -14,15 +16,18 @@ namespace TimesheetApp.Controllers.Api
     {
         private readonly IEmployeeService _employeeService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IProjectService _projectService;
         private readonly RoleManager<IdentityRole> _roleManager;
 
         public EmployeesController(
             IEmployeeService employeeService,
             UserManager<ApplicationUser> userManager,
+            IProjectService projectService,
             RoleManager<IdentityRole> roleManager)
         {
             _employeeService = employeeService;
             _userManager = userManager;
+            _projectService = projectService;
             _roleManager = roleManager;
         }
 
@@ -33,7 +38,18 @@ namespace TimesheetApp.Controllers.Api
             var users = await _employeeService.GetAllEmployeesPaginatedAsync(page, pageSize);
             int totalCount = _employeeService.GetTotalEmployeeCount();
             int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            return Ok(new { users, totalPages, currentPage = page, pageSize });
+            var dtos = users.Select(u => new EmployeeSummaryDto
+            {
+                Id = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                EmployeeNumber = u.EmployeeNumber,
+                JobTitle = u.JobTitle,
+                LabourGradeCode = u.LabourGradeCode,
+                SupervisorId = u.SupervisorId,
+                TimesheetApproverId = u.TimesheetApproverId,
+            });
+            return Ok(new { users = dtos, totalPages, currentPage = page, pageSize });
         }
 
         // GET /api/employees/{id}
@@ -42,17 +58,58 @@ namespace TimesheetApp.Controllers.Api
         {
             var user = await _employeeService.GetEmployeeDetailsAsync(id);
             if (user == null) return NotFound();
-            return Ok(user);
+
+            bool isAdminOrHR = User.IsInRole("Admin") || User.IsInRole("HR");
+            string callerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            if (isAdminOrHR || callerId == id)
+            {
+                return Ok(new EmployeeDetailDto
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    EmployeeNumber = user.EmployeeNumber,
+                    JobTitle = user.JobTitle,
+                    LabourGradeCode = user.LabourGradeCode,
+                    SupervisorId = user.SupervisorId,
+                    TimesheetApproverId = user.TimesheetApproverId,
+                    Email = user.Email,
+                    SickDays = user.SickDays,
+                    FlexTime = user.FlexTime,
+                    Overtime = user.Overtime,
+                    Salary = user.Salary,
+                });
+            }
+
+            return Ok(new EmployeeSummaryDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                EmployeeNumber = user.EmployeeNumber,
+                JobTitle = user.JobTitle,
+                LabourGradeCode = user.LabourGradeCode,
+                SupervisorId = user.SupervisorId,
+                TimesheetApproverId = user.TimesheetApproverId,
+            });
         }
 
         // PUT /api/employees/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] ApplicationUser applicationUser)
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateEmployeeDto dto)
         {
-            if (id != applicationUser.Id) return BadRequest();
+            if (id != dto.Id) return BadRequest();
+
+            string callerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            bool isAdminOrHR = User.IsInRole("Admin") || User.IsInRole("HR");
+
+            if (!isAdminOrHR && callerId != id)
+                return Forbid();
+
             var existing = await _employeeService.FindEmployeeAsync(id);
             if (existing == null) return NotFound();
-            await _employeeService.UpdateEmployeeAsync(existing, applicationUser, _userManager);
+            await _employeeService.UpdateEmployeeAsync(existing, dto, isAdminOrHR, _userManager);
             return NoContent();
         }
 
@@ -76,8 +133,14 @@ namespace TimesheetApp.Controllers.Api
 
         // POST /api/employees/add-to-project
         [HttpPost("add-to-project")]
-        public IActionResult AddToProject([FromBody] List<EmployeeProject> employeeProjects)
+        public async Task<IActionResult> AddToProject([FromBody] List<EmployeeProject> employeeProjects)
         {
+            string callerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            foreach (int projectId in employeeProjects.Select(ep => ep.ProjectId).Distinct())
+            {
+                bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, callerId);
+                if (!isPM) return Forbid();
+            }
             _employeeService.AddEmployeesToProject(employeeProjects);
             return Ok(employeeProjects);
         }

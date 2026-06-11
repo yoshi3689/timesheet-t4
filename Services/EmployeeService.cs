@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TimesheetApp.Data;
+using TimesheetApp.DTOs.Employees;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
 
@@ -68,29 +69,33 @@ public class EmployeeService : IEmployeeService
             .ToList();
     }
 
-    public async Task UpdateEmployeeAsync(ApplicationUser existing, ApplicationUser updated, UserManager<ApplicationUser> userManager)
+    public async Task UpdateEmployeeAsync(ApplicationUser existing, UpdateEmployeeDto dto, bool isAdminOrHR, UserManager<ApplicationUser> userManager)
     {
-        existing.FirstName = updated.FirstName;
-        existing.LastName = updated.LastName;
-        existing.EmployeeNumber = updated.EmployeeNumber;
-        existing.SickDays = updated.SickDays;
-        existing.FlexTime = updated.FlexTime;
-        existing.JobTitle = updated.JobTitle;
-        existing.Salary = updated.Salary;
-        existing.LabourGradeCode = updated.LabourGradeCode;
-        if (await userManager.IsInRoleAsync(await userManager.FindByIdAsync(updated.SupervisorId!) ?? new ApplicationUser(), "Supervisor") && existing.Id != updated.SupervisorId)
+        existing.FirstName = dto.FirstName ?? existing.FirstName;
+        existing.LastName = dto.LastName ?? existing.LastName;
+        existing.JobTitle = dto.JobTitle ?? existing.JobTitle;
+
+        if (isAdminOrHR)
         {
-            existing.SupervisorId = updated.SupervisorId;
+            existing.EmployeeNumber = dto.EmployeeNumber;
+            existing.SickDays = dto.SickDays;
+            existing.FlexTime = dto.FlexTime;
+            existing.Salary = dto.Salary;
+            existing.LabourGradeCode = dto.LabourGradeCode ?? existing.LabourGradeCode;
         }
-        var approver = await userManager.FindByIdAsync(updated.TimesheetApproverId!);
-        if (approver != null && updated.TimesheetApproverId != existing.Id && (approver.SupervisorId == existing.SupervisorId || approver.Id == existing.SupervisorId))
+
+        if (dto.SupervisorId != null &&
+            await userManager.IsInRoleAsync(await userManager.FindByIdAsync(dto.SupervisorId) ?? new ApplicationUser(), "Supervisor") &&
+            existing.Id != dto.SupervisorId)
         {
-            existing.TimesheetApproverId = updated.TimesheetApproverId;
+            existing.SupervisorId = dto.SupervisorId;
         }
-        existing.PhoneNumber = updated.PhoneNumber;
-        existing.LockoutEnd = updated.LockoutEnd;
-        existing.LockoutEnabled = updated.LockoutEnabled;
-        existing.AccessFailedCount = updated.AccessFailedCount;
+        var approver = dto.TimesheetApproverId != null ? await userManager.FindByIdAsync(dto.TimesheetApproverId) : null;
+        if (approver != null && dto.TimesheetApproverId != existing.Id &&
+            (approver.SupervisorId == existing.SupervisorId || approver.Id == existing.SupervisorId))
+        {
+            existing.TimesheetApproverId = dto.TimesheetApproverId;
+        }
 
         _context.Update(existing);
         await _context.SaveChangesAsync();

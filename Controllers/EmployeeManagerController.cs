@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TimesheetApp.Data;
+using TimesheetApp.DTOs.Employees;
 using TimesheetApp.Models;
 using TimesheetApp.Services;
 
@@ -106,7 +107,21 @@ namespace TimesheetApp.Controllers
                     var user = await _employeeService.FindEmployeeAsync(id);
                     if (user != null)
                     {
-                        await _employeeService.UpdateEmployeeAsync(user, applicationUser, _userManager);
+                        var dto = new UpdateEmployeeDto
+                        {
+                            Id = applicationUser.Id,
+                            FirstName = applicationUser.FirstName,
+                            LastName = applicationUser.LastName,
+                            EmployeeNumber = applicationUser.EmployeeNumber,
+                            SickDays = applicationUser.SickDays,
+                            FlexTime = applicationUser.FlexTime,
+                            JobTitle = applicationUser.JobTitle,
+                            Salary = applicationUser.Salary,
+                            LabourGradeCode = applicationUser.LabourGradeCode,
+                            SupervisorId = applicationUser.SupervisorId,
+                            TimesheetApproverId = applicationUser.TimesheetApproverId,
+                        };
+                        await _employeeService.UpdateEmployeeAsync(user, dto, isAdminOrHR: true, _userManager);
                     }
                 }
                 catch (DbUpdateConcurrencyException)
