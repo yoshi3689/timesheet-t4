@@ -37,14 +37,14 @@ namespace TimesheetApp.Controllers.Api
         public IActionResult GetApproved()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return Ok(_timesheetService.GetApprovedTimesheets(userId!).Select(t => new Timesheet
+            return Ok(_timesheetService.GetApprovedTimesheets(userId!).Select(t => new
             {
-                TotalHours = t.TotalHours,
-                EndDate = t.EndDate,
-                TimesheetId = t.TimesheetId,
-                EmployeeHash = t.EmployeeHash,
-                FlexHours = t.FlexHours,
-                Overtime = t.Overtime
+                t.TotalHours,
+                t.EndDate,
+                t.TimesheetId,
+                t.EmployeeHash,
+                t.FlexHours,
+                t.Overtime
             }));
         }
 

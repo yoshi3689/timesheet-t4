@@ -3,6 +3,11 @@ using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Models
 {
+    public class WorkPackageIdRequest
+    {
+        public string WorkPackageId { get; set; } = "";
+    }
+
     public class WorkPackageViewModel
     {
         public List<TimesheetApp.Models.TimesheetModels.WorkPackage> wps { get; set; } = new List<WorkPackage>();

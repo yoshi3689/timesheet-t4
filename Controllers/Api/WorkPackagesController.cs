@@ -95,12 +95,12 @@ namespace TimesheetApp.Controllers.Api
 
         // POST /api/workpackages/project/{projectId}/budget-details
         [HttpPost("project/{projectId}/budget-details")]
-        public async Task<IActionResult> BudgetDetails(int projectId, [FromBody] WorkPackage wp)
+        public async Task<IActionResult> BudgetDetails(int projectId, [FromBody] WorkPackageIdRequest req)
         {
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
             if (!isPM) return Forbid();
-            var budgets = _workPackageService.GetBudgetDetails(wp.WorkPackageId, projectId);
+            var budgets = _workPackageService.GetBudgetDetails(req.WorkPackageId, projectId);
             return Ok(new
             {
                 pmBudgets = budgets.Where(c => !c.isREBudget).ToList(),
@@ -110,45 +110,45 @@ namespace TimesheetApp.Controllers.Api
 
         // POST /api/workpackages/project/{projectId}/close-wp
         [HttpPost("project/{projectId}/close-wp")]
-        public async Task<IActionResult> CloseWorkPackage(int projectId, [FromBody] WorkPackage wp)
+        public async Task<IActionResult> CloseWorkPackage(int projectId, [FromBody] WorkPackageIdRequest req)
         {
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
             if (!isPM) return Forbid();
-            _workPackageService.CloseWorkPackage(wp.WorkPackageId, projectId);
+            _workPackageService.CloseWorkPackage(req.WorkPackageId, projectId);
             return Ok();
         }
 
         // POST /api/workpackages/project/{projectId}/wp-employees
         [HttpPost("project/{projectId}/wp-employees")]
-        public async Task<IActionResult> GetWPEmployees(int projectId, [FromBody] WorkPackage wp)
+        public async Task<IActionResult> GetWPEmployees(int projectId, [FromBody] WorkPackageIdRequest req)
         {
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
             if (!isPM) return Forbid();
-            return Ok(_workPackageService.GetWPEmployees(wp.WorkPackageId, projectId));
+            return Ok(_workPackageService.GetWPEmployees(req.WorkPackageId, projectId));
         }
 
         // POST /api/workpackages/project/{projectId}/candidate-employees
         [HttpPost("project/{projectId}/candidate-employees")]
-        public async Task<IActionResult> GetCandidateEmployees(int projectId, [FromBody] WorkPackage wp)
+        public async Task<IActionResult> GetCandidateEmployees(int projectId, [FromBody] WorkPackageIdRequest req)
         {
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
             if (!isPM) return Forbid();
-            var result = _workPackageService.GetCandidateEmployees(wp.WorkPackageId, projectId);
+            var result = _workPackageService.GetCandidateEmployees(req.WorkPackageId, projectId);
             if (result == null) return BadRequest();
             return Ok(result);
         }
 
         // POST /api/workpackages/project/{projectId}/assigned-employees
         [HttpPost("project/{projectId}/assigned-employees")]
-        public async Task<IActionResult> GetAssignedEmployees(int projectId, [FromBody] WorkPackage wp)
+        public async Task<IActionResult> GetAssignedEmployees(int projectId, [FromBody] WorkPackageIdRequest req)
         {
             var userId = _userManager.GetUserId(HttpContext.User);
             bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
             if (!isPM) return Forbid();
-            return Ok(_workPackageService.GetAssignedEmployees(wp.WorkPackageId, projectId));
+            return Ok(_workPackageService.GetAssignedEmployees(req.WorkPackageId, projectId));
         }
 
         // POST /api/workpackages/project/{projectId}/assign-employees
