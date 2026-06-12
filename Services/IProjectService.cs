@@ -15,6 +15,6 @@ public interface IProjectService
     Task<byte[]> GenerateReportAsync(int projectId);
     Task<byte[]> GenerateWeekReportAsync(int projectId);
     Task<byte[]> GeneratePCBACAsync(int projectId);
-    Task<List<object>> GetAllProjectEmployeesAsync(int projectId, string currentUserId);
+    Task<List<ProjectEmployeeDto>> GetAllProjectEmployeesAsync(int projectId, string currentUserId);
     Task<bool> AssignAssistantProjectManagerAsync(int projectId, string employeeNumber, string currentPmId);
 }
