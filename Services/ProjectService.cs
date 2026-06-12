@@ -595,15 +595,14 @@ public class ProjectService : IProjectService
     {
         return await _context.EmployeeProjects
             .Where(c => c.ProjectId == projectId && c.UserId != currentUserId)
-            .Include(c => c.User)
             .Select(c => new ProjectEmployeeDto
             {
-                Id = c.User!.Id,
-                FirstName = c.User.FirstName,
-                LastName = c.User.LastName,
-                EmployeeNumber = c.User.EmployeeNumber,
-                JobTitle = c.User.JobTitle,
-                LabourGradeCode = c.User.LabourGradeCode
+                Id              = c.User!.Id,
+                FirstName       = c.User!.FirstName,
+                LastName        = c.User!.LastName,
+                EmployeeNumber  = c.User!.EmployeeNumber,
+                JobTitle        = c.User!.JobTitle,
+                LabourGradeCode = c.User!.LabourGradeCode
             })
             .ToListAsync();
     }
