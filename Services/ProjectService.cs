@@ -591,25 +591,21 @@ public class ProjectService : IProjectService
         return byteInfo;
     }
 
-    public async Task<List<object>> GetAllProjectEmployeesAsync(int projectId, string currentUserId)
+    public async Task<List<ProjectEmployeeDto>> GetAllProjectEmployeesAsync(int projectId, string currentUserId)
     {
-        var employees = await _context.EmployeeProjects
+        return await _context.EmployeeProjects
             .Where(c => c.ProjectId == projectId && c.UserId != currentUserId)
-            .Include(c => c.Project)
-                .ThenInclude(p => p!.AssistantProjectManager)
-            .Include(c => c.Project!.ProjectManager)
             .Include(c => c.User)
-            .Select(c => (object)new
+            .Select(c => new ProjectEmployeeDto
             {
-                c!.User!.FirstName,
-                c!.User!.LastName,
-                c!.User!.EmployeeNumber,
-                ManagerNumber = c.Project != null && c.Project.AssistantProjectManager != null ? c.Project.AssistantProjectManager.EmployeeNumber : 0,
-                ProjectManagerNumber = c.Project != null && c.Project.ProjectManager != null ? c.Project.ProjectManager.EmployeeNumber : 0
+                Id = c.User!.Id,
+                FirstName = c.User.FirstName,
+                LastName = c.User.LastName,
+                EmployeeNumber = c.User.EmployeeNumber,
+                JobTitle = c.User.JobTitle,
+                LabourGradeCode = c.User.LabourGradeCode
             })
             .ToListAsync();
-
-        return employees;
     }
 
     public async Task<bool> AssignAssistantProjectManagerAsync(int projectId, string employeeNumber, string currentPmId)
