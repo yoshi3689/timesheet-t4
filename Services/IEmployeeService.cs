@@ -13,6 +13,7 @@ public interface IEmployeeService
     Task<ApplicationUser?> FindEmployeeAsync(string id);
     Task<IList<ApplicationUser>> GetSupervisorsAsync();
     IEnumerable<object> GetTimesheetApprovers(string supervisorId);
+    Task<(ApplicationUser User, string TempPassword)> CreateEmployeeAsync(CreateEmployeeDto dto, UserManager<ApplicationUser> userManager);
     Task UpdateEmployeeAsync(ApplicationUser existing, UpdateEmployeeDto dto, bool isAdminOrHR, UserManager<ApplicationUser> userManager);
     bool EmployeeExists(string id);
     ApplicationUser? GetCurrentUserWithSupervisedUsers(string userName);

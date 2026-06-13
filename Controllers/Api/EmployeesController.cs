@@ -95,6 +95,36 @@ namespace TimesheetApp.Controllers.Api
             });
         }
 
+        // POST /api/employees
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateEmployeeDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            bool isAdminOrHR = User.IsInRole("Admin") || User.IsInRole("HR");
+            if (!isAdminOrHR) return Forbid();
+
+            try
+            {
+                var (user, tempPassword) = await _employeeService.CreateEmployeeAsync(dto, _userManager);
+                return Created($"/api/employees/{user.Id}", new
+                {
+                    id = user.Id,
+                    firstName = user.FirstName,
+                    lastName = user.LastName,
+                    email = user.Email,
+                    employeeNumber = user.EmployeeNumber,
+                    jobTitle = user.JobTitle,
+                    labourGradeCode = user.LabourGradeCode,
+                    tempPassword
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         // PUT /api/employees/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] UpdateEmployeeDto dto)

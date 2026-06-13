@@ -65,6 +65,53 @@ public class EmployeeService : IEmployeeService
             .ToList();
     }
 
+    public async Task<(ApplicationUser User, string TempPassword)> CreateEmployeeAsync(CreateEmployeeDto dto, UserManager<ApplicationUser> userManager)
+    {
+        var tempPassword = GenerateTempPassword();
+        var user = new ApplicationUser
+        {
+            UserName = dto.Email,
+            Email = dto.Email,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            EmployeeNumber = dto.EmployeeNumber,
+            JobTitle = dto.JobTitle,
+            LabourGradeCode = dto.LabourGradeCode,
+            SupervisorId = string.IsNullOrEmpty(dto.SupervisorId) ? null : dto.SupervisorId,
+            HasTempPassword = dto.HasTempPassword
+        };
+
+        var result = await userManager.CreateAsync(user, tempPassword);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(result.Errors.First().Description);
+
+        if (dto.Roles.Count > 0)
+            await userManager.AddToRolesAsync(user, dto.Roles);
+
+        return (user, tempPassword);
+    }
+
+    private static string GenerateTempPassword()
+    {
+        const string lower = "abcdefghijklmnopqrstuvwxyz";
+        const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string digits = "0123456789";
+        const string special = "!@#$%";
+        var rng = Random.Shared;
+        var chars = new[]
+        {
+            upper[rng.Next(upper.Length)],
+            digits[rng.Next(digits.Length)],
+            special[rng.Next(special.Length)],
+            lower[rng.Next(lower.Length)],
+            lower[rng.Next(lower.Length)],
+            lower[rng.Next(lower.Length)],
+            lower[rng.Next(lower.Length)],
+            lower[rng.Next(lower.Length)],
+        };
+        return new string(chars.OrderBy(_ => rng.Next()).ToArray());
+    }
+
     public async Task UpdateEmployeeAsync(ApplicationUser existing, UpdateEmployeeDto dto, bool isAdminOrHR, UserManager<ApplicationUser> userManager)
     {
         existing.FirstName = dto.FirstName ?? existing.FirstName;
