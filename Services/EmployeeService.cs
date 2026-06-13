@@ -73,6 +73,7 @@ public class EmployeeService : IEmployeeService
         {
             UserName = dto.Email,
             Email = dto.Email,
+            EmailConfirmed = true,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             EmployeeNumber = dto.EmployeeNumber,

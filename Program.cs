@@ -147,6 +147,10 @@ internal partial class Program
                 context.Database.Migrate();
             }
 
+            // Ensure all application roles exist
+            foreach (var roleName in new[] { "Admin", "HR", "Supervisor", "Employee" })
+                if (!await RoleManager.RoleExistsAsync(roleName))
+                    await RoleManager.CreateAsync(new IdentityRole(roleName));
 
             RSA rsa = RSA.Create();
             //create a default admin
@@ -179,6 +183,11 @@ internal partial class Program
             else
             {
                 admin = adminExist;
+                // Ensure roles are always applied even if admin existed before role seeding
+                var existingRoles = await UserManager.GetRolesAsync(admin);
+                foreach (var role in new[] { "Admin", "Supervisor", "HR" })
+                    if (!existingRoles.Contains(role))
+                        await UserManager.AddToRoleAsync(admin, role);
             }
 
             // Define the number of HR users you want to create
