@@ -104,6 +104,16 @@ namespace TimesheetApp.Controllers.Api
             bool isAdminOrHR = User.IsInRole("Admin") || User.IsInRole("HR");
             if (!isAdminOrHR) return Forbid();
 
+            // HR cannot elevate anyone to Admin — only Admin can assign the Admin role
+            bool callerIsAdmin = User.IsInRole("Admin");
+            if (!callerIsAdmin && dto.Roles.Contains("Admin"))
+                return Forbid();
+
+            // Validate all requested roles exist
+            foreach (var role in dto.Roles)
+                if (!await _roleManager.RoleExistsAsync(role))
+                    return BadRequest(new { message = $"Role '{role}' does not exist." });
+
             try
             {
                 var (user, tempPassword) = await _employeeService.CreateEmployeeAsync(dto, _userManager);

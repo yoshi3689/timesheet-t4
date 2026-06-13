@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TimesheetApp.Data;
@@ -77,7 +78,7 @@ public class EmployeeService : IEmployeeService
             EmployeeNumber = dto.EmployeeNumber,
             JobTitle = dto.JobTitle,
             LabourGradeCode = dto.LabourGradeCode,
-            SupervisorId = string.IsNullOrEmpty(dto.SupervisorId) ? null : dto.SupervisorId,
+            SupervisorId = await ResolveValidSupervisorId(dto.SupervisorId, userManager),
             HasTempPassword = dto.HasTempPassword
         };
 
@@ -91,25 +92,37 @@ public class EmployeeService : IEmployeeService
         return (user, tempPassword);
     }
 
+    private static async Task<string?> ResolveValidSupervisorId(string? supervisorId, UserManager<ApplicationUser> userManager)
+    {
+        if (string.IsNullOrEmpty(supervisorId)) return null;
+        var supervisor = await userManager.FindByIdAsync(supervisorId);
+        if (supervisor == null || !await userManager.IsInRoleAsync(supervisor, "Supervisor")) return null;
+        return supervisorId;
+    }
+
     private static string GenerateTempPassword()
     {
         const string lower = "abcdefghijklmnopqrstuvwxyz";
         const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const string digits = "0123456789";
         const string special = "!@#$%";
-        var rng = Random.Shared;
-        var chars = new[]
-        {
-            upper[rng.Next(upper.Length)],
-            digits[rng.Next(digits.Length)],
-            special[rng.Next(special.Length)],
-            lower[rng.Next(lower.Length)],
-            lower[rng.Next(lower.Length)],
-            lower[rng.Next(lower.Length)],
-            lower[rng.Next(lower.Length)],
-            lower[rng.Next(lower.Length)],
-        };
-        return new string(chars.OrderBy(_ => rng.Next()).ToArray());
+        char[] chars =
+        [
+            upper[RandomNumberGenerator.GetInt32(upper.Length)],
+            digits[RandomNumberGenerator.GetInt32(digits.Length)],
+            special[RandomNumberGenerator.GetInt32(special.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+            lower[RandomNumberGenerator.GetInt32(lower.Length)],
+        ];
+        RandomNumberGenerator.Shuffle(chars.AsSpan());
+        return new string(chars);
     }
 
     public async Task UpdateEmployeeAsync(ApplicationUser existing, UpdateEmployeeDto dto, bool isAdminOrHR, UserManager<ApplicationUser> userManager)
