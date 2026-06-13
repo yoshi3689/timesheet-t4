@@ -183,11 +183,15 @@ internal partial class Program
             else
             {
                 admin = adminExist;
-                // Ensure roles are always applied even if admin existed before role seeding
-                var existingRoles = await UserManager.GetRolesAsync(admin);
-                foreach (var role in new[] { "Admin", "Supervisor", "HR" })
-                    if (!existingRoles.Contains(role))
-                        await UserManager.AddToRoleAsync(admin, role);
+                // Dev only: backfill roles if the admin pre-dates role seeding.
+                // Not run in production — role changes must be intentional there.
+                if (isDev)
+                {
+                    var existingRoles = await UserManager.GetRolesAsync(admin);
+                    foreach (var role in new[] { "Admin", "Supervisor", "HR" })
+                        if (!existingRoles.Contains(role))
+                            await UserManager.AddToRoleAsync(admin, role);
+                }
             }
 
             // Define the number of HR users you want to create

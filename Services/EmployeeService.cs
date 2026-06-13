@@ -73,7 +73,8 @@ public class EmployeeService : IEmployeeService
         {
             UserName = dto.Email,
             Email = dto.Email,
-            EmailConfirmed = true,
+            EmailConfirmed = true, // intentional: no email infra; admin hands temp password directly; user activates via /setup
+
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             EmployeeNumber = dto.EmployeeNumber,
