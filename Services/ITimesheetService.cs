@@ -17,4 +17,5 @@ public interface ITimesheetService
     Task<(bool success, string? error, byte[]? hash)> ApproveTimesheetAsync(int timesheetId, string approverId, string password);
     Task<bool> DeclineTimesheetAsync(int timesheetId, string approverId, string password, string? approverNotes);
     TimesheetRow? AddCustomRow(int timesheetId, string userId, string type, string? labourGradeCode);
+    bool DeleteTimesheet(int timesheetId);
 }

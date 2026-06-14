@@ -165,7 +165,8 @@ public class TimesheetService : ITimesheetService
                 {
                     ProjectId = c.WorkPackage!.ProjectId,
                     WorkPackageId = c.WorkPackage.WorkPackageId,
-                    IsClosed = c.WorkPackage.IsClosed
+                    IsClosed = c.WorkPackage.IsClosed,
+                    Title = c.WorkPackage.Title
                 }
             })
             .ToList();
@@ -350,5 +351,17 @@ public class TimesheetService : ITimesheetService
 
         row.Timesheet = null;
         return row;
+    }
+
+    public bool DeleteTimesheet(int timesheetId)
+    {
+        var timesheet = _context.Timesheets
+            .Include(t => t.TimesheetRows)
+            .FirstOrDefault(t => t.TimesheetId == timesheetId);
+        if (timesheet == null) return false;
+        _context.TimesheetRows.RemoveRange(timesheet.TimesheetRows);
+        _context.Timesheets.Remove(timesheet);
+        _context.SaveChanges();
+        return true;
     }
 }

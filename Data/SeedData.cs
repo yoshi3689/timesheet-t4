@@ -30,7 +30,19 @@ public static class SeedData
         async Task<ApplicationUser> Upsert(string email, Func<RSA, ApplicationUser> factory, string? role = null)
         {
             var existing = await userManager.FindByEmailAsync(email);
-            if (existing != null) { result[email] = existing; return existing; }
+            if (existing != null)
+            {
+                // If the user exists but was never activated (no RSA keys), seed the keys now
+                if (existing.PublicKey == null)
+                {
+                    using var seedRsa = RSA.Create();
+                    existing.PublicKey = seedRsa.ExportRSAPublicKey();
+                    existing.PrivateKey = KeyHelper.Encrypt(seedRsa.ExportRSAPrivateKey(), "Password123!");
+                    await userManager.UpdateAsync(existing);
+                }
+                result[email] = existing;
+                return existing;
+            }
 
             using var rsa = RSA.Create();
             var user = factory(rsa);
@@ -101,6 +113,18 @@ public static class SeedData
             });
         }
 
+        // Sync supervisor/approver links in case engineers already existed with stale GUIDs
+        foreach (var (email, _, _, _, _) in engDefs)
+        {
+            var user = result[email];
+            if (user.SupervisorId != sup1.Id || user.TimesheetApproverId != sup1.Id)
+            {
+                user.SupervisorId = sup1.Id;
+                user.TimesheetApproverId = sup1.Id;
+                await userManager.UpdateAsync(user);
+            }
+        }
+
         return result;
     }
 
@@ -114,7 +138,15 @@ public static class SeedData
         async Task<Project> Upsert(int id, Func<Project> factory)
         {
             var existing = await db.Projects.FirstOrDefaultAsync(p => p.ProjectId == id);
-            if (existing != null) { result[id] = existing; return existing; }
+            if (existing != null)
+            {
+                // Sync PM so VerifyProjectManagerAsync works after a DB re-seed
+                var fresh = factory();
+                existing.ProjectManagerId = fresh.ProjectManagerId;
+                await db.SaveChangesAsync();
+                result[id] = existing;
+                return existing;
+            }
             var p = factory();
             db.Projects.Add(p);
             await db.SaveChangesAsync();
@@ -202,6 +234,44 @@ public static class SeedData
         Add("AA", 103, "Vulnerability Scan", "A", true,  true, "eng6@sheet.dev");
         Add("AB", 103, "Penetration Test",   "A", true,  true, "eng6@sheet.dev");
         Add("B",  103, "Remediation",       null, true,  true, "eng4@sheet.dev");
+        await db.SaveChangesAsync();
+
+        // Sync ResponsibleUserId for existing WPs in case user GUIDs changed after a re-seed
+        var respMap = new Dictionary<(string, int), string?>
+        {
+            { ("AA", 101), users["eng1@sheet.dev"].Id }, { ("AB", 101), users["eng6@sheet.dev"].Id },
+            { ("BA", 101), users["eng7@sheet.dev"].Id }, { ("BB", 101), users["eng8@sheet.dev"].Id },
+            { ("BC", 101), users["eng4@sheet.dev"].Id }, { ("CA", 101), users["eng2@sheet.dev"].Id },
+            { ("CB", 101), users["eng3@sheet.dev"].Id }, { ("D",  101), users["eng6@sheet.dev"].Id },
+            { ("AA", 102), users["eng5@sheet.dev"].Id }, { ("AB", 102), users["eng5@sheet.dev"].Id },
+            { ("BA", 102), users["eng1@sheet.dev"].Id }, { ("BB", 102), users["eng2@sheet.dev"].Id },
+            { ("BC", 102), users["eng4@sheet.dev"].Id }, { ("CA", 102), users["eng3@sheet.dev"].Id },
+            { ("AA", 103), users["eng6@sheet.dev"].Id }, { ("AB", 103), users["eng6@sheet.dev"].Id },
+            { ("B",  103), users["eng4@sheet.dev"].Id },
+        };
+        foreach (var ((wpId, projectId), userId) in respMap)
+        {
+            var wp = await db.WorkPackages.FindAsync(wpId, projectId);
+            if (wp != null && wp.ResponsibleUserId != userId)
+                wp.ResponsibleUserId = userId;
+        }
+
+        // Sync IsClosed — seed WPs may have been closed in the DB; reset the ones that should be open
+        var shouldBeOpen = new (string, int)[]
+        {
+            ("A",  101), ("AA", 101), ("AB", 101),
+            ("B",  101), ("BA", 101), ("BB", 101), ("BC", 101),
+            ("C",  101), ("CA", 101), ("CB", 101), ("D",  101),
+            ("A",  102), ("AA", 102), ("AB", 102),
+            ("B",  102), ("BA", 102), ("BB", 102), ("BC", 102),
+            ("C",  102), ("CA", 102),
+        };
+        foreach (var (wpId, projectId) in shouldBeOpen)
+        {
+            var wp = await db.WorkPackages.FindAsync(wpId, projectId);
+            if (wp != null && wp.IsClosed)
+                wp.IsClosed = false;
+        }
         await db.SaveChangesAsync();
     }
 

@@ -167,6 +167,16 @@ namespace TimesheetApp.Controllers.Api
             return Ok(_timesheetService.GetTimesheetRowDtos(model.Timesheet));
         }
 
+        // DELETE /api/timesheets/{id} — admin only, for test teardown
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult DeleteTimesheet(int id)
+        {
+            var deleted = _timesheetService.DeleteTimesheet(id);
+            if (!deleted) return NotFound();
+            return Ok();
+        }
+
         // POST /api/timesheets/rows/custom
         [HttpPost("rows/custom")]
         public async Task<IActionResult> AddCustomRow([FromBody] CustomRowModel model)

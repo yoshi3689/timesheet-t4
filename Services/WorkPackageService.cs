@@ -181,20 +181,32 @@ public class WorkPackageService : IWorkPackageService
     public WorkPackage CreateChildWorkPackage(WorkPackageViewModel p, int projectId)
     {
         string newWPID = Guid.NewGuid().ToString();
-
-        var parent = _context.WorkPackages!.FirstOrDefault(c => c.ProjectId == projectId && c.WorkPackageId == p.WorkPackage!.ParentWorkPackageId);
-        if (parent != null)
+        string? requestedParentId = p.WorkPackage!.ParentWorkPackageId;
+        if (string.IsNullOrEmpty(requestedParentId) || requestedParentId == "0")
         {
-            parent.IsBottomLevel = false;
-            _context.Entry(parent).State = EntityState.Modified;
+            // "0" is the sentinel for "child of project root" — resolve to the actual root WP
+            // so the new WP remains reachable in GetProjectWorkPackagesTree.
+            var rootWP = _context.WorkPackages!
+                .FirstOrDefault(c => c.ProjectId == projectId && c.ParentWorkPackageId == null);
+            requestedParentId = rootWP?.WorkPackageId;
+        }
+
+        if (requestedParentId != null)
+        {
+            var parent = _context.WorkPackages!.FirstOrDefault(c => c.ProjectId == projectId && c.WorkPackageId == requestedParentId);
+            if (parent != null)
+            {
+                parent.IsBottomLevel = false;
+                _context.Entry(parent).State = EntityState.Modified;
+            }
         }
 
         var newChild = new WorkPackage
         {
             WorkPackageId = newWPID,
             ProjectId = projectId,
-            ParentWorkPackageId = p.WorkPackage!.ParentWorkPackageId,
-            ParentWorkPackageProjectId = projectId,
+            ParentWorkPackageId = requestedParentId,
+            ParentWorkPackageProjectId = requestedParentId != null ? projectId : 0,
             IsBottomLevel = true,
             IsClosed = false,
             Title = p.WorkPackage.Title
