@@ -72,7 +72,9 @@ public class ProjectService : IProjectService
         return _context.Projects
             .Include(p => p.ProjectManager)
             .FirstOrDefault(p => p.ProjectId == id &&
-                (p.ProjectManagerId == userId || p.AssistantProjectManagerId == userId));
+                (p.ProjectManagerId == userId ||
+                 p.AssistantProjectManagerId == userId ||
+                 _context.EmployeeWorkPackages.Any(ewp => ewp.UserId == userId && ewp.WorkPackageProjectId == p.ProjectId)));
     }
 
     public (bool valid, string? error) ValidateNewProject(CreateProjectViewModel input)
