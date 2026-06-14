@@ -198,6 +198,9 @@ public class WorkPackageService : IWorkPackageService
             {
                 parent.IsBottomLevel = false;
                 _context.Entry(parent).State = EntityState.Modified;
+                var staleAssignments = _context.EmployeeWorkPackages!
+                    .Where(e => e.WorkPackageId == parent.WorkPackageId && e.WorkPackageProjectId == projectId);
+                _context.EmployeeWorkPackages!.RemoveRange(staleAssignments);
             }
         }
 
@@ -206,7 +209,6 @@ public class WorkPackageService : IWorkPackageService
             WorkPackageId = newWPID,
             ProjectId = projectId,
             ParentWorkPackageId = requestedParentId,
-            ParentWorkPackageProjectId = requestedParentId != null ? projectId : 0,
             IsBottomLevel = true,
             IsClosed = false,
             Title = p.WorkPackage.Title
@@ -324,12 +326,12 @@ public class WorkPackageService : IWorkPackageService
             .Where(c => c.WPProjectId == (projectId + "~" + workPackageId))
             .ToList();
 
-        var emp = _context.EmployeeProjects!
-            .Where(ep => ep.ProjectId == projectId)
-            .Select(e => new EmployeeWorkPackageViewModel
+        var emp = _context.Users
+            .Where(u => u.LabourGradeCode != null)
+            .Select(u => new EmployeeWorkPackageViewModel
             {
-                Employee = e.User!,
-                Assigned = userIdsInLLWP.Contains(e.UserId)
+                Employee = u,
+                Assigned = userIdsInLLWP.Contains(u.Id)
             })
             .ToList();
 
@@ -402,12 +404,12 @@ public class WorkPackageService : IWorkPackageService
         var workPackageProjectId = ewps[0].WorkPackageProjectId;
 
         var oldWp = _context.WorkPackages
-            .Where(c => ewps.Select(s => s.WorkPackageId).Contains(c.WorkPackageId) && c.IsBottomLevel == false)
+            .Where(c => ewps.Select(s => s.WorkPackageId).Contains(c.WorkPackageId) && c.ProjectId == workPackageProjectId && c.IsBottomLevel == false)
             .ToList();
         if (oldWp.Any()) return "Error";
 
         var currentWp = _context.WorkPackages
-            .Where(c => c.WorkPackageId == workPackageId)
+            .Where(c => c.WorkPackageId == workPackageId && c.ProjectId == workPackageProjectId)
             .Include(c => c.Project)
             .FirstOrDefault();
         if (currentWp == null) return "Error";
@@ -465,7 +467,7 @@ public class WorkPackageService : IWorkPackageService
         if (user == null) return null;
 
         var fullEwp = _context.EmployeeWorkPackages
-            .Where(c => c.UserId == ewp.UserId && c.WorkPackageId == ewp.WorkPackageId)
+            .Where(c => c.UserId == ewp.UserId && c.WorkPackageId == ewp.WorkPackageId && c.WorkPackageProjectId == ewp.WorkPackageProjectId)
             .Include(c => c.WorkPackage)
             .Include(c => c.WorkPackage!.Project)
             .FirstOrDefault();

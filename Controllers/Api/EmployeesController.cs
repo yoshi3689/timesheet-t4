@@ -160,42 +160,19 @@ namespace TimesheetApp.Controllers.Api
             return Ok(_employeeService.GetTimesheetApprovers(supervisorId));
         }
 
-        // GET /api/employees/available-for-project?projectId=1
-        [HttpGet("available-for-project")]
-        public IActionResult GetAvailableForProject([FromQuery] int projectId)
-        {
-            var user = _employeeService.GetCurrentUserWithSupervisedUsers(User.Identity!.Name!);
-            if (user == null) return BadRequest();
-            var users = _employeeService.GetAvailableUsersForProject(
-                projectId, user.Id, user.Id, User.IsInRole("Admin"));
-            return Ok(users);
-        }
-
-        // POST /api/employees/add-to-project
-        [HttpPost("add-to-project")]
-        public async Task<IActionResult> AddToProject([FromBody] List<EmployeeProject> employeeProjects)
-        {
-            string callerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            foreach (int projectId in employeeProjects.Select(ep => ep.ProjectId).Distinct())
-            {
-                bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, callerId);
-                if (!isPM) return Forbid();
-            }
-            _employeeService.AddEmployeesToProject(employeeProjects);
-            return Ok(employeeProjects);
-        }
-
         // POST /api/employees/assign-tsa
         [HttpPost("assign-tsa")]
-        public async Task<IActionResult> AssignTSApprover([FromBody] EmployeeProject employeeProject)
+        public async Task<IActionResult> AssignTSApprover([FromBody] AssignTsaRequest req)
         {
             var user = _employeeService.GetCurrentUserWithSupervisedUsers(User.Identity!.Name!);
-            var futureTSA = await _employeeService.FindEmployeeAsync(employeeProject.UserId!);
+            var futureTSA = await _employeeService.FindEmployeeAsync(req.UserId!);
             if (user == null || futureTSA == null ||
                 (futureTSA.SupervisorId != user.Id && futureTSA.Id != user.Id))
                 return BadRequest();
-            _employeeService.AssignTimesheetApprover(user, employeeProject.UserId!);
+            _employeeService.AssignTimesheetApprover(user, req.UserId!);
             return Ok();
         }
+
+        public record AssignTsaRequest(string? UserId);
     }
 }

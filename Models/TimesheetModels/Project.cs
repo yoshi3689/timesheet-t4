@@ -40,7 +40,5 @@ namespace TimesheetApp.Models.TimesheetModels
     [Display(Name = "Asst. Manager")]
     public virtual ApplicationUser? AssistantProjectManager { get; set; }
 
-    [InverseProperty("Project")]
-    public virtual ICollection<EmployeeProject> EmployeeProjects { get; } = new List<EmployeeProject>();
   }
 }

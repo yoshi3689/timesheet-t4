@@ -172,44 +172,6 @@ public class EmployeeService : IEmployeeService
             .FirstOrDefault();
     }
 
-    public List<Project> GetAllProjectsWithEmployees()
-    {
-        return _context.Projects
-            .Where(c => c.ProjectId != 010)
-            .Include(p => p.EmployeeProjects).ThenInclude(c => c.User)
-            .Include(p => p.ProjectManager)
-            .Include(p => p.AssistantProjectManager)
-            .ToList();
-    }
-
-    public List<ApplicationUser> GetAvailableUsersForProject(int projectId, string supervisorId, string currentUserId, bool isAdmin)
-    {
-        var usersInProject = _context.EmployeeProjects
-            .Where(ep => ep.ProjectId == projectId)
-            .Select(ep => ep.UserId)
-            .ToList();
-
-        var usersAvailable = _context.Users
-            .Where(u => u.SupervisorId == supervisorId && !usersInProject.Contains(u.Id))
-            .ToList();
-
-        if (isAdmin && !usersInProject.Contains(currentUserId))
-        {
-            var currentUser = _context.Users.Find(currentUserId);
-            if (currentUser != null)
-                usersAvailable.Add(currentUser);
-        }
-        return usersAvailable;
-    }
-
-    public void AddEmployeesToProject(List<EmployeeProject> employeeProjects)
-    {
-        foreach (var ep in employeeProjects)
-        {
-            _context.Add(ep);
-        }
-        _context.SaveChanges();
-    }
 
     public void AssignTimesheetApprover(ApplicationUser supervisor, string futureApproverId)
     {

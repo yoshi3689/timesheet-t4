@@ -17,9 +17,6 @@ public interface IEmployeeService
     Task UpdateEmployeeAsync(ApplicationUser existing, UpdateEmployeeDto dto, bool isAdminOrHR, UserManager<ApplicationUser> userManager);
     bool EmployeeExists(string id);
     ApplicationUser? GetCurrentUserWithSupervisedUsers(string userName);
-    List<Project> GetAllProjectsWithEmployees();
-    List<ApplicationUser> GetAvailableUsersForProject(int projectId, string supervisorId, string currentUserId, bool isAdmin);
-    void AddEmployeesToProject(List<EmployeeProject> employeeProjects);
     void AssignTimesheetApprover(ApplicationUser supervisor, string futureApproverId);
     List<LabourGrade> GetCurrentYearLabourGrades();
 }

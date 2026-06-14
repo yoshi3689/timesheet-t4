@@ -18,7 +18,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     }
     public virtual DbSet<Timesheet> Timesheets => Set<Timesheet>();
     public virtual DbSet<TimesheetRow> TimesheetRows => Set<TimesheetRow>();
-    public virtual DbSet<EmployeeProject> EmployeeProjects => Set<EmployeeProject>();
     public virtual DbSet<EmployeeWorkPackage> EmployeeWorkPackages => Set<EmployeeWorkPackage>();
     public virtual DbSet<LabourGrade> LabourGrades => Set<LabourGrade>();
     public virtual DbSet<Project> Projects => Set<Project>();
@@ -37,7 +36,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<WorkPackage>()
             .HasOne(p => p.ParentWorkPackage)
             .WithMany(c => c.ChildWorkPackages)
-            .HasForeignKey(p => new { p.ParentWorkPackageId, p.ParentWorkPackageProjectId });
+            .HasForeignKey(p => new { p.ParentWorkPackageId, p.ProjectId });
 
         modelBuilder.Entity<EmployeeWorkPackage>()
             .HasOne(p => p.WorkPackage)

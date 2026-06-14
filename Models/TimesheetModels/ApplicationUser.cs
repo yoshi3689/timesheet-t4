@@ -84,9 +84,6 @@ namespace TimesheetApp.Models
         public virtual ICollection<WorkPackage> SupervisedWorkPackage { get; } = new List<WorkPackage>();
 
         [InverseProperty("User")]
-        public virtual ICollection<EmployeeProject> EmployeeProjects { get; } = new List<EmployeeProject>();
-
-        [InverseProperty("User")]
         public virtual ICollection<EmployeeWorkPackage>? WorkPackages { get; set; }
 
         [InverseProperty("User")]

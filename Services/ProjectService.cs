@@ -207,7 +207,7 @@ public class ProjectService : IProjectService
         var budgets = _context.Budgets.Where(c => c.WPProjectId.StartsWith(prj.ProjectId + "~")).ToList();
         var estimates = _context.ResponsibleEngineerEstimates.Where(c => c.WPProjectId!.StartsWith(prj.ProjectId + "~")).ToList();
 
-        var employees = _context.EmployeeProjects.Where(c => c.ProjectId == prj.ProjectId).Select(c => c.UserId).ToList();
+        var employees = _context.EmployeeWorkPackages.Where(c => c.WorkPackageProjectId == prj.ProjectId).Select(c => c.UserId).Distinct().ToList();
         var eWps = _context.EmployeeWorkPackages.Where(c => c.WorkPackageProjectId == prj.ProjectId).Include(c => c.User).ToList();
         var timesheets = _context.Timesheets
             .Where(c => c.TimesheetApproverId != null && c.EndDate <= lastDay && employees.Contains(c.UserId))
@@ -383,7 +383,7 @@ public class ProjectService : IProjectService
         wpTable.SetWidth(UnitValue.CreatePercentValue(100));
 
         var labourGrades = _context.LabourGrades.ToList();
-        var employees = _context.EmployeeProjects.Where(c => c.ProjectId == prj.ProjectId).Select(c => c.UserId).ToList();
+        var employees = _context.EmployeeWorkPackages.Where(c => c.WorkPackageProjectId == prj.ProjectId).Select(c => c.UserId).Distinct().ToList();
         var eWps = _context.EmployeeWorkPackages.Where(c => c.WorkPackageProjectId == prj.ProjectId).Include(c => c.User).ToList();
         var timesheets = _context.Timesheets
             .Where(c => c.TimesheetApproverId != null && c.EndDate == DateOnly.FromDateTime(lastDay) && employees.Contains(c.UserId))
@@ -519,7 +519,7 @@ public class ProjectService : IProjectService
         var budgets = _context.Budgets.Where(c => c.WPProjectId.StartsWith(prj.ProjectId + "~")).ToList();
         var estimates = _context.ResponsibleEngineerEstimates.Where(c => c.WPProjectId!.StartsWith(prj.ProjectId + "~")).ToList();
 
-        var employees = _context.EmployeeProjects.Where(c => c.ProjectId == prj.ProjectId).Select(c => c.UserId).ToList();
+        var employees = _context.EmployeeWorkPackages.Where(c => c.WorkPackageProjectId == prj.ProjectId).Select(c => c.UserId).Distinct().ToList();
         var timesheets = _context.Timesheets
             .Where(c => c.TimesheetApproverId != null && employees.Contains(c.UserId))
             .Include(c => c.TimesheetApprover)
@@ -598,16 +598,18 @@ public class ProjectService : IProjectService
 
     public async Task<List<ProjectEmployeeDto>> GetAllProjectEmployeesAsync(int projectId, string currentUserId)
     {
-        return await _context.EmployeeProjects
-            .Where(c => c.ProjectId == projectId && c.UserId != currentUserId)
-            .Select(c => new ProjectEmployeeDto
+        return await _context.EmployeeWorkPackages
+            .Where(e => e.WorkPackageProjectId == projectId && e.UserId != currentUserId)
+            .Select(e => e.User!)
+            .Distinct()
+            .Select(u => new ProjectEmployeeDto
             {
-                Id              = c.User!.Id,
-                FirstName       = c.User!.FirstName,
-                LastName        = c.User!.LastName,
-                EmployeeNumber  = c.User!.EmployeeNumber,
-                JobTitle        = c.User!.JobTitle,
-                LabourGradeCode = c.User!.LabourGradeCode
+                Id              = u.Id,
+                FirstName       = u.FirstName,
+                LastName        = u.LastName,
+                EmployeeNumber  = u.EmployeeNumber,
+                JobTitle        = u.JobTitle,
+                LabourGradeCode = u.LabourGradeCode
             })
             .ToListAsync();
     }
