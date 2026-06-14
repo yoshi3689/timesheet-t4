@@ -46,7 +46,10 @@ public class ProjectService : IProjectService
                 .ToList();
         }
         return _context.Projects!
-            .Where(s => (s.ProjectManager!.Id == userId || s.AssistantProjectManagerId == userId) && s.ProjectId != 10)
+            .Where(s => (s.ProjectManager!.Id == userId
+                         || s.AssistantProjectManagerId == userId
+                         || _context.EmployeeWorkPackages.Any(ewp => ewp.UserId == userId && ewp.WorkPackageProjectId == s.ProjectId))
+                        && s.ProjectId != 10)
             .OrderBy(c => c.ProjectId)
             .Include(s => s.ProjectManager)
             .ToList();
