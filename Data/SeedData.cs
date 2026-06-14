@@ -140,9 +140,10 @@ public static class SeedData
             var existing = await db.Projects.FirstOrDefaultAsync(p => p.ProjectId == id);
             if (existing != null)
             {
-                // Sync PM so VerifyProjectManagerAsync works after a DB re-seed
+                // Sync PM and IsClosed so tests see the expected project state after a re-seed
                 var fresh = factory();
                 existing.ProjectManagerId = fresh.ProjectManagerId;
+                existing.IsClosed = fresh.IsClosed;
                 await db.SaveChangesAsync();
                 result[id] = existing;
                 return existing;
