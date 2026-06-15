@@ -81,6 +81,7 @@ public class EmployeeService : IEmployeeService
             JobTitle = dto.JobTitle,
             LabourGradeCode = dto.LabourGradeCode,
             SupervisorId = await ResolveValidSupervisorId(dto.SupervisorId, userManager),
+            TimesheetApproverId = await ResolveValidSupervisorId(dto.SupervisorId, userManager),
             HasTempPassword = dto.HasTempPassword
         };
 
