@@ -86,7 +86,7 @@ public class ProjectService : IProjectService
         return (true, null);
     }
 
-    public void CreateProject(CreateProjectViewModel input)
+    public async Task CreateProjectAsync(CreateProjectViewModel input)
     {
         _context.Projects!.Add(input.project);
         _context.SaveChanges();
@@ -128,6 +128,10 @@ public class ProjectService : IProjectService
             Convert.ToString(input.project.ProjectId) + " Add",
             1);
         _context.SaveChanges();
+
+        var pm = await _userManager.FindByIdAsync(input.project.ProjectManagerId!);
+        if (pm != null && !await _userManager.IsInRoleAsync(pm, "PM"))
+            await _userManager.AddToRoleAsync(pm, "PM");
     }
 
     public async Task<bool> VerifyProjectManagerAsync(int projectId, string userId)
@@ -623,14 +627,28 @@ public class ProjectService : IProjectService
         var user = _context.Users.Where(c => c.EmployeeNumber == asmEmployeeNum).Select(c => c.Id).FirstOrDefault();
         if (user == null || user == proj.ProjectManagerId) return false;
 
-        var oldASM = proj.AssistantProjectManagerId;
+        var oldAsmId = proj.AssistantProjectManagerId;
         proj.AssistantProjectManagerId = user;
 
-        if (oldASM != null)
+        if (oldAsmId != null)
         {
-            _notificationService.AddNotification(oldASM, "You have been removed from the project " + proj.ProjectTitle + " as an Assistant Project Manager.", Convert.ToString(projectId) + " Remove", 2);
+            _notificationService.AddNotification(oldAsmId, "You have been removed from the project " + proj.ProjectTitle + " as an Assistant Project Manager.", Convert.ToString(projectId) + " Remove", 2);
+            var oldAsm = await _userManager.FindByIdAsync(oldAsmId);
+            if (oldAsm != null)
+            {
+                bool stillPM = _context.Projects.Any(p =>
+                    p.ProjectId != projectId &&
+                    (p.ProjectManagerId == oldAsmId || p.AssistantProjectManagerId == oldAsmId));
+                if (!stillPM) await _userManager.RemoveFromRoleAsync(oldAsm, "PM");
+            }
         }
+
         _notificationService.AddNotification(proj.AssistantProjectManagerId, "You have been added to the project " + proj.ProjectTitle + " as an Assistant Project Manager.", Convert.ToString(projectId) + " Add", 1);
+
+        var newAsm = await _userManager.FindByIdAsync(user);
+        if (newAsm != null && !await _userManager.IsInRoleAsync(newAsm, "PM"))
+            await _userManager.AddToRoleAsync(newAsm, "PM");
+
         _context.SaveChanges();
         return true;
     }

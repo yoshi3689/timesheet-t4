@@ -148,7 +148,7 @@ internal partial class Program
             }
 
             // Ensure all application roles exist
-            foreach (var roleName in new[] { "Admin", "HR", "Supervisor", "Employee" })
+            foreach (var roleName in new[] { "Admin", "HR", "Supervisor", "Employee", "PM" })
                 if (!await RoleManager.RoleExistsAsync(roleName))
                     await RoleManager.CreateAsync(new IdentityRole(roleName));
 

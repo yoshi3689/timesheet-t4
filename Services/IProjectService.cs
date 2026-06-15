@@ -10,7 +10,7 @@ public interface IProjectService
     Project? GetProjectById(int id);
     Project? GetProjectByIdForUser(int id, string userId, bool isHrOrAdmin);
     (bool valid, string? error) ValidateNewProject(CreateProjectViewModel input);
-    void CreateProject(CreateProjectViewModel input);
+    Task CreateProjectAsync(CreateProjectViewModel input);
     Task<bool> VerifyProjectManagerAsync(int projectId, string userId);
     Task<byte[]> GenerateReportAsync(int projectId);
     Task<byte[]> GenerateWeekReportAsync(int projectId);

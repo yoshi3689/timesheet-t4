@@ -75,12 +75,12 @@ namespace TimesheetApp.Controllers.Api
         // POST /api/projects
         [HttpPost]
         [Authorize(Roles = "HR,Admin")]
-        public IActionResult Create([FromBody] CreateProjectViewModel input)
+        public async Task<IActionResult> Create([FromBody] CreateProjectViewModel input)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var (valid, error) = _projectService.ValidateNewProject(input);
             if (!valid) return BadRequest(new { error });
-            _projectService.CreateProject(input);
+            await _projectService.CreateProjectAsync(input);
             return Ok();
         }
 

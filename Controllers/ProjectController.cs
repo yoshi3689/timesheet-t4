@@ -193,7 +193,7 @@ namespace TimesheetApp.Controllers
         [HttpPost]
         [Authorize(Roles = "HR,Admin", Policy = "KeyRequirement")]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(CreateProjectViewModel input)
+        public async Task<IActionResult> Create(CreateProjectViewModel input)
         {
             var (valid, error) = _projectService.ValidateNewProject(input);
             if (!valid)
@@ -206,7 +206,7 @@ namespace TimesheetApp.Controllers
 
             if (ModelState.IsValid)
             {
-                _projectService.CreateProject(input);
+                await _projectService.CreateProjectAsync(input);
                 return RedirectToAction("Index");
             }
 
