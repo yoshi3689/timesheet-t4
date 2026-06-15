@@ -82,7 +82,7 @@ public class EmployeeService : IEmployeeService
             JobTitle = dto.JobTitle,
             LabourGradeCode = dto.LabourGradeCode,
             SupervisorId = resolvedSupervisorId,
-            TimesheetApproverId = !string.IsNullOrEmpty(dto.TimesheetApproverId) ? dto.TimesheetApproverId : resolvedSupervisorId,
+            TimesheetApproverId = !string.IsNullOrEmpty(dto.TimesheetApproverId) ? await ResolveValidSupervisorId(dto.TimesheetApproverId, userManager) : resolvedSupervisorId,
             HasTempPassword = dto.HasTempPassword
         };
 
