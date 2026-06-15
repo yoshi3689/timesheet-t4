@@ -53,6 +53,9 @@ public static class SeedData
                     existing.PrivateKey = KeyHelper.Encrypt(seedRsa.ExportRSAPrivateKey(), "Password123!");
                     await userManager.UpdateAsync(existing);
                 }
+                // Backfill role if missing (e.g. user existed before role was added to seed)
+                if (role != null && !await userManager.IsInRoleAsync(existing, role))
+                    await userManager.AddToRoleAsync(existing, role);
                 result[email] = existing;
                 return existing;
             }

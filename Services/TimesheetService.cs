@@ -191,12 +191,12 @@ public class TimesheetService : ITimesheetService
         {
             if (sheet.User == null || sheet.EmployeeHash == null || sheet.User.PublicKey == null)
             {
-                Console.WriteLine("signature fail");
+                Console.WriteLine($"signature skip: timesheet {sheet.TimesheetId} missing user, hash, or public key");
                 continue;
             }
             if (!_signatureService.VerifySignature(sheet, sheet.User.PublicKey, sheet.EmployeeHash))
             {
-                Console.WriteLine("signature fail");
+                Console.WriteLine($"signature invalid: timesheet {sheet.TimesheetId} failed RSA verification");
                 continue;
             }
             verifiedSheets.Add(sheet);
