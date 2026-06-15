@@ -18,6 +18,19 @@ public static class SeedData
         var projects = await SeedProjectsAsync(db, users);
         await SeedWorkPackagesAsync(db, users);
         await SeedTimesheetsAsync(db, users);
+        await SeedPmRolesAsync(userManager, users);
+    }
+
+    private static async Task SeedPmRolesAsync(
+        UserManager<ApplicationUser> userManager,
+        Dictionary<string, ApplicationUser> users)
+    {
+        foreach (var email in new[] { "pm1@sheet.dev", "pm2@sheet.dev" })
+        {
+            var pm = users[email];
+            if (!await userManager.IsInRoleAsync(pm, "PM"))
+                await userManager.AddToRoleAsync(pm, "PM");
+        }
     }
 
     // ── Users ─────────────────────────────────────────────────────────────────
@@ -198,7 +211,6 @@ public static class SeedData
             {
                 WorkPackageId = id, ProjectId = projectId, Title = title,
                 ParentWorkPackageId = parentId,
-                ParentWorkPackageProjectId = parentId != null ? projectId : 0,
                 IsBottomLevel = isBottom, IsClosed = isClosed,
                 ResponsibleUserId = eng != null ? users[eng].Id : null
             });
