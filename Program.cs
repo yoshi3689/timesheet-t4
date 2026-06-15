@@ -8,6 +8,7 @@ using TimesheetApp.Helpers;
 using TimesheetApp.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using TimesheetApp.Services;
+using Microsoft.AspNetCore.DataProtection;
 
 internal partial class Program
 {
@@ -84,6 +85,13 @@ internal partial class Program
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+
+        if (isDev)
+        {
+            builder.Services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo(
+                    Path.Combine(builder.Environment.ContentRootPath, ".dp-keys")));
+        }
 
         builder.Services.AddCors(options =>
         {

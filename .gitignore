@@ -5,6 +5,7 @@
 
 appsettings.Development.json
 appsettings.Production.json
+.dp-keys/
 Signature.png
 /dist/
 
