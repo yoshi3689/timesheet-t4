@@ -24,6 +24,14 @@ public class WorkPackageService : IWorkPackageService
             .ToListAsync();
     }
 
+    public async Task<List<WorkPackage>> GetAssignedWorkPackagesAsync(string userId)
+    {
+        return await _context.EmployeeWorkPackages!
+            .Where(ewp => ewp.UserId == userId)
+            .Select(ewp => ewp.WorkPackage!)
+            .ToListAsync();
+    }
+
     public async Task<WorkPackage?> GetWorkPackageDetailsAsync(string id)
     {
         return await _context.WorkPackages
@@ -149,7 +157,8 @@ public class WorkPackageService : IWorkPackageService
             .Include(c => c.Project)
             .ToList();
 
-        var top = all.FirstOrDefault(c => c.ParentWorkPackage == null)!;
+        var top = all.FirstOrDefault(c => c.ParentWorkPackage == null);
+        if (top == null) return [];
         return FindAllChildren(top);
     }
 
