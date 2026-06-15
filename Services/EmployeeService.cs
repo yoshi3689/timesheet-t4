@@ -69,6 +69,7 @@ public class EmployeeService : IEmployeeService
     public async Task<(ApplicationUser User, string TempPassword)> CreateEmployeeAsync(CreateEmployeeDto dto, UserManager<ApplicationUser> userManager)
     {
         var tempPassword = GenerateTempPassword();
+        var resolvedSupervisorId = await ResolveValidSupervisorId(dto.SupervisorId, userManager);
         var user = new ApplicationUser
         {
             UserName = dto.Email,
@@ -80,8 +81,8 @@ public class EmployeeService : IEmployeeService
             EmployeeNumber = dto.EmployeeNumber,
             JobTitle = dto.JobTitle,
             LabourGradeCode = dto.LabourGradeCode,
-            SupervisorId = await ResolveValidSupervisorId(dto.SupervisorId, userManager),
-            TimesheetApproverId = await ResolveValidSupervisorId(dto.SupervisorId, userManager),
+            SupervisorId = resolvedSupervisorId,
+            TimesheetApproverId = !string.IsNullOrEmpty(dto.TimesheetApproverId) ? dto.TimesheetApproverId : resolvedSupervisorId,
             HasTempPassword = dto.HasTempPassword
         };
 

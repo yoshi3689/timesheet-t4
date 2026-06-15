@@ -17,6 +17,7 @@ public class CreateEmployeeDto
     [Required]
     public string LabourGradeCode { get; set; } = "";
     public string? SupervisorId { get; set; }
+    public string? TimesheetApproverId { get; set; }
     public List<string> Roles { get; set; } = ["Employee"];
     public bool HasTempPassword { get; set; } = true;
 }
