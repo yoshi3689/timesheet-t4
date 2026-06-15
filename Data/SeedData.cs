@@ -309,7 +309,16 @@ public static class SeedData
         {
             var user = users[email];
             var userId = user.Id;
-            if (await db.Timesheets.AnyAsync(t => t.UserId == userId && t.EndDate == endDate)) return;
+            var existingTs = await db.Timesheets
+                .Include(t => t.TimesheetRows)
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.EndDate == endDate);
+            if (existingTs != null)
+            {
+                if (existingTs.TimesheetRows.Any()) return;
+                // Exists but has no rows (old seed) — delete and recreate cleanly below.
+                db.Timesheets.Remove(existingTs);
+                await db.SaveChangesAsync();
+            }
 
             var ts = new Timesheet
             {
