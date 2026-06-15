@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using TimesheetApp.Helpers;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
+using TimesheetApp.Services;
 
 namespace TimesheetApp.Data;
 
@@ -13,11 +14,12 @@ public static class SeedData
     {
         var db = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var signatureService = services.GetRequiredService<ISignatureService>();
 
         var users = await SeedUsersAsync(db, userManager);
         var projects = await SeedProjectsAsync(db, users);
         await SeedWorkPackagesAsync(db, users);
-        await SeedTimesheetsAsync(db, users);
+        await SeedTimesheetsAsync(db, users, signatureService);
         await SeedPmRolesAsync(userManager, users);
     }
 
@@ -295,16 +297,18 @@ public static class SeedData
 
     private static async Task SeedTimesheetsAsync(
         ApplicationDbContext db,
-        Dictionary<string, ApplicationUser> users)
+        Dictionary<string, ApplicationUser> users,
+        ISignatureService signatureService)
     {
-        var sup1Id = users["sup1@sheet.dev"].Id;
-        var dummy = new byte[] { 1 };
+        var sup1 = users["sup1@sheet.dev"];
+        var sup1Id = sup1.Id;
 
         async Task Add(string email, DateOnly endDate,
-            byte[]? empHash, byte[]? appHash, string? appNotes,
+            bool sign, bool approve, string? appNotes,
             params (int proj, string wp, float sat, float sun, float mon, float tue, float wed, float thu, float fri)[] rowDefs)
         {
-            var userId = users[email].Id;
+            var user = users[email];
+            var userId = user.Id;
             if (await db.Timesheets.AnyAsync(t => t.UserId == userId && t.EndDate == endDate)) return;
 
             var ts = new Timesheet
@@ -312,8 +316,6 @@ public static class SeedData
                 UserId = userId,
                 TimesheetApproverId = sup1Id,
                 EndDate = endDate,
-                EmployeeHash = empHash,
-                ApproverHash = appHash,
                 ApproverNotes = appNotes,
             };
 
@@ -328,57 +330,84 @@ public static class SeedData
                 row.TotalHoursRow = row.getSum();
                 ts.TimesheetRows.Add(row);
             }
-
             ts.TotalHours = ts.TimesheetRows.Sum(r => r.TotalHoursRow);
+
+            if (sign && user.PrivateKey != null)
+                ts.EmployeeHash = signatureService.HashTimesheet(ts, "Password123!", user.PrivateKey);
+
+            if (approve && ts.EmployeeHash != null && sup1.PrivateKey != null)
+                ts.ApproverHash = signatureService.HashTimesheet(ts, "Password123!", sup1.PrivateKey);
+
             db.Timesheets.Add(ts);
             await db.SaveChangesAsync();
         }
 
         // approved — week ending May 16
-        await Add("eng1@sheet.dev", new DateOnly(2026, 5, 16), dummy, dummy, null,
+        await Add("eng1@sheet.dev", new DateOnly(2026, 5, 16), sign: true, approve: true, null,
             (101, "BA", 0, 0, 8, 8, 4, 0, 0),
             (101, "BB", 0, 0, 0, 0, 4, 8, 8));
 
-        await Add("eng2@sheet.dev", new DateOnly(2026, 5, 16), dummy, dummy, null,
+        await Add("eng2@sheet.dev", new DateOnly(2026, 5, 16), sign: true, approve: true, null,
             (101, "AA", 0, 0, 8, 8, 8, 0, 0),
             (101, "AB", 0, 0, 0, 0, 0, 8, 8));
 
         // approved — week ending May 23
-        await Add("eng4@sheet.dev", new DateOnly(2026, 5, 23), dummy, dummy, null,
+        await Add("eng4@sheet.dev", new DateOnly(2026, 5, 23), sign: true, approve: true, null,
             (101, "BC", 0, 0, 8, 8, 8, 8, 0),
             (101, "CA", 0, 0, 0, 0, 0, 0, 8));
 
-        await Add("eng3@sheet.dev", new DateOnly(2026, 5, 23), dummy, dummy, "Approved — short week noted",
+        await Add("eng3@sheet.dev", new DateOnly(2026, 5, 23), sign: true, approve: true, "Approved — short week noted",
             (101, "BA", 0, 0, 8, 8, 0, 0, 0),
             (101, "CB", 0, 0, 0, 0, 8, 8, 0));
 
         // submitted — week ending May 30
-        await Add("eng6@sheet.dev", new DateOnly(2026, 5, 30), dummy, null, null,
+        await Add("eng6@sheet.dev", new DateOnly(2026, 5, 30), sign: true, approve: false, null,
             (101, "BB", 0, 0, 8, 8, 8, 0, 0),
             (101, "BC", 0, 0, 0, 0, 0, 8, 8));
 
-        await Add("eng5@sheet.dev", new DateOnly(2026, 5, 30), dummy, null, null,
+        await Add("eng5@sheet.dev", new DateOnly(2026, 5, 30), sign: true, approve: false, null,
             (101, "CA", 0, 0, 8, 8, 0, 0, 0),
             (101, "CB", 0, 0, 0, 0, 8, 8, 8));
 
         // rejected — week ending May 30
-        // status='rejected' because ApproverNotes set + both hashes null (see timesheetUtils.ts deriveStatus)
-        await Add("eng8@sheet.dev", new DateOnly(2026, 5, 30), null, null,
+        await Add("eng8@sheet.dev", new DateOnly(2026, 5, 30), sign: false, approve: false,
             "Hours not matching project log — please revise",
             (101, "BA", 0, 0, 7, 7, 7, 7, 7));
 
         // draft — week ending Jun 6
-        await Add("eng7@sheet.dev", new DateOnly(2026, 6, 6), null, null, null,
+        await Add("eng7@sheet.dev", new DateOnly(2026, 6, 6), sign: false, approve: false, null,
             (101, "AA", 0, 0, 8, 8, 8, 0, 0));
 
-        await Add("eng3@sheet.dev", new DateOnly(2026, 6, 6), null, null, null,
+        await Add("eng3@sheet.dev", new DateOnly(2026, 6, 6), sign: false, approve: false, null,
             (101, "BB", 0, 0, 8, 8, 0, 0, 0),
             (101, "BA", 0, 0, 0, 0, 8, 8, 8));
 
         // submitted — week ending Jun 6
-        await Add("eng4@sheet.dev", new DateOnly(2026, 6, 6), dummy, null, null,
+        await Add("eng4@sheet.dev", new DateOnly(2026, 6, 6), sign: true, approve: false, null,
             (101, "CB", 0, 0, 8, 8, 8, 0, 0),
             (101, "D",  0, 0, 0, 0, 0, 8, 8));
+
+        // Backfill: fix any existing timesheets that have invalid (dummy) signatures
+        var seededUserIds = users.Values.Select(u => u.Id).ToHashSet();
+        var toFix = await db.Timesheets
+            .Include(t => t.User)
+            .Include(t => t.TimesheetRows)
+            .Where(t => t.EmployeeHash != null && seededUserIds.Contains(t.UserId!))
+            .ToListAsync();
+
+        foreach (var ts in toFix)
+        {
+            if (ts.User?.PublicKey == null || ts.User.PrivateKey == null) continue;
+            if (signatureService.VerifySignature(ts, ts.User.PublicKey, ts.EmployeeHash!)) continue;
+
+            var newEmpHash = signatureService.HashTimesheet(ts, "Password123!", ts.User.PrivateKey);
+            if (newEmpHash == null) continue;
+            ts.EmployeeHash = newEmpHash;
+
+            if (ts.ApproverHash != null && sup1.PrivateKey != null)
+                ts.ApproverHash = signatureService.HashTimesheet(ts, "Password123!", sup1.PrivateKey);
+        }
+        await db.SaveChangesAsync();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
