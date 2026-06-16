@@ -157,9 +157,12 @@ public class WorkPackageService : IWorkPackageService
             .Include(c => c.Project)
             .ToList();
 
-        var top = all.FirstOrDefault(c => c.ParentWorkPackage == null);
-        if (top == null) return [];
-        return FindAllChildren(top);
+        var roots = all.Where(c => c.ParentWorkPackage == null).ToList();
+        if (roots.Count == 0) return [];
+        var result = new List<WorkPackage>();
+        foreach (var root in roots)
+            result.AddRange(FindAllChildren(root));
+        return result;
     }
 
     public List<WorkPackage> CalculateTotalMoney(List<WorkPackage> wps, List<Budget> budgets)
@@ -193,10 +196,11 @@ public class WorkPackageService : IWorkPackageService
         string? requestedParentId = p.WorkPackage!.ParentWorkPackageId;
         if (string.IsNullOrEmpty(requestedParentId) || requestedParentId == "0")
         {
-            // "0" is the sentinel for "child of project root" — resolve to the actual root WP
-            // so the new WP remains reachable in GetProjectWorkPackagesTree.
+            // Resolve "no parent" / "0" sentinel to the explicit root WP (id="0") if one exists.
+            // For seeded projects that have no "0" root, leave requestedParentId null so the new
+            // WP is created as a top-level sibling of the existing phase WPs (A/B/C/D).
             var rootWP = _context.WorkPackages!
-                .FirstOrDefault(c => c.ProjectId == projectId && c.ParentWorkPackageId == null);
+                .FirstOrDefault(c => c.ProjectId == projectId && c.WorkPackageId == "0");
             requestedParentId = rootWP?.WorkPackageId;
         }
 

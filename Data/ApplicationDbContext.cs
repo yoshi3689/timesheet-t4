@@ -41,7 +41,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<EmployeeWorkPackage>()
             .HasOne(p => p.WorkPackage)
             .WithMany(c => c.EmployeeWorkPackages)
-            .HasForeignKey(p => new { p.WorkPackageId, p.WorkPackageProjectId });
+            .HasForeignKey(p => new { p.WorkPackageId, p.WorkPackageProjectId })
+            .HasPrincipalKey(p => new { p.WorkPackageId, p.ProjectId });
 
         modelBuilder.Entity<TimesheetRow>()
             .Property(e => e.WorkPackageId)
