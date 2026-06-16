@@ -21,9 +21,11 @@ internal partial class Program
         var port = builder.Configuration["DBPORT"] ?? (isDev ? "3333" : throw new InvalidOperationException("DBPORT environment variable is required in production."));
         var password = builder.Configuration["DBPASSWORD"] ?? (isDev ? "password123" : throw new InvalidOperationException("DBPASSWORD environment variable is required in production."));
         var db = builder.Configuration["DBNAME"] ?? (isDev ? "db" : throw new InvalidOperationException("DBNAME environment variable is required in production."));
+        var user = builder.Configuration["DBUSER"] ?? "root";
+        var sslMode = builder.Configuration["DBSSL"] ?? "none";
 
-        string connectionString = $"server={host}; userid=root; pwd={password};"
-                + $"port={port}; database={db};SslMode=none;allowpublickeyretrieval=True;";
+        string connectionString = $"server={host};port={port};userid={user};pwd={password};"
+                + $"database={db};SslMode={sslMode};allowpublickeyretrieval=True;";
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -105,6 +107,13 @@ internal partial class Program
         });
 
         var app = builder.Build();
+
+        if (isDev)
+        {
+            var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+            startupLogger.LogInformation("Data Protection keys persisted to {KeysPath}",
+                Path.Combine(app.Environment.ContentRootPath, ".dp-keys"));
+        }
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
