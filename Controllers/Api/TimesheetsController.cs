@@ -43,6 +43,7 @@ namespace TimesheetApp.Controllers.Api
                 t.EndDate,
                 t.TimesheetId,
                 t.EmployeeHash,
+                t.ApproverHash,
                 t.FlexHours,
                 t.Overtime
             }));

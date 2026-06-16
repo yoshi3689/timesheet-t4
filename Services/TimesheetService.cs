@@ -118,10 +118,12 @@ public class TimesheetService : ITimesheetService
         }
 
         Dictionary<int, string> validationErrors = new Dictionary<int, string>();
-        oldRow.Timesheet.TotalHours += timesheetRow.TotalHoursRow - oldRow.TotalHoursRow;
         oldRow.packedHours = timesheetRow.packedHours;
+        float newRowTotal = 0;
+        for (int d = 0; d < 7; d++) newRowTotal += oldRow.getHour(d);
+        oldRow.Timesheet.TotalHours += newRowTotal - oldRow.TotalHoursRow;
+        oldRow.TotalHoursRow = newRowTotal;
         oldRow.Notes = timesheetRow.Notes;
-        oldRow.TotalHoursRow = timesheetRow.TotalHoursRow;
 
         for (int i = 0; i < 7; i++)
         {
@@ -180,7 +182,8 @@ public class TimesheetService : ITimesheetService
         var approveSheets = _context.Timesheets!
             .Where(t => t.User!.TimesheetApproverId == approverId &&
                         t.EmployeeHash != null &&
-                        t.ApproverHash == null)
+                        t.ApproverHash == null &&
+                        t.ApproverNotes == null)
             .Include(c => c.User)
             .Include(c => c.TimesheetRows)
             .OrderBy(c => c.EndDate)
@@ -245,6 +248,7 @@ public class TimesheetService : ITimesheetService
             return (false, "unauthorized", null);
         }
 
+        timesheet.ApproverNotes = null;
         timesheet.EmployeeHash = timesheetHash;
         _context.Update(timesheet);
         _context.SaveChanges();
@@ -265,6 +269,11 @@ public class TimesheetService : ITimesheetService
         if (user == null || timesheet == null || user.PrivateKey == null || timesheet.User == null || timesheet.User.TimesheetApproverId != user.Id)
         {
             return (false, "badrequest", null);
+        }
+
+        if (timesheet.EmployeeHash == null || timesheet.ApproverHash != null || timesheet.ApproverNotes != null)
+        {
+            return (false, "Timesheet is not in a submitted state.", null);
         }
 
         byte[]? timesheetHash = _signatureService.HashTimesheet(timesheet, password, user.PrivateKey);
@@ -306,6 +315,11 @@ public class TimesheetService : ITimesheetService
             .FirstOrDefault();
 
         if (user == null || timesheet == null || user.PrivateKey == null || timesheet.User == null || timesheet.User.TimesheetApproverId != user.Id)
+        {
+            return false;
+        }
+
+        if (timesheet.EmployeeHash == null || timesheet.ApproverHash != null || timesheet.ApproverNotes != null)
         {
             return false;
         }
