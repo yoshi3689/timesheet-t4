@@ -32,7 +32,6 @@ internal partial class Program
         var jwtSecret = builder.Configuration["JWT_SECRET"]
             ?? (isDev ? "dev-secret-key-must-be-at-least-32-characters!"
                 : throw new InvalidOperationException("JWT_SECRET environment variable is required in production."));
-        var jwtExpiresHours = int.TryParse(builder.Configuration["JWT_EXPIRES_HOURS"], out var jwtH) ? jwtH : 8;
 
         var frontendUrl = builder.Configuration["FRONTEND_URL"]
             ?? (isDev ? "http://localhost:3000"
@@ -62,6 +61,7 @@ internal partial class Program
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
                 ValidateIssuer = false,
                 ValidateAudience = false,
+                ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero,
             };
         });
