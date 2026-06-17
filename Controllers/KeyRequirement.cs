@@ -2,8 +2,6 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using TimesheetApp.Data;
-using TimesheetApp.Models;
 
 namespace TimesheetApp.Authorization;
 /// <summary>
@@ -23,24 +21,11 @@ public class KeyRequirement : IAuthorizationRequirement
 /// </summary>
 public class KeyRequirementHandler : AuthorizationHandler<KeyRequirement>
 {
-    private readonly ApplicationDbContext _dbContext;
-
-    public KeyRequirementHandler(ApplicationDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
-
     protected override Task HandleRequirementAsync(AuthorizationHandlerContext authContext, KeyRequirement requirement)
     {
-        var user = _dbContext.Users.Where(c => c.UserName == authContext.User.Identity!.Name).FirstOrDefault();
-        if (user == null)
-        {
-            return Task.CompletedTask;
-        }
-        if ((user.PublicKey != null) == requirement.HasKey)
-        {
+        var activated = authContext.User.FindFirst("activated")?.Value == "true";
+        if (activated == requirement.HasKey)
             authContext.Succeed(requirement);
-        }
         return Task.CompletedTask;
     }
 }
