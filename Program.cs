@@ -8,7 +8,9 @@ using TimesheetApp.Helpers;
 using TimesheetApp.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using TimesheetApp.Services;
-using Microsoft.AspNetCore.DataProtection;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 internal partial class Program
 {
@@ -26,6 +28,16 @@ internal partial class Program
 
         string connectionString = $"server={host};port={port};userid={user};pwd={password};"
                 + $"database={db};SslMode={sslMode};allowpublickeyretrieval=True;";
+
+        var jwtSecret = builder.Configuration["JWT_SECRET"]
+            ?? (isDev ? "dev-secret-key-must-be-at-least-32-characters!"
+                : throw new InvalidOperationException("JWT_SECRET environment variable is required in production."));
+        var jwtExpiresHours = int.TryParse(builder.Configuration["JWT_EXPIRES_HOURS"], out var jwtH) ? jwtH : 8;
+
+        var frontendUrl = builder.Configuration["FRONTEND_URL"]
+            ?? (isDev ? "http://localhost:3000"
+                : throw new InvalidOperationException("FRONTEND_URL environment variable is required in production."));
+
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -36,23 +48,21 @@ internal partial class Program
         builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
-        builder.Services.ConfigureApplicationCookie(options =>
+        builder.Services.AddAuthentication(options =>
         {
-            options.Events.OnRedirectToLogin = context =>
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                if (context.Request.Path.StartsWithSegments("/api"))
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                else
-                    context.Response.Redirect(context.RedirectUri);
-                return Task.CompletedTask;
-            };
-            options.Events.OnRedirectToAccessDenied = context =>
-            {
-                if (context.Request.Path.StartsWithSegments("/api"))
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                else
-                    context.Response.Redirect(context.RedirectUri);
-                return Task.CompletedTask;
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ClockSkew = TimeSpan.Zero,
             };
         });
         builder.Services.AddAuthorization(options =>
@@ -73,47 +83,23 @@ internal partial class Program
                     System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
             });
         builder.Services.AddHttpContextAccessor();
-        builder.Services.AddDistributedMemoryCache();
-        builder.Services.AddSession(options =>
-        {
-            options.IdleTimeout = TimeSpan.FromHours(12);
-            options.Cookie.Name = ".ProjectManagement.Session";
-            options.Cookie.IsEssential = true;
-            options.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
-            options.Cookie.HttpOnly = true;
-        });
 
         builder.Services.AddHealthChecks();
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
-        if (isDev)
-        {
-            builder.Services.AddDataProtection()
-                .PersistKeysToFileSystem(new DirectoryInfo(
-                    Path.Combine(builder.Environment.ContentRootPath, ".dp-keys")));
-        }
-
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("Frontend", policy =>
             {
-                policy.WithOrigins("http://localhost:3000")
+                policy.WithOrigins(frontendUrl)
                       .AllowAnyHeader()
-                      .AllowAnyMethod()
-                      .AllowCredentials();
+                      .AllowAnyMethod();
             });
         });
 
         var app = builder.Build();
-
-        if (isDev)
-        {
-            var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
-            startupLogger.LogInformation("Data Protection keys persisted to {KeysPath}",
-                Path.Combine(app.Environment.ContentRootPath, ".dp-keys"));
-        }
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
@@ -130,7 +116,7 @@ internal partial class Program
             app.UseHsts();
         }
 
-        app.UseHttpsRedirection();
+        if (isDev) app.UseHttpsRedirection();
         app.UseStaticFiles();
 
         app.UseRouting();
@@ -146,7 +132,6 @@ internal partial class Program
         app.MapRazorPages();
         app.MapHealthChecks("/health");
 
-        app.UseSession();
         // Seed initial data and apply pending migrations on startup
         var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         using (var scope = scopeFactory.CreateScope())
