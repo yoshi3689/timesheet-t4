@@ -33,9 +33,10 @@ internal partial class Program
             ?? (isDev ? "dev-secret-key-must-be-at-least-32-characters!"
                 : throw new InvalidOperationException("JWT_SECRET environment variable is required in production."));
 
-        var frontendUrl = builder.Configuration["FRONTEND_URL"]
+        var frontendUrls = (builder.Configuration["FRONTEND_URLS"] ?? builder.Configuration["FRONTEND_URL"]
             ?? (isDev ? "http://localhost:3000"
-                : throw new InvalidOperationException("FRONTEND_URL environment variable is required in production."));
+                : throw new InvalidOperationException("FRONTEND_URLS environment variable is required in production.")))
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -93,7 +94,7 @@ internal partial class Program
         {
             options.AddPolicy("Frontend", policy =>
             {
-                policy.WithOrigins(frontendUrl)
+                policy.WithOrigins(frontendUrls)
                       .AllowAnyHeader()
                       .AllowAnyMethod();
             });

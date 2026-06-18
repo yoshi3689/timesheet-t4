@@ -196,7 +196,7 @@ ViewData["Title"] = "Manage Project";
             }
             <text>
             (async function () {
-                await addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" ==="True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.ParentWorkPackageProjectId, @wp.TotalBudget, @wp.TotalRemaining);
+                await addWP("@wp.WorkPackageId", "@wp.Title", firstname, lastname, "@wp.IsClosed" ==="True", "@wp.IsBottomLevel" === "True", "@wp.ParentWorkPackageId", @wp.TotalBudget, @wp.TotalRemaining);
             })();
             </text>
     }
@@ -234,7 +234,7 @@ ViewData["Title"] = "Manage Project";
     }
 
     async function addWP(WorkPackageId, Title, ResponsibleUserFN, ResponsibleUserLN, IsClosed, IsBottomLevel,
-        ParentWorkPackageId, ParentWorkPackageProjectId, totalBudget, remainingBudget) {
+        ParentWorkPackageId, totalBudget, remainingBudget) {
         let employeeButton = null;
         let item = document.createElement("div");
         item.className = "accordion-item";
@@ -655,8 +655,7 @@ ViewData["Title"] = "Manage Project";
         let subp = document.createElement("p");
         subp.innerHTML = "";
         div.appendChild(subp);
-        if (ParentWorkPackageId !== null && ParentWorkPackageProjectId !== null && ParentWorkPackageId !== "" &&
-            ParentWorkPackageProjectId !== "") {
+        if (ParentWorkPackageId !== null && ParentWorkPackageId !== "") {
             collapse.appendChild(div);
             item.appendChild(collapse);
             parent = document.querySelector("#WP" + ParentWorkPackageId);

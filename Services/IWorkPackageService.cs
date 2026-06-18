@@ -6,6 +6,7 @@ namespace TimesheetApp.Services;
 public interface IWorkPackageService
 {
     Task<List<WorkPackage>> GetResponsibleWorkPackagesAsync(string userId);
+    Task<List<WorkPackage>> GetAssignedWorkPackagesAsync(string userId);
     Task<WorkPackage?> GetWorkPackageDetailsAsync(string id);
     LowestWorkPackageBAndEViewModel GetEditModel(string wpId, int projectId);
     void CreateBudgetsAndEstimates(LowestWorkPackageBAndEViewModel input);

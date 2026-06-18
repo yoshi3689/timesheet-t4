@@ -8,7 +8,6 @@ public class WorkPackageDetailDto
     public string? ResponsibleUserId { get; set; }
     public string? ResponsibleUserName { get; set; }
     public string? ParentWorkPackageId { get; set; }
-    public int ParentWorkPackageProjectId { get; set; }
     public bool IsBottomLevel { get; set; }
     public bool IsClosed { get; set; }
     public double ActualCost { get; set; }

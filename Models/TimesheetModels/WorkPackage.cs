@@ -28,7 +28,6 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? Title { get; set; }
         public string? ResponsibleUserId { get; set; }
         public string? ParentWorkPackageId { get; set; }
-        public int ParentWorkPackageProjectId { get; set; } = 0;
         public bool IsBottomLevel { get; set; }
         public double ActualCost { get; set; }
         [Display(Name = "Closed")]
