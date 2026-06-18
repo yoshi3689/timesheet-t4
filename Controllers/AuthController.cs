@@ -1,7 +1,11 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using TimesheetApp.Helpers;
 using TimesheetApp.Models;
 
@@ -11,13 +15,13 @@ namespace TimesheetApp.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IConfiguration _config;
 
-        public AuthController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
+        public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config)
         {
-            _signInManager = signInManager;
             _userManager = userManager;
+            _config = config;
         }
 
         public record LoginRequest(string Email, string Password);
@@ -26,25 +30,37 @@ namespace TimesheetApp.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var result = await _signInManager.PasswordSignInAsync(
-                request.Email, request.Password, isPersistent: false, lockoutOnFailure: false);
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                return Ok(new { success = false, message = "Invalid email or password." });
 
-            if (result.Succeeded)
-                return Ok(new { success = true, message = "Logged in." });
+            var roles = await _userManager.GetRolesAsync(user);
 
-            if (result.IsLockedOut)
-                return Ok(new { success = false, message = "Account locked out." });
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+                new Claim("activated", (user.PublicKey != null).ToString().ToLower()),
+            };
+            foreach (var role in roles)
+                claims.Add(new Claim(ClaimTypes.Role, role));
 
-            return Ok(new { success = false, message = "Invalid email or password." });
+            var secret = _config["JWT_SECRET"] ?? "dev-secret-key-must-be-at-least-32-characters!";
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expiresHours = int.TryParse(_config["JWT_EXPIRES_HOURS"], out var h) ? h : 8;
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(expiresHours),
+                signingCredentials: creds);
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return Ok(new { success = true, token = tokenString, message = "Logged in." });
         }
 
         // POST /api/auth/logout
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await _signInManager.SignOutAsync();
-            return Ok(new { success = true });
-        }
+        public IActionResult Logout() => Ok(new { success = true });
 
         // GET /api/auth/me
         [HttpGet("me")]
