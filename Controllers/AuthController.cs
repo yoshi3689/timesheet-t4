@@ -31,8 +31,19 @@ namespace TimesheetApp.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+            if (user == null)
                 return Ok(new { success = false, message = "Invalid email or password." });
+
+            if (await _userManager.IsLockedOutAsync(user))
+                return Ok(new { success = false, message = "Account locked out." });
+
+            if (!await _userManager.CheckPasswordAsync(user, request.Password))
+            {
+                await _userManager.AccessFailedAsync(user);
+                return Ok(new { success = false, message = "Invalid email or password." });
+            }
+
+            await _userManager.ResetAccessFailedCountAsync(user);
 
             var roles = await _userManager.GetRolesAsync(user);
 
@@ -45,7 +56,7 @@ namespace TimesheetApp.Controllers
             foreach (var role in roles)
                 claims.Add(new Claim(ClaimTypes.Role, role));
 
-            var secret = _config["JWT_SECRET"] ?? "dev-secret-key-must-be-at-least-32-characters!";
+            var secret = _config["JWT_SECRET"] ?? throw new InvalidOperationException("JWT_SECRET is not configured.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var expiresHours = int.TryParse(_config["JWT_EXPIRES_HOURS"], out var h) ? h : 8;
