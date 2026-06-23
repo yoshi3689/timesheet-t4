@@ -6,7 +6,8 @@ namespace TimesheetApp.Models.TimesheetModels;
 public class RefreshToken
 {
     [Key]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }
 
     [Required]
     public string UserId { get; set; } = null!;

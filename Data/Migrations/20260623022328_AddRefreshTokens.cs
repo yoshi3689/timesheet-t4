@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -32,7 +33,8 @@ namespace TimesheetApp.Data.Migrations
                 name: "RefreshTokens",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserId = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     TokenHash = table.Column<string>(type: "varchar(64)", maxLength: 64, nullable: false)
@@ -58,9 +60,9 @@ namespace TimesheetApp.Data.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "93c05412-ef81-4f53-8f56-d25397f89f3f", null, "Admin", "ADMIN" },
-                    { "a87eabe2-a482-4a12-9f23-b16f62144333", null, "HR", "HR" },
-                    { "f1eda073-b928-4764-bed5-ab03958a00d2", null, "Supervisor", "SUPERVISOR" }
+                    { "44cd2666-6814-4a33-8a44-ee4ff835c01a", null, "Admin", "ADMIN" },
+                    { "697ab3b3-60b1-427c-ab43-93b96889ea65", null, "Supervisor", "SUPERVISOR" },
+                    { "bdda633e-99ae-4485-b250-e6f752509414", null, "HR", "HR" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -78,17 +80,17 @@ namespace TimesheetApp.Data.Migrations
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "93c05412-ef81-4f53-8f56-d25397f89f3f");
+                keyValue: "44cd2666-6814-4a33-8a44-ee4ff835c01a");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "a87eabe2-a482-4a12-9f23-b16f62144333");
+                keyValue: "697ab3b3-60b1-427c-ab43-93b96889ea65");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "f1eda073-b928-4764-bed5-ab03958a00d2");
+                keyValue: "bdda633e-99ae-4485-b250-e6f752509414");
 
             migrationBuilder.InsertData(
                 table: "AspNetRoles",

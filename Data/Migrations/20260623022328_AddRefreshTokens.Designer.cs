@@ -11,7 +11,7 @@ using TimesheetApp.Data;
 namespace TimesheetApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260623021543_AddRefreshTokens")]
+    [Migration("20260623022328_AddRefreshTokens")]
     partial class AddRefreshTokens
     {
         /// <inheritdoc />
@@ -50,19 +50,19 @@ namespace TimesheetApp.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "a87eabe2-a482-4a12-9f23-b16f62144333",
+                            Id = "bdda633e-99ae-4485-b250-e6f752509414",
                             Name = "HR",
                             NormalizedName = "HR"
                         },
                         new
                         {
-                            Id = "93c05412-ef81-4f53-8f56-d25397f89f3f",
+                            Id = "44cd2666-6814-4a33-8a44-ee4ff835c01a",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "f1eda073-b928-4764-bed5-ab03958a00d2",
+                            Id = "697ab3b3-60b1-427c-ab43-93b96889ea65",
                             Name = "Supervisor",
                             NormalizedName = "SUPERVISOR"
                         });
@@ -923,9 +923,9 @@ namespace TimesheetApp.Data.Migrations
 
             modelBuilder.Entity("TimesheetApp.Models.TimesheetModels.RefreshToken", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
