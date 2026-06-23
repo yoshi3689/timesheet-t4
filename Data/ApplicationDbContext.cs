@@ -26,6 +26,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<WorkPackage> WorkPackages => Set<WorkPackage>();
     public virtual DbSet<Notification> Notifications => Set<Notification>();
     public virtual DbSet<ApplicationUser> ApplicationUsers => Set<ApplicationUser>();
+    public virtual DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
