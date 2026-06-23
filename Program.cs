@@ -96,7 +96,8 @@ internal partial class Program
             {
                 policy.WithOrigins(frontendUrls)
                       .AllowAnyHeader()
-                      .AllowAnyMethod();
+                      .AllowAnyMethod()
+                      .AllowCredentials();
             });
         });
 
