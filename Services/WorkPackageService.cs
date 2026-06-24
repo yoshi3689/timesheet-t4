@@ -154,8 +154,16 @@ public class WorkPackageService : IWorkPackageService
             .Include(c => c.ResponsibleUser)
             .Include(c => c.ParentWorkPackage)
             .Include(c => c.ChildWorkPackages)
-            .Include(c => c.Project)
             .ToList();
+
+        var assigneeCounts = _context.EmployeeWorkPackages!
+            .Where(ewp => ewp.WorkPackageProjectId == projectId)
+            .GroupBy(ewp => ewp.WorkPackageId)
+            .Select(g => new { WorkPackageId = g.Key, Count = g.Count() })
+            .ToDictionary(x => x.WorkPackageId, x => x.Count);
+
+        foreach (var wp in all)
+            wp.AssigneeCount = assigneeCounts.TryGetValue(wp.WorkPackageId, out var c) ? c : 0;
 
         var roots = all.Where(c => c.ParentWorkPackage == null).ToList();
         if (roots.Count == 0) return [];
@@ -229,8 +237,15 @@ public class WorkPackageService : IWorkPackageService
 
         if (p.budgets != null)
         {
-            Budget? parentB = null;
             List<Budget> parentBudgets = _context.Budgets.Where(c => c.WPProjectId == projectId + "~" + newChild.ParentWorkPackageId).ToList();
+
+            foreach (var budget in p.budgets)
+            {
+                var parentB = parentBudgets.FirstOrDefault(c => c.LabourCode == budget.LabourCode);
+                if (parentB != null && budget.Days * budget.People > parentB.UnallocatedDays * parentB.UnallocatedPeople)
+                    throw new InvalidOperationException($"Budget for labour grade '{budget.LabourCode}' exceeds the parent work package's unallocated budget.");
+            }
+
             foreach (var budget in p.budgets)
             {
                 Budget newBudget = new Budget
@@ -243,7 +258,7 @@ public class WorkPackageService : IWorkPackageService
                     UnallocatedPeople = budget.People
                 };
                 _context.Budgets!.Add(newBudget);
-                parentB = parentBudgets.FirstOrDefault(c => c.LabourCode == budget.LabourCode);
+                var parentB = parentBudgets.FirstOrDefault(c => c.LabourCode == budget.LabourCode);
                 if (parentB != null)
                 {
                     parentB.UnallocatedDays -= newBudget.UnallocatedDays;
@@ -313,6 +328,16 @@ public class WorkPackageService : IWorkPackageService
             }
             closingwp.IsClosed = true;
         }
+        _context.SaveChanges();
+    }
+
+    public void UpdateWorkPackage(string workPackageId, int projectId, string title, string? responsibleUserId)
+    {
+        var wp = _context.WorkPackages
+            .SingleOrDefault(w => w.WorkPackageId == workPackageId && w.ProjectId == projectId);
+        if (wp == null) return;
+        wp.Title = title;
+        wp.ResponsibleUserId = responsibleUserId;
         _context.SaveChanges();
     }
 

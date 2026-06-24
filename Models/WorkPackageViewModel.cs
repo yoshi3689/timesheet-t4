@@ -8,6 +8,13 @@ namespace TimesheetApp.Models
         public string WorkPackageId { get; set; } = "";
     }
 
+    public class WorkPackageUpdateRequest
+    {
+        public string WorkPackageId { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string? ResponsibleUserId { get; set; }
+    }
+
     public class WorkPackageViewModel
     {
         public List<TimesheetApp.Models.TimesheetModels.WorkPackage> wps { get; set; } = new List<WorkPackage>();

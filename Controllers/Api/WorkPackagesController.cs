@@ -67,7 +67,8 @@ namespace TimesheetApp.Controllers.Api
 
       string userId = _userManager.GetUserId(HttpContext.User)!;
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
 
       _workPackageService.CreateBudgetsAndEstimates(input);
       return Ok();
@@ -93,7 +94,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
       if (p.WorkPackage == null) return BadRequest();
 
       var project = _projectService.GetProjectById(projectId);
@@ -104,7 +106,14 @@ namespace TimesheetApp.Controllers.Api
       var parent = wps.FirstOrDefault(c => c.WorkPackageId == p.WorkPackage.ParentWorkPackageId);
       if (parent != null && parent.IsClosed) return BadRequest();
 
-      return Ok(_workPackageService.CreateChildWorkPackage(p, projectId));
+      try
+      {
+        return Ok(_workPackageService.CreateChildWorkPackage(p, projectId));
+      }
+      catch (InvalidOperationException ex)
+      {
+        return BadRequest(new { message = ex.Message });
+      }
     }
 
     // POST /api/workpackages/project/{projectId}/budget-details
@@ -113,7 +122,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
       var budgets = _workPackageService.GetBudgetDetails(req.WorkPackageId, projectId);
       return Ok(new
       {
@@ -128,8 +138,22 @@ namespace TimesheetApp.Controllers.Api
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
       _workPackageService.CloseWorkPackage(req.WorkPackageId, projectId);
+      return Ok();
+    }
+
+    // POST /api/workpackages/project/{projectId}/update-wp
+    [HttpPost("project/{projectId}/update-wp")]
+    public async Task<IActionResult> UpdateWorkPackage(int projectId, [FromBody] WorkPackageUpdateRequest req)
+    {
+      var userId = _userManager.GetUserId(HttpContext.User);
+      bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
+      if (string.IsNullOrWhiteSpace(req.Title)) return BadRequest("Title is required.");
+      _workPackageService.UpdateWorkPackage(req.WorkPackageId, projectId, req.Title, req.ResponsibleUserId);
       return Ok();
     }
 
@@ -139,7 +163,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
       return Ok(_workPackageService.GetWPEmployees(req.WorkPackageId, projectId));
     }
 
@@ -149,7 +174,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
       var result = _workPackageService.GetCandidateEmployees(req.WorkPackageId, projectId);
       if (result == null) return BadRequest();
       return Ok(result);
@@ -161,7 +187,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
       return Ok(_workPackageService.GetAssignedEmployees(req.WorkPackageId, projectId));
     }
 
@@ -171,7 +198,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
       if (ewps.Count == 0) return BadRequest();
       var project = _projectService.GetProjectById(projectId);
       if (project == null) return NotFound();
@@ -196,7 +224,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
-      if (!isPM) return Forbid();
+      bool isAdmin = User.IsInRole("Admin");
+      if (!isPM && !isAdmin) return Forbid();
       if (ewp.WorkPackageProjectId != projectId) return BadRequest();
       var result = _workPackageService.AssignResponsibleEngineer(ewp);
       if (result == null) return BadRequest();

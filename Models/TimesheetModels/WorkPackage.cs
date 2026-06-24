@@ -51,5 +51,8 @@ namespace TimesheetApp.Models.TimesheetModels
 
         [NotMapped]
         public double TotalRemaining { get; set; }
+
+        [NotMapped]
+        public int AssigneeCount { get; set; }
     }
 }

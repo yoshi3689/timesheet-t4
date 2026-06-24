@@ -16,6 +16,7 @@ public interface IWorkPackageService
     WorkPackage CreateChildWorkPackage(WorkPackageViewModel p, int projectId);
     List<Budget> GetBudgetDetails(string workPackageId, int projectId);
     void CloseWorkPackage(string workPackageId, int projectId);
+    void UpdateWorkPackage(string workPackageId, int projectId, string title, string? responsibleUserId);
     void CloseProject(int projectId);
     object GetWPEmployees(string workPackageId, int projectId);
     object GetCandidateEmployees(string workPackageId, int projectId);
