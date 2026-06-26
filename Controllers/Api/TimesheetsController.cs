@@ -49,12 +49,18 @@ namespace TimesheetApp.Controllers.Api
             }));
         }
 
-        // GET /api/timesheets/to-approve
+        // GET /api/timesheets/to-approve?status=submitted|approved|rejected&from=YYYY-MM-DD&to=YYYY-MM-DD&page=0&pageSize=15
         [HttpGet("to-approve")]
-        public IActionResult GetToApprove()
+        public IActionResult GetToApprove(
+            [FromQuery] string status = "submitted",
+            [FromQuery] DateOnly? from = null,
+            [FromQuery] DateOnly? to = null,
+            [FromQuery] int page = 0,
+            [FromQuery] int pageSize = 15)
         {
             var approverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return Ok(_timesheetService.GetTimesheetsToApprove(approverId!));
+            var (items, total) = _timesheetService.GetTimesheetsToApprove(approverId!, status, from, to, page, pageSize);
+            return Ok(new { items, total, page, pageSize });
         }
 
         // POST /api/timesheets

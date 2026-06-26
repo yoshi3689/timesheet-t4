@@ -11,7 +11,13 @@ public interface ITimesheetService
     Timesheet? GetTimesheetWithDetails(int timesheetId);
     (Dictionary<int, string>? errors, object? result) UpdateRow(TimesheetRow timesheetRow);
     List<TimesheetRow> GetTimesheetRowDtos(int timesheetId);
-    List<Timesheet> GetTimesheetsToApprove(string approverId);
+    (List<Timesheet> items, int total) GetTimesheetsToApprove(
+        string approverId,
+        string status = "submitted",
+        DateOnly? from = null,
+        DateOnly? to = null,
+        int page = 0,
+        int pageSize = 15);
     List<Timesheet> GetApprovedTimesheets(string userId);
     Task<(bool success, string? error, byte[]? hash)> SubmitTimesheetAsync(int timesheetId, string userId, string password, double? flexhours, double? overtime);
     Task<(bool success, string? error, byte[]? hash)> ApproveTimesheetAsync(int timesheetId, string approverId, string password);

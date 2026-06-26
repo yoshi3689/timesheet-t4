@@ -174,23 +174,76 @@ public class TimesheetService : ITimesheetService
             .ToList();
     }
 
-    // Returns all submitted-but-not-approved sheets for the approver's assigned employees.
-    // Each sheet's RSA signature is verified before inclusion — sheets with invalid or missing
-    // signatures are silently dropped. N+1 query: one DB round-trip per employee (known backlog item).
-    public List<Timesheet> GetTimesheetsToApprove(string approverId)
+    // Returns the approver's subordinates' timesheets for a given status filter.
+    //   "submitted" (default): awaiting approval — EmployeeHash set, no ApproverHash, no ApproverNotes.
+    //   "rejected": previously declined and not yet resubmitted — ApproverNotes set, no ApproverHash.
+    //   "approved": already approved — ApproverHash set.
+    // The default ("submitted") preserves the actionable approval queue: RSA signatures are verified
+    // and invalid/missing-signature sheets are silently dropped, since the approver acts on these.
+    // History views ("approved"/"rejected") skip signature verification (not actionable) and are
+    // capped to the most recent MaxApprovalHistory sheets to bound payload size — a supervisor may
+    // accumulate dozens of historical sheets per subordinate. Full pagination is a follow-up item.
+    // N+1 query on the submitted path: one DB round-trip per employee (known backlog item).
+    public (List<Timesheet> items, int total) GetTimesheetsToApprove(
+        string approverId,
+        string status = "submitted",
+        DateOnly? from = null,
+        DateOnly? to = null,
+        int page = 0,
+        int pageSize = 15)
     {
-        var approveSheets = _context.Timesheets!
-            .Where(t => t.User!.TimesheetApproverId == approverId &&
-                        t.EmployeeHash != null &&
-                        t.ApproverHash == null &&
-                        t.ApproverNotes == null)
+        var normalized = string.IsNullOrWhiteSpace(status) ? "submitted" : status.ToLowerInvariant();
+
+        // Default window: last Friday to this Friday
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        int daysToFriday = ((int)DayOfWeek.Friday - (int)today.DayOfWeek + 7) % 7;
+        var thisFriday = daysToFriday == 0 ? today : today.AddDays(daysToFriday);
+        var lastFriday = thisFriday.AddDays(-7);
+        from ??= lastFriday;
+        to ??= thisFriday;
+
+        var query = _context.Timesheets!
+            .Where(t => t.User!.TimesheetApproverId == approverId)
+            .Where(t => t.EndDate >= from && t.EndDate <= to);
+
+        bool isSubmitted = false;
+        switch (normalized)
+        {
+            case "approved":
+                query = query.Where(t => t.ApproverHash != null);
+                break;
+            case "rejected":
+                query = query.Where(t => t.ApproverNotes != null && t.ApproverHash == null);
+                break;
+            default: // "submitted"
+                isSubmitted = true;
+                query = query.Where(t => t.EmployeeHash != null &&
+                                         t.ApproverHash == null &&
+                                         t.ApproverNotes == null);
+                break;
+        }
+
+        query = query
             .Include(c => c.User)
             .Include(c => c.TimesheetRows)
-            .OrderBy(c => c.EndDate)
-            .ToList();
+                .ThenInclude(r => r.WorkPackage);
 
-        var verifiedSheets = new List<Timesheet>();
-        foreach (var sheet in approveSheets)
+        if (!isSubmitted)
+        {
+            var total = query.Count();
+            var items = query
+                .OrderByDescending(c => c.EndDate)
+                .Skip(page * pageSize)
+                .Take(pageSize)
+                .ToList();
+            return (items, total);
+        }
+
+        // Submitted path: fetch all in window, verify RSA signatures, then paginate in memory
+        // so pagination counts only over sheets the approver can actually act on.
+        var allSubmitted = query.OrderBy(c => c.EndDate).ToList();
+        var verified = new List<Timesheet>();
+        foreach (var sheet in allSubmitted)
         {
             if (sheet.User == null || sheet.EmployeeHash == null || sheet.User.PublicKey == null)
             {
@@ -202,9 +255,9 @@ public class TimesheetService : ITimesheetService
                 Console.WriteLine($"signature invalid: timesheet {sheet.TimesheetId} failed RSA verification");
                 continue;
             }
-            verifiedSheets.Add(sheet);
+            verified.Add(sheet);
         }
-        return verifiedSheets;
+        return (verified.Skip(page * pageSize).Take(pageSize).ToList(), verified.Count);
     }
 
     public List<Timesheet> GetApprovedTimesheets(string userId)

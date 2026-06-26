@@ -64,7 +64,7 @@ namespace TimesheetApp.Controllers
         public IActionResult ToApprove()
         {
             var approverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var verifiedSheets = _timesheetService.GetTimesheetsToApprove(approverId!);
+            var (verifiedSheets, _) = _timesheetService.GetTimesheetsToApprove(approverId!);
 
             if (verifiedSheets.Count == 0)
             {
@@ -72,7 +72,7 @@ namespace TimesheetApp.Controllers
             }
 
             DateTime currentDate = DateTime.Today;
-            var timesheet = verifiedSheets.AsEnumerable()
+            var timesheet = verifiedSheets
                 .OrderBy(ts => Math.Abs((DateTime.Parse(ts.EndDate.ToString()!) - currentDate.Date).TotalDays))
                 .FirstOrDefault();
 
