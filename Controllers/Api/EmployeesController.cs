@@ -64,6 +64,7 @@ namespace TimesheetApp.Controllers.Api
 
             if (isAdminOrHR || callerId == id)
             {
+                var roles = await _userManager.GetRolesAsync(user);
                 return Ok(new EmployeeDetailDto
                 {
                     Id = user.Id,
@@ -79,6 +80,7 @@ namespace TimesheetApp.Controllers.Api
                     FlexTime = user.FlexTime,
                     Overtime = user.Overtime,
                     Salary = user.Salary,
+                    Roles = roles.ToList(),
                 });
             }
 

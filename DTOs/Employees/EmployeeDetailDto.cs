@@ -15,4 +15,5 @@ public class EmployeeDetailDto
     public double FlexTime { get; set; }
     public double Overtime { get; set; }
     public double Salary { get; set; }
+    public List<string> Roles { get; set; } = [];
 }
