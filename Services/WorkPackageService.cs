@@ -427,6 +427,12 @@ public class WorkPackageService : IWorkPackageService
         });
     }
 
+    public bool IsEmployeeAssignedToWP(string userId, string workPackageId, int projectId)
+    {
+        return _context.EmployeeWorkPackages!
+            .Any(ewp => ewp.UserId == userId && ewp.WorkPackageId == workPackageId && ewp.WorkPackageProjectId == projectId);
+    }
+
     public object GetAssignedEmployees(string workPackageId, int projectId)
     {
         return _context.EmployeeWorkPackages!

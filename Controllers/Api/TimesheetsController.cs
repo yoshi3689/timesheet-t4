@@ -175,6 +175,16 @@ namespace TimesheetApp.Controllers.Api
         }
 
         // DELETE /api/timesheets/{id} — admin only, for test teardown
+        [HttpDelete("rows/{rowId}")]
+        public async Task<IActionResult> DeleteTimesheetRow(int rowId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return BadRequest();
+            var deleted = _timesheetService.DeleteTimesheetRow(rowId, user.Id);
+            if (!deleted) return NotFound();
+            return Ok();
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public IActionResult DeleteTimesheet(int id)

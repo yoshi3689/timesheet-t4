@@ -21,6 +21,7 @@ public interface IWorkPackageService
     object GetWPEmployees(string workPackageId, int projectId);
     object GetCandidateEmployees(string workPackageId, int projectId);
     object GetAssignedEmployees(string workPackageId, int projectId);
+    bool IsEmployeeAssignedToWP(string userId, string workPackageId, int projectId);
     object AssignEmployees(List<EmployeeWorkPackage> ewps);
     string? AssignResponsibleEngineer(EmployeeWorkPackage ewp);
     List<Budget> GetSplitBudgets(string workPackageId, int projectId);

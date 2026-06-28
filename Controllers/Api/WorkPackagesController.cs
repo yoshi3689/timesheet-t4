@@ -81,10 +81,12 @@ namespace TimesheetApp.Controllers.Api
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
       bool isAdminOrHR = User.IsInRole("Admin") || User.IsInRole("HR");
-      if (!isPM && !isAdminOrHR) return Forbid();
       var wps = _workPackageService.GetProjectWorkPackagesTree(projectId);
-      var budgets = _workPackageService.GetProjectBudgets(projectId);
-      wps = _workPackageService.CalculateTotalMoney(wps, budgets);
+      if (isPM || isAdminOrHR)
+      {
+        var budgets = _workPackageService.GetProjectBudgets(projectId);
+        wps = _workPackageService.CalculateTotalMoney(wps, budgets);
+      }
       return Ok(wps);
     }
 
@@ -188,7 +190,8 @@ namespace TimesheetApp.Controllers.Api
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
       bool isAdmin = User.IsInRole("Admin");
-      if (!isPM && !isAdmin) return Forbid();
+      if (!isPM && !isAdmin && !_workPackageService.IsEmployeeAssignedToWP(userId!, req.WorkPackageId, projectId))
+        return Forbid();
       return Ok(_workPackageService.GetAssignedEmployees(req.WorkPackageId, projectId));
     }
 

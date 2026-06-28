@@ -420,6 +420,25 @@ public class TimesheetService : ITimesheetService
         return row;
     }
 
+    // Deletes a single special row (SICK/VACN/SHOL/FLEX) from a draft timesheet.
+    // Refuses if: row not found, wrong owner, sheet already submitted, or not a special row (project 10).
+    public bool DeleteTimesheetRow(int rowId, string userId)
+    {
+        var row = _context.TimesheetRows
+            .Include(r => r.Timesheet)
+            .FirstOrDefault(r => r.TimesheetRowId == rowId);
+
+        if (row == null || row.Timesheet == null) return false;
+        if (row.Timesheet.UserId != userId) return false;
+        if (row.Timesheet.EmployeeHash != null) return false;
+        if (row.WorkPackageProjectId != 10) return false;
+
+        row.Timesheet.TotalHours -= row.TotalHoursRow;
+        _context.TimesheetRows.Remove(row);
+        _context.SaveChanges();
+        return true;
+    }
+
     public bool DeleteTimesheet(int timesheetId)
     {
         var timesheet = _context.Timesheets
