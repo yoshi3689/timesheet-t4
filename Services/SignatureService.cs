@@ -71,7 +71,12 @@ public class SignatureService : ISignatureService
     // Flattens the timesheet into a single string that uniquely represents its contents.
     // This string is what gets signed and verified — any change to hours, dates, WP assignments,
     // or labour codes will produce a different string and break the signature.
-    // Note: row order matters here. If rows are reordered in the DB, verification would fail.
+    //
+    // Row order MUST be deterministic: EF Core does not guarantee the materialization order of a
+    // navigation collection, and different queries (e.g. the submit path vs the approval-queue path
+    // with its extra .ThenInclude) can return rows in different orders. Signing under one order and
+    // verifying under another silently breaks the signature. We pin the order by TimesheetRowId (the
+    // immutable PK) so sign-time and verify-time always produce the identical string.
     private string CreateDataString(Timesheet timesheet)
     {
         StringBuilder dataBuilder = new StringBuilder();
@@ -79,7 +84,7 @@ public class SignatureService : ISignatureService
         dataBuilder.Append(timesheet.TotalHours.ToString(CultureInfo.InvariantCulture));
         dataBuilder.Append(timesheet.FlexHours.ToString(CultureInfo.InvariantCulture));
         dataBuilder.Append(timesheet.Overtime.ToString(CultureInfo.InvariantCulture));
-        foreach (TimesheetRow row in timesheet.TimesheetRows)
+        foreach (TimesheetRow row in timesheet.TimesheetRows.OrderBy(r => r.TimesheetRowId))
         {
             dataBuilder.Append(row.WorkPackageId);
             dataBuilder.Append(row.WorkPackageProjectId);
