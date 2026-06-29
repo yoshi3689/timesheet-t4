@@ -285,6 +285,7 @@ internal partial class Program
             DbContext.SaveChanges();
 
             if (isDev) await SeedData.SeedAsync(scope.ServiceProvider);
+            await SeedData.BackfillSignaturesAsync(scope.ServiceProvider);
         }
         app.Run();
     }

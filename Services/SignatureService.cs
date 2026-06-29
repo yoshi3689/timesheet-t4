@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using TimesheetApp.Helpers;
@@ -74,10 +75,10 @@ public class SignatureService : ISignatureService
     private string CreateDataString(Timesheet timesheet)
     {
         StringBuilder dataBuilder = new StringBuilder();
-        dataBuilder.Append(timesheet.EndDate);
-        dataBuilder.Append(timesheet.TotalHours);
-        dataBuilder.Append(timesheet.FlexHours);
-        dataBuilder.Append(timesheet.Overtime);
+        dataBuilder.Append(timesheet.EndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        dataBuilder.Append(timesheet.TotalHours.ToString(CultureInfo.InvariantCulture));
+        dataBuilder.Append(timesheet.FlexHours.ToString(CultureInfo.InvariantCulture));
+        dataBuilder.Append(timesheet.Overtime.ToString(CultureInfo.InvariantCulture));
         foreach (TimesheetRow row in timesheet.TimesheetRows)
         {
             dataBuilder.Append(row.WorkPackageId);

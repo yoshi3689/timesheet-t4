@@ -10,6 +10,38 @@ namespace TimesheetApp.Data;
 
 public static class SeedData
 {
+    // Re-signs any timesheet whose stored EmployeeHash/ApproverHash no longer verifies.
+    // Safe to run on every startup: skips sheets that already verify, uses Password123! for all keys.
+    public static async Task BackfillSignaturesAsync(IServiceProvider services)
+    {
+        var db = services.GetRequiredService<ApplicationDbContext>();
+        var signatureService = services.GetRequiredService<ISignatureService>();
+
+        var timesheets = await db.Timesheets
+            .Include(t => t.User)
+            .Include(t => t.TimesheetApprover)
+            .Include(t => t.TimesheetRows)
+            .Where(t => t.EmployeeHash != null)
+            .ToListAsync();
+
+        bool changed = false;
+        foreach (var ts in timesheets)
+        {
+            if (ts.User?.PublicKey == null || ts.User.PrivateKey == null) continue;
+            if (signatureService.VerifySignature(ts, ts.User.PublicKey, ts.EmployeeHash!)) continue;
+
+            var newEmpHash = signatureService.HashTimesheet(ts, "Password123!", ts.User.PrivateKey);
+            if (newEmpHash == null) continue;
+            ts.EmployeeHash = newEmpHash;
+            changed = true;
+
+            if (ts.ApproverHash != null && ts.TimesheetApprover?.PrivateKey != null)
+                ts.ApproverHash = signatureService.HashTimesheet(ts, "Password123!", ts.TimesheetApprover.PrivateKey);
+        }
+
+        if (changed) await db.SaveChangesAsync();
+    }
+
     public static async Task SeedAsync(IServiceProvider services)
     {
         var db = services.GetRequiredService<ApplicationDbContext>();
