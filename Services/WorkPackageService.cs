@@ -136,21 +136,31 @@ public class WorkPackageService : IWorkPackageService
 
         if (input.estimates != null)
         {
-            foreach (var estimate in input.estimates)
-            {
-                int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
-                DateTime nextFriday = DateTime.Today.AddDays(offset);
-                ResponsibleEngineerEstimate re = new ResponsibleEngineerEstimate
-                {
-                    WPProjectId = estimate.WPProjectId,
-                    LabourCode = estimate.LabourCode,
-                    Date = DateOnly.FromDateTime(nextFriday),
-                    EstimatedCost = estimate.EstimatedCost,
-                };
-                _context.ResponsibleEngineerEstimates!.Add(re);
-            }
-            _context.SaveChanges();
+            var entries = input.estimates.Select(e => (e.LabourCode!, e.EstimatedCost)).ToList();
+            SubmitWeeklyEstimate(input.estimates[0].WPProjectId!, entries);
         }
+    }
+
+    public WorkPackage? GetWorkPackage(string workPackageId, int projectId)
+    {
+        return _context.WorkPackages.FirstOrDefault(w => w.WorkPackageId == workPackageId && w.ProjectId == projectId);
+    }
+
+    public void SubmitWeeklyEstimate(string wpProjectId, List<(string LabourCode, double EstimatedCost)> entries)
+    {
+        int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
+        DateTime nextFriday = DateTime.Today.AddDays(offset);
+        foreach (var (labourCode, estimatedCost) in entries)
+        {
+            _context.ResponsibleEngineerEstimates!.Add(new ResponsibleEngineerEstimate
+            {
+                WPProjectId = wpProjectId,
+                LabourCode = labourCode,
+                Date = DateOnly.FromDateTime(nextFriday),
+                EstimatedCost = estimatedCost,
+            });
+        }
+        _context.SaveChanges();
     }
 
     public List<WorkPackage> GetProjectWorkPackagesTree(int projectId)

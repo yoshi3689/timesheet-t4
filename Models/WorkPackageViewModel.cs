@@ -28,6 +28,18 @@ namespace TimesheetApp.Models
         public List<ResponsibleEngineerEstimate>? estimates { get; set; }
     }
 
+    public class EstimateEntry
+    {
+        public string LabourCode { get; set; } = "";
+        public double EstimatedCost { get; set; }
+    }
+
+    public class SubmitEstimateRequest
+    {
+        public int ProjectId { get; set; }
+        public List<EstimateEntry> Entries { get; set; } = new();
+    }
+
     public class CreateProjectViewModel
     {
         public Project project { get; set; } = new Project();

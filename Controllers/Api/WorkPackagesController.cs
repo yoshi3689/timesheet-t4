@@ -83,6 +83,26 @@ namespace TimesheetApp.Controllers.Api
       return Ok();
     }
 
+    // POST /api/workpackages/{id}/estimate
+    [HttpPost("{id}/estimate")]
+    public async Task<IActionResult> SubmitEstimate(string id, [FromBody] SubmitEstimateRequest input)
+    {
+      if (!ModelState.IsValid) return BadRequest(ModelState);
+
+      var wp = _workPackageService.GetWorkPackage(id, input.ProjectId);
+      if (wp == null) return NotFound();
+
+      string userId = _userManager.GetUserId(HttpContext.User)!;
+      bool isPM = await _projectService.VerifyProjectManagerAsync(input.ProjectId, userId);
+      bool isAdmin = User.IsInRole("Admin");
+      bool isResponsibleEngineer = wp.ResponsibleUserId == userId;
+      if (!isPM && !isAdmin && !isResponsibleEngineer) return Forbid();
+
+      var entries = input.Entries.Select(e => (e.LabourCode, e.EstimatedCost)).ToList();
+      _workPackageService.SubmitWeeklyEstimate(input.ProjectId + "~" + id, entries);
+      return Ok();
+    }
+
     // GET /api/workpackages/project/{projectId}/tree
     [HttpGet("project/{projectId}/tree")]
     public async Task<IActionResult> GetProjectTree(int projectId)
