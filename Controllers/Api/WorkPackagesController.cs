@@ -95,7 +95,7 @@ namespace TimesheetApp.Controllers.Api
       string userId = _userManager.GetUserId(HttpContext.User)!;
       bool isPM = await _projectService.VerifyProjectManagerAsync(input.ProjectId, userId);
       bool isAdmin = User.IsInRole("Admin");
-      bool isResponsibleEngineer = wp.ResponsibleUserId == userId;
+      bool isResponsibleEngineer = _workPackageService.IsUserResponsibleForWorkPackage(id, input.ProjectId, userId);
       if (!isPM && !isAdmin && !isResponsibleEngineer) return Forbid();
 
       var entries = input.Entries.Select(e => (e.LabourCode, e.EstimatedCost)).ToList();

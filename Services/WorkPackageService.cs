@@ -146,6 +146,21 @@ public class WorkPackageService : IWorkPackageService
         return _context.WorkPackages.FirstOrDefault(w => w.WorkPackageId == workPackageId && w.ProjectId == projectId);
     }
 
+    // A RE assigned at a mid-level WP is responsible for its whole descendant subtree
+    // (same semantics as GetResponsibleSubtreeWithBudgetAsync) — so estimate submission
+    // must check the WP's ancestor chain, not just ResponsibleUserId on the exact WP.
+    public bool IsUserResponsibleForWorkPackage(string workPackageId, int projectId, string userId)
+    {
+        var wp = GetWorkPackage(workPackageId, projectId);
+        while (wp != null)
+        {
+            if (wp.ResponsibleUserId == userId) return true;
+            if (wp.ParentWorkPackageId == null) return false;
+            wp = GetWorkPackage(wp.ParentWorkPackageId, projectId);
+        }
+        return false;
+    }
+
     public void SubmitWeeklyEstimate(string wpProjectId, List<(string LabourCode, double EstimatedCost)> entries)
     {
         int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;

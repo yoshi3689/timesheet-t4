@@ -29,5 +29,6 @@ public interface IWorkPackageService
     List<LabourGrade> GetCurrentYearLabourGrades();
     Task<List<ResponsibleBudgetGroupDto>> GetResponsibleSubtreeWithBudgetAsync(string userId);
     WorkPackage? GetWorkPackage(string workPackageId, int projectId);
+    bool IsUserResponsibleForWorkPackage(string workPackageId, int projectId, string userId);
     void SubmitWeeklyEstimate(string wpProjectId, List<(string LabourCode, double EstimatedCost)> entries);
 }
