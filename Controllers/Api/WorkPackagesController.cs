@@ -35,6 +35,15 @@ namespace TimesheetApp.Controllers.Api
       return Ok(await _workPackageService.GetResponsibleWorkPackagesAsync(user.Id));
     }
 
+    // GET /api/workpackages/responsible/budget
+    [HttpGet("responsible/budget")]
+    public async Task<IActionResult> GetResponsibleBudget()
+    {
+      var user = await _userManager.GetUserAsync(User);
+      if (user == null) return Unauthorized();
+      return Ok(await _workPackageService.GetResponsibleSubtreeWithBudgetAsync(user.Id));
+    }
+
     // GET /api/workpackages/assigned
     [HttpGet("assigned")]
     public async Task<IActionResult> GetAssigned()

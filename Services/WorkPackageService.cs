@@ -9,11 +9,19 @@ public class WorkPackageService : IWorkPackageService
 {
     private readonly ApplicationDbContext _context;
     private readonly INotificationService _notificationService;
+    private readonly IProjectService _projectService;
+    private readonly ISignatureService _signatureService;
 
-    public WorkPackageService(ApplicationDbContext context, INotificationService notificationService)
+    public WorkPackageService(
+        ApplicationDbContext context,
+        INotificationService notificationService,
+        IProjectService projectService,
+        ISignatureService signatureService)
     {
         _context = context;
         _notificationService = notificationService;
+        _projectService = projectService;
+        _signatureService = signatureService;
     }
 
     public async Task<List<WorkPackage>> GetResponsibleWorkPackagesAsync(string userId)
@@ -171,6 +179,90 @@ public class WorkPackageService : IWorkPackageService
         foreach (var root in roots)
             result.AddRange(FindAllChildren(root));
         return result;
+    }
+
+    public async Task<List<ResponsibleBudgetGroupDto>> GetResponsibleSubtreeWithBudgetAsync(string userId)
+    {
+        var responsibleWpKeys = await _context.WorkPackages
+            .Where(wp => wp.ResponsibleUserId == userId)
+            .Select(wp => new { wp.ProjectId, wp.WorkPackageId })
+            .ToListAsync();
+
+        if (responsibleWpKeys.Count == 0) return new List<ResponsibleBudgetGroupDto>();
+
+        var projectIds = responsibleWpKeys.Select(k => k.ProjectId).Distinct().ToList();
+
+        // Load all WPs for the involved projects once — EF relationship fixup wires up
+        // ChildWorkPackages, so FindAllChildren traverses in memory with no N+1.
+        var allWps = await _context.WorkPackages
+            .Where(wp => projectIds.Contains(wp.ProjectId))
+            .Include(wp => wp.Project)
+            .Include(wp => wp.ChildWorkPackages)
+            .ToListAsync();
+
+        var wpLookup = allWps.ToDictionary(w => (w.ProjectId, w.WorkPackageId));
+        var labourGrades = _context.LabourGrades.ToList();
+        var groups = new List<ResponsibleBudgetGroupDto>();
+
+        foreach (var key in responsibleWpKeys)
+        {
+            var root = wpLookup[(key.ProjectId, key.WorkPackageId)];
+            var subtree = FindAllChildren(root);
+
+            var wpIds = subtree.Select(w => w.WorkPackageId).ToHashSet();
+            var wpProjectIdKeys = subtree.Select(w => root.ProjectId + "~" + w.WorkPackageId).ToHashSet();
+
+            var budgets = _context.Budgets.Where(b => wpProjectIdKeys.Contains(b.WPProjectId)).ToList();
+            var estimates = _context.ResponsibleEngineerEstimates.Where(e => e.WPProjectId != null && wpProjectIdKeys.Contains(e.WPProjectId)).ToList();
+
+            var employeeIds = _context.EmployeeWorkPackages
+                .Where(e => e.WorkPackageProjectId == root.ProjectId && wpIds.Contains(e.WorkPackageId))
+                .Select(e => e.UserId).Distinct().ToList();
+
+            var timesheets = _context.Timesheets
+                .Where(t => t.TimesheetApproverId != null && employeeIds.Contains(t.UserId))
+                .Include(t => t.TimesheetApprover)
+                .Include(t => t.TimesheetRows)
+                .ToList();
+
+            var verifiedRows = new List<TimesheetRow>();
+            foreach (var timesheet in timesheets)
+            {
+                if (_signatureService.VerifySignature(timesheet, timesheet.TimesheetApprover!.PublicKey!, timesheet.ApproverHash!))
+                    verifiedRows.AddRange(timesheet.TimesheetRows.Where(r => r.ProjectId == root.ProjectId && wpIds.Contains(r.WorkPackageId)));
+            }
+
+            var group = new ResponsibleBudgetGroupDto
+            {
+                RootWorkPackageId = root.WorkPackageId,
+                ProjectId = root.ProjectId,
+                ProjectTitle = root.Project?.ProjectTitle ?? "",
+                RootTitle = root.Title ?? "",
+            };
+
+            foreach (var wp in subtree)
+            {
+                var wpKey = root.ProjectId + "~" + wp.WorkPackageId;
+                var rollup = _projectService.CalculateWpCostRollup(
+                    budgets.Where(b => b.WPProjectId == wpKey).ToList(),
+                    estimates.Where(e => e.WPProjectId == wpKey).ToList(),
+                    verifiedRows.Where(r => r.WorkPackageId == wp.WorkPackageId).ToList(),
+                    labourGrades);
+
+                group.WorkPackages.Add(new ResponsibleBudgetWpDto
+                {
+                    WorkPackageId = wp.WorkPackageId,
+                    ProjectId = wp.ProjectId,
+                    Title = wp.Title ?? "",
+                    IsBottomLevel = wp.IsBottomLevel,
+                    Rollup = rollup
+                });
+            }
+
+            groups.Add(group);
+        }
+
+        return groups;
     }
 
     public List<WorkPackage> CalculateTotalMoney(List<WorkPackage> wps, List<Budget> budgets)

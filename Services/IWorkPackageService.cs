@@ -27,4 +27,5 @@ public interface IWorkPackageService
     List<Budget> GetSplitBudgets(string workPackageId, int projectId);
     List<Budget> GetProjectBudgets(int projectId);
     List<LabourGrade> GetCurrentYearLabourGrades();
+    Task<List<ResponsibleBudgetGroupDto>> GetResponsibleSubtreeWithBudgetAsync(string userId);
 }
