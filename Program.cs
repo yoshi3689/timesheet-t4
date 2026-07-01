@@ -12,6 +12,8 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.HttpOverrides;
+using TimesheetApp.Middleware;
+using IPNetwork = System.Net.IPNetwork;
 
 internal partial class Program
 {
@@ -38,6 +40,23 @@ internal partial class Program
             ?? (isDev ? "http://localhost:3000"
                 : throw new InvalidOperationException("FRONTEND_URLS environment variable is required in production.")))
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        var ipRestrictionEnabled = (builder.Configuration["IP_RESTRICTION_ENABLED"] ?? "false")
+            .Equals("true", StringComparison.OrdinalIgnoreCase);
+        var ipRestrictionLogOnly = (builder.Configuration["IP_RESTRICTION_LOG_ONLY"] ?? "true")
+            .Equals("true", StringComparison.OrdinalIgnoreCase);
+        var ipAllowedNetworks = new List<IPNetwork>();
+        if (ipRestrictionEnabled)
+        {
+            var cidrEntries = (builder.Configuration["IP_ALLOWED_CIDRS"] ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var entry in cidrEntries)
+            {
+                if (!IPNetwork.TryParse(entry, out var network))
+                    throw new InvalidOperationException($"Invalid CIDR entry in IP_ALLOWED_CIDRS: '{entry}'");
+                ipAllowedNetworks.Add(network);
+            }
+        }
 
         // Add services to the container.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -78,6 +97,12 @@ internal partial class Program
         builder.Services.AddScoped<ITimesheetService, TimesheetService>();
         builder.Services.AddScoped<IWorkPackageService, WorkPackageService>();
         builder.Services.AddScoped<IProjectService, ProjectService>();
+        builder.Services.AddSingleton(new IpAllowlistSettings
+        {
+            Enabled = ipRestrictionEnabled,
+            LogOnly = ipRestrictionLogOnly,
+            AllowedNetworks = ipAllowedNetworks
+        });
         builder.Services.AddControllersWithViews()
             .AddJsonOptions(options =>
             {
@@ -111,6 +136,8 @@ internal partial class Program
         fwdOptions.KnownNetworks.Clear();  // Cloud Run's proxy IP isn't fixed/known in advance
         fwdOptions.KnownProxies.Clear();   // trust Cloud Run's edge-stripped XFF value
         app.UseForwardedHeaders(fwdOptions);
+
+        app.UseMiddleware<IpAllowlistMiddleware>();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
