@@ -11,6 +11,7 @@ using TimesheetApp.Services;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.HttpOverrides;
 
 internal partial class Program
 {
@@ -102,6 +103,14 @@ internal partial class Program
         });
 
         var app = builder.Build();
+
+        var fwdOptions = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+        };
+        fwdOptions.KnownNetworks.Clear();  // Cloud Run's proxy IP isn't fixed/known in advance
+        fwdOptions.KnownProxies.Clear();   // trust Cloud Run's edge-stripped XFF value
+        app.UseForwardedHeaders(fwdOptions);
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
