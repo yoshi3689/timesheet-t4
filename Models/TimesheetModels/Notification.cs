@@ -18,6 +18,8 @@ namespace TimesheetApp.Models.TimesheetModels
         public string? For { get; set; }
         [Required]
         public string? UserId { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string? TargetUrl { get; set; }
 
         [ForeignKey("UserId")]
         public ApplicationUser User { get; set; } = null!;

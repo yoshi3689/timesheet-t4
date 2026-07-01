@@ -15,7 +15,7 @@ public class NotificationService : INotificationService
 
     public List<Notification> GetUserNotifications(string userId)
     {
-        return _context.Notifications.Where(c => c.UserId == userId).ToList();
+        return _context.Notifications.Where(c => c.UserId == userId).OrderByDescending(c => c.CreatedAt).ToList();
     }
 
     public async Task DismissNotificationAsync(int notificationId, string userId)
@@ -30,19 +30,20 @@ public class NotificationService : INotificationService
         }
     }
 
-    public void AddNotification(string userId, string message, string forField, int importance)
+    public void AddNotification(string userId, string message, string forField, int importance, string? targetUrl = null)
     {
         _context.Notifications.Add(new Notification
         {
             UserId = userId,
             Message = message,
             For = forField,
-            Importance = importance
+            Importance = importance,
+            TargetUrl = targetUrl
         });
     }
 
-    public bool NotificationExistsFor(string forField)
+    public bool NotificationExistsFor(string userId, string forField)
     {
-        return _context.Notifications.Any(n => n.For == forField);
+        return _context.Notifications.Any(n => n.UserId == userId && n.For == forField);
     }
 }

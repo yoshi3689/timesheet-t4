@@ -11,12 +11,14 @@ public class TimesheetService : ITimesheetService
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ISignatureService _signatureService;
+    private readonly INotificationService _notificationService;
 
-    public TimesheetService(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ISignatureService signatureService)
+    public TimesheetService(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ISignatureService signatureService, INotificationService notificationService)
     {
         _context = context;
         _userManager = userManager;
         _signatureService = signatureService;
+        _notificationService = notificationService;
     }
 
     // Returns sheets the employee has not yet submitted (EmployeeHash == null), newest first.
@@ -304,6 +306,17 @@ public class TimesheetService : ITimesheetService
         timesheet.ApproverNotes = null;
         timesheet.EmployeeHash = timesheetHash;
         _context.Update(timesheet);
+
+        if (user.TimesheetApproverId != null)
+        {
+            _notificationService.AddNotification(
+                user.TimesheetApproverId,
+                $"{user.FirstName} {user.LastName} submitted their timesheet for week ending {timesheet.EndDate:MMM d}.",
+                $"timesheet-{timesheetId} submitted",
+                1,
+                $"/timesheets/approve/{timesheetId}");
+        }
+
         _context.SaveChanges();
         return (true, null, timesheetHash);
     }
@@ -351,6 +364,14 @@ public class TimesheetService : ITimesheetService
         timesheet.ApproverHash = timesheetHash;
         timesheet.TimesheetApproverId = user.Id;
         _context.Update(timesheet);
+
+        _notificationService.AddNotification(
+            timesheet.UserId!,
+            $"Your timesheet for week ending {timesheet.EndDate:MMM d} was approved.",
+            $"timesheet-{timesheetId} approved",
+            1,
+            $"/timesheets/{timesheetId}");
+
         _context.SaveChanges();
         return (true, null, timesheetHash);
     }
@@ -381,6 +402,15 @@ public class TimesheetService : ITimesheetService
         timesheet.EmployeeHash = null;
         timesheet.ApproverNotes = approverNotes ?? " ";
         _context.Update(timesheet);
+
+        var reason = string.IsNullOrWhiteSpace(approverNotes) ? "" : $" Reason: {approverNotes}";
+        _notificationService.AddNotification(
+            timesheet.UserId!,
+            $"Your timesheet for week ending {timesheet.EndDate:MMM d} was sent back for changes.{reason}",
+            $"timesheet-{timesheetId} declined",
+            2,
+            $"/timesheets/{timesheetId}");
+
         _context.SaveChanges();
         return true;
     }

@@ -327,6 +327,19 @@ public class WorkPackageService : IWorkPackageService
                 }
             }
             closingwp.IsClosed = true;
+
+            var assignedUserIds = _context.EmployeeWorkPackages
+                .Where(c => c.WorkPackageId == workPackageId && c.WorkPackageProjectId == projectId)
+                .Select(c => c.UserId)
+                .ToList();
+            foreach (var assignedUserId in assignedUserIds)
+            {
+                _notificationService.AddNotification(
+                    assignedUserId!,
+                    $"The work package \"{closingwp.Title}\" was closed and is no longer accepting time entries.",
+                    $"{projectId}~{workPackageId} closed",
+                    2);
+            }
         }
         _context.SaveChanges();
     }
@@ -350,6 +363,21 @@ public class WorkPackageService : IWorkPackageService
         {
             wp.IsClosed = true;
         }
+
+        var affectedUserIds = _context.EmployeeWorkPackages
+            .Where(c => c.WorkPackageProjectId == projectId)
+            .Select(c => c.UserId)
+            .Distinct()
+            .ToList();
+        foreach (var affectedUserId in affectedUserIds)
+        {
+            _notificationService.AddNotification(
+                affectedUserId!,
+                $"The project \"{project.ProjectTitle}\" was closed and is no longer accepting time entries.",
+                $"project-{projectId} closed",
+                2);
+        }
+
         _context.SaveChanges();
     }
 
@@ -477,7 +505,7 @@ public class WorkPackageService : IWorkPackageService
 
         foreach (var notifiedEmployeeId in notifiedAddedEmployeeIds)
         {
-            if (_context.Users.Any(e => e.Id == notifiedEmployeeId) && !_notificationService.NotificationExistsFor(workPackageString + " Add"))
+            if (_context.Users.Any(e => e.Id == notifiedEmployeeId) && !_notificationService.NotificationExistsFor(notifiedEmployeeId!, workPackageString + " Add"))
             {
                 _notificationService.AddNotification(notifiedEmployeeId!, "You have been added to the work package " + currentWp.Title + " in the project " + currentWp.Project!.ProjectTitle, workPackageString + " Add", 1);
             }
@@ -485,7 +513,7 @@ public class WorkPackageService : IWorkPackageService
 
         foreach (var notifiedEmployeeId in notifiedRemovedEmployeeIds)
         {
-            if (_context.Users.Any(e => e.Id == notifiedEmployeeId) && !_notificationService.NotificationExistsFor(workPackageString + " Remove"))
+            if (_context.Users.Any(e => e.Id == notifiedEmployeeId) && !_notificationService.NotificationExistsFor(notifiedEmployeeId!, workPackageString + " Remove"))
             {
                 _notificationService.AddNotification(notifiedEmployeeId!, "You have been removed from the work package " + currentWp.Title + " in the project " + currentWp.Project!.ProjectTitle, workPackageString + " Remove", 2);
             }

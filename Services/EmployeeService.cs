@@ -12,11 +12,13 @@ public class EmployeeService : IEmployeeService
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly INotificationService _notificationService;
 
-    public EmployeeService(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public EmployeeService(ApplicationDbContext context, UserManager<ApplicationUser> userManager, INotificationService notificationService)
     {
         _context = context;
         _userManager = userManager;
+        _notificationService = notificationService;
     }
 
     public async Task<List<ApplicationUser>> GetAllEmployeesPaginatedAsync(int page, int pageSize)
@@ -185,9 +187,21 @@ public class EmployeeService : IEmployeeService
             .Where(u => u.SupervisorId == supervisor.Id)
             .ToList();
         foreach (var s in supervisedUsers)
+        {
+            var previousApproverId = s.TimesheetApproverId;
             s.TimesheetApproverId = futureApproverId;
+            if (previousApproverId != futureApproverId)
+            {
+                _notificationService.AddNotification(s.Id,
+                    "Your timesheet approver has changed.", $"tsa-{s.Id} changed", 1);
+            }
+        }
 
         futureTSA.TimesheetApproverId = supervisor.Id;
+        _notificationService.AddNotification(futureApproverId,
+            $"You are now the timesheet approver for {supervisor.FirstName} {supervisor.LastName}'s team.",
+            $"tsa-{supervisor.Id} assign", 1);
+
         _context.SaveChanges();
     }
 
