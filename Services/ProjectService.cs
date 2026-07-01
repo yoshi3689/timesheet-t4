@@ -150,6 +150,66 @@ public class ProjectService : IProjectService
         return user.Id == project.ProjectManagerId || user.Id == project.AssistantProjectManagerId;
     }
 
+    // Shared per-bucket cost rollup — bucket is whatever the caller pre-filtered
+    // budgets/estimates/verifiedRows to (a single WP for GenerateReportAsync, a
+    // single labour code across the whole project for GeneratePCBACAsync).
+    public WpCostRollup CalculateWpCostRollup(
+        List<Budget> budgets, List<ResponsibleEngineerEstimate> estimates,
+        List<TimesheetRow> verifiedRows, List<LabourGrade> labourGrades)
+    {
+        double totalPDPM = 0, totalCostPM = 0;
+        foreach (var budget in budgets.Where(c => c.isREBudget == false))
+        {
+            totalPDPM += budget.BudgetAmount;
+            totalCostPM += budget.BudgetAmount * (labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
+        }
+
+        double totalPDRE = 0, totalCostRE = 0;
+        foreach (var budget in budgets.Where(c => c.isREBudget == true))
+        {
+            totalPDRE += budget.BudgetAmount;
+            totalCostRE += budget.BudgetAmount * (labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
+        }
+
+        double totalPDActual = 0, totalCostActual = 0;
+        foreach (var row in verifiedRows)
+        {
+            totalPDActual += row.TotalHoursRow / 8;
+            totalCostActual += (row.TotalHoursRow / 8) * (labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode && c.Year == row.Timesheet!.EndDate.Year).FirstOrDefault()?.Rate ?? 0);
+        }
+
+        double pDEstimate = totalPDActual;
+        double costEstimate = totalCostActual;
+        foreach (var estimate in estimates)
+        {
+            pDEstimate += estimate.EstimatedCost;
+            costEstimate += estimate.EstimatedCost * (labourGrades.Where(c => c.LabourCode == estimate.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
+        }
+
+        double pdVariance = (pDEstimate - totalPDPM) / Math.Max(totalPDPM, pDEstimate) * 100;
+        double costVariance = (costEstimate - totalCostPM) / Math.Max(totalCostPM, costEstimate) * 100;
+        pdVariance = double.IsNaN(pdVariance) ? 0 : pdVariance;
+        costVariance = double.IsNaN(costVariance) ? 0 : costVariance;
+
+        double percentComplete = totalCostActual / costEstimate * 100;
+        percentComplete = double.IsNaN(percentComplete) ? 0 : percentComplete;
+
+        return new WpCostRollup
+        {
+            PmPlannedPD = totalPDPM,
+            PmPlannedCost = totalCostPM,
+            REPlannedPD = totalPDRE,
+            REPlannedCost = totalCostRE,
+            ActualPD = totalPDActual,
+            ActualCost = totalCostActual,
+            EacPD = pDEstimate,
+            EacCost = costEstimate,
+            PdVariance = pdVariance,
+            CostVariance = costVariance,
+            PercentComplete = percentComplete
+        };
+    }
+
     public async Task<byte[]> GenerateReportAsync(int projectId)
     {
         MemoryStream ms = new MemoryStream();
@@ -245,62 +305,33 @@ public class ProjectService : IProjectService
                 .Add(new Paragraph("Total P.D.").SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.RIGHT))
                 .Add(new Paragraph("Labour $").SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.RIGHT)));
 
-            double totalPDPM = 0;
-            double totalCostPM = 0;
-            foreach (var budget in budgets.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId && c.isREBudget == false))
-            {
-                totalPDPM += budget.BudgetAmount;
-                totalCostPM += budget.BudgetAmount * labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).First().Rate;
-            }
-            wpTable.AddCell(new Cell()
-                .Add(new Paragraph(Convert.ToString(Math.Round(totalPDPM, 2))).SetFontSize(fontSizeSH))
-                .Add(new Paragraph("$" + Math.Round(totalCostPM, 2)).SetFontSize(fontSizeSH)));
-
-            double totalPDRE = 0;
-            double totalCostRE = 0;
-            foreach (var budget in budgets.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId && c.isREBudget == true))
-            {
-                totalPDRE += budget.BudgetAmount;
-                totalCostRE += budget.BudgetAmount * labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).First().Rate;
-            }
-            wpTable.AddCell(new Cell()
-                .Add(new Paragraph(Convert.ToString(Math.Round(totalPDRE, 2))).SetFontSize(fontSizeSH))
-                .Add(new Paragraph("$" + Math.Round(totalCostRE, 2)).SetFontSize(fontSizeSH)));
-
-            double totalPDActual = 0;
-            double totalCostActual = 0;
-            foreach (var row in timesheetRows.Where(c => c.WorkPackageId == wp.WorkPackageId))
-            {
-                totalPDActual = totalPDActual + (row.TotalHoursRow / 8);
-                totalCostActual += (row.TotalHoursRow / 8) * (labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode && c.Year == row.Timesheet!.EndDate.Year).FirstOrDefault()?.Rate ?? 0);
-            }
-            wpTable.AddCell(new Cell()
-                .Add(new Paragraph(Convert.ToString(Math.Round(totalPDActual, 2))).SetFontSize(fontSizeSH))
-                .Add(new Paragraph("$" + Math.Round(totalCostActual, 2)).SetFontSize(fontSizeSH)));
-
-            double pDEstimate = totalPDActual;
-            double costEstimate = totalCostActual;
-            foreach (var estimate in estimates.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId).ToList())
-            {
-                pDEstimate += estimate.EstimatedCost;
-                costEstimate += estimate.EstimatedCost * (labourGrades.Where(c => c.LabourCode == estimate.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
-            }
-            wpTable.AddCell(new Cell()
-                .Add(new Paragraph(Convert.ToString(Math.Round(pDEstimate, 2))).SetFontSize(fontSizeSH))
-                .Add(new Paragraph("$" + Math.Round(costEstimate, 2)).SetFontSize(fontSizeSH)));
-
-            double pdVariance = (pDEstimate - totalPDPM) / Math.Max(totalPDPM, pDEstimate) * 100;
-            double costVariance = (costEstimate - totalCostPM) / Math.Max(totalCostPM, costEstimate) * 100;
-            pdVariance = double.IsNaN(pdVariance) ? 0 : pdVariance;
-            costVariance = double.IsNaN(costVariance) ? 0 : costVariance;
+            var wpBudgets = budgets.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId).ToList();
+            var wpEstimates = estimates.Where(c => c.WPProjectId == prj.ProjectId + "~" + wp.WorkPackageId).ToList();
+            var wpRows = timesheetRows.Where(c => c.WorkPackageId == wp.WorkPackageId).ToList();
+            var rollup = CalculateWpCostRollup(wpBudgets, wpEstimates, wpRows, labourGrades);
 
             wpTable.AddCell(new Cell()
-                .Add(new Paragraph(Convert.ToString(Math.Round(pdVariance))).SetFontSize(fontSizeSH))
-                .Add(new Paragraph(Convert.ToString(Math.Round(costVariance))).SetFontSize(fontSizeSH)));
+                .Add(new Paragraph(Convert.ToString(Math.Round(rollup.PmPlannedPD, 2))).SetFontSize(fontSizeSH))
+                .Add(new Paragraph("$" + Math.Round(rollup.PmPlannedCost, 2)).SetFontSize(fontSizeSH)));
 
-            double percentComplete = totalCostActual / costEstimate * 100;
             wpTable.AddCell(new Cell()
-                .Add(new Paragraph(Convert.ToString(double.IsNaN(percentComplete) ? 0 : Math.Round(percentComplete))).SetFontSize(fontSizeSH)));
+                .Add(new Paragraph(Convert.ToString(Math.Round(rollup.REPlannedPD, 2))).SetFontSize(fontSizeSH))
+                .Add(new Paragraph("$" + Math.Round(rollup.REPlannedCost, 2)).SetFontSize(fontSizeSH)));
+
+            wpTable.AddCell(new Cell()
+                .Add(new Paragraph(Convert.ToString(Math.Round(rollup.ActualPD, 2))).SetFontSize(fontSizeSH))
+                .Add(new Paragraph("$" + Math.Round(rollup.ActualCost, 2)).SetFontSize(fontSizeSH)));
+
+            wpTable.AddCell(new Cell()
+                .Add(new Paragraph(Convert.ToString(Math.Round(rollup.EacPD, 2))).SetFontSize(fontSizeSH))
+                .Add(new Paragraph("$" + Math.Round(rollup.EacCost, 2)).SetFontSize(fontSizeSH)));
+
+            wpTable.AddCell(new Cell()
+                .Add(new Paragraph(Convert.ToString(Math.Round(rollup.PdVariance))).SetFontSize(fontSizeSH))
+                .Add(new Paragraph(Convert.ToString(Math.Round(rollup.CostVariance))).SetFontSize(fontSizeSH)));
+
+            wpTable.AddCell(new Cell()
+                .Add(new Paragraph(Convert.ToString(Math.Round(rollup.PercentComplete))).SetFontSize(fontSizeSH)));
         }
 
         document.Add(wpTable);
@@ -544,38 +575,25 @@ public class ProjectService : IProjectService
         {
             wpTable.AddCell(new Cell(1, 2).Add(new Paragraph(lg.LabourCode + " ($" + lg.Rate + ")")));
 
-            double totalPDPM = 0, totalCostPM = 0;
-            foreach (var budget in budgets.Where(c => c.isREBudget == false && c.LabourCode == lg.LabourCode))
-            {
-                totalPDPM += budget.BudgetAmount;
-                totalCostPM += budget.BudgetAmount * (labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
-            }
-            totalPM += totalCostPM;
-            totalPMPD += totalPDPM;
-            wpTable.AddCell(new Cell().Add(new Paragraph(Convert.ToString(Math.Round(totalPDPM, 2))).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
-            wpTable.AddCell(new Cell().Add(new Paragraph("$" + Math.Round(totalCostPM, 2)).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
+            var lgBudgets = budgets.Where(c => c.LabourCode == lg.LabourCode).ToList();
+            var lgEstimates = estimates.Where(c => c.LabourCode == lg.LabourCode).ToList();
+            var lgRows = timesheetRows.Where(c => c.OriginalLabourCode == lg.LabourCode).ToList();
+            var rollup = CalculateWpCostRollup(lgBudgets, lgEstimates, lgRows, labourGrades);
 
-            double totalPDRE = 0, totalCostRE = 0;
-            foreach (var budget in budgets.Where(c => c.isREBudget == true && c.LabourCode == lg.LabourCode))
-            {
-                totalPDRE += budget.BudgetAmount;
-                totalCostRE += budget.BudgetAmount * (labourGrades.Where(c => c.LabourCode == budget.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
-            }
-            totalRE += totalCostRE;
-            totalREPD += totalPDRE;
-            wpTable.AddCell(new Cell().Add(new Paragraph(Convert.ToString(Math.Round(totalPDRE, 2))).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
-            wpTable.AddCell(new Cell().Add(new Paragraph("$" + Math.Round(totalCostRE, 2)).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
+            totalPM += rollup.PmPlannedCost;
+            totalPMPD += rollup.PmPlannedPD;
+            wpTable.AddCell(new Cell().Add(new Paragraph(Convert.ToString(Math.Round(rollup.PmPlannedPD, 2))).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
+            wpTable.AddCell(new Cell().Add(new Paragraph("$" + Math.Round(rollup.PmPlannedCost, 2)).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
 
-            double totalPDActual = 0, totalCostActual = 0;
-            foreach (var row in timesheetRows.Where(c => c.OriginalLabourCode == lg.LabourCode))
-            {
-                totalPDActual += row.TotalHoursRow / 8;
-                totalCostActual += (row.TotalHoursRow / 8) * (labourGrades.Where(c => c.LabourCode == row.OriginalLabourCode && c.Year == row.Timesheet!.EndDate.Year).FirstOrDefault()?.Rate ?? 0);
-            }
-            totalActualPD += totalPDActual;
-            totalActual += totalCostActual;
-            wpTable.AddCell(new Cell().Add(new Paragraph(Convert.ToString(Math.Round(totalPDActual, 2))).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
-            wpTable.AddCell(new Cell().Add(new Paragraph("$" + Math.Round(totalCostActual, 2)).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
+            totalRE += rollup.REPlannedCost;
+            totalREPD += rollup.REPlannedPD;
+            wpTable.AddCell(new Cell().Add(new Paragraph(Convert.ToString(Math.Round(rollup.REPlannedPD, 2))).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
+            wpTable.AddCell(new Cell().Add(new Paragraph("$" + Math.Round(rollup.REPlannedCost, 2)).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
+
+            totalActualPD += rollup.ActualPD;
+            totalActual += rollup.ActualCost;
+            wpTable.AddCell(new Cell().Add(new Paragraph(Convert.ToString(Math.Round(rollup.ActualPD, 2))).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
+            wpTable.AddCell(new Cell().Add(new Paragraph("$" + Math.Round(rollup.ActualCost, 2)).SetFontSize(fontSizeSH).SetTextAlignment(TextAlignment.CENTER)));
         }
 
         wpTable.AddCell(new Cell(1, 2).SetBackgroundColor(ColorConstants.LIGHT_GRAY).SetTextAlignment(TextAlignment.CENTER).SetFontSize(fontSizeSH).Add(new Paragraph("Total")));
