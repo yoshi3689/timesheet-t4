@@ -7,6 +7,7 @@ public class ResponsibleBudgetWpDto
     public string Title { get; set; } = null!;
     public bool IsBottomLevel { get; set; }
     public WpCostRollup Rollup { get; set; } = null!;
+    public List<string> LabourCodes { get; set; } = new();
 }
 
 public class ResponsibleBudgetGroupDto

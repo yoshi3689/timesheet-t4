@@ -253,11 +253,19 @@ public class WorkPackageService : IWorkPackageService
             foreach (var wp in subtree)
             {
                 var wpKey = root.ProjectId + "~" + wp.WorkPackageId;
+                var wpBudgets = budgets.Where(b => b.WPProjectId == wpKey).ToList();
                 var rollup = _projectService.CalculateWpCostRollup(
-                    budgets.Where(b => b.WPProjectId == wpKey).ToList(),
+                    wpBudgets,
                     estimates.Where(e => e.WPProjectId == wpKey).ToList(),
                     verifiedRows.Where(r => r.WorkPackageId == wp.WorkPackageId).ToList(),
                     labourGrades);
+
+                // Same RE-budget-first, PM-budget-fallback convention as GetEditModel —
+                // the labour codes an estimate can be entered against for this WP.
+                var reCodes = wpBudgets.Where(b => b.isREBudget).Select(b => b.LabourCode!).Distinct().ToList();
+                var labourCodes = reCodes.Count > 0
+                    ? reCodes
+                    : wpBudgets.Where(b => !b.isREBudget).Select(b => b.LabourCode!).Distinct().ToList();
 
                 group.WorkPackages.Add(new ResponsibleBudgetWpDto
                 {
@@ -265,7 +273,8 @@ public class WorkPackageService : IWorkPackageService
                     ProjectId = wp.ProjectId,
                     Title = wp.Title ?? "",
                     IsBottomLevel = wp.IsBottomLevel,
-                    Rollup = rollup
+                    Rollup = rollup,
+                    LabourCodes = labourCodes
                 });
             }
 
