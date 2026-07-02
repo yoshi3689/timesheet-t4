@@ -168,10 +168,10 @@ public class EmployeeService : IEmployeeService
         return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();
     }
 
-    public ApplicationUser? GetCurrentUserWithSupervisedUsers(string userName)
+    public ApplicationUser? GetCurrentUserWithSupervisedUsers(string userId)
     {
         return _context.Users
-            .Where(c => c.UserName == userName)
+            .Where(c => c.Id == userId)
             .Include(c => c.SupervisedUsers)
             .FirstOrDefault();
     }

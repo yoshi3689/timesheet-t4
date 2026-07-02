@@ -16,7 +16,7 @@ public interface IEmployeeService
     Task<(ApplicationUser User, string TempPassword)> CreateEmployeeAsync(CreateEmployeeDto dto, UserManager<ApplicationUser> userManager);
     Task UpdateEmployeeAsync(ApplicationUser existing, UpdateEmployeeDto dto, bool isAdminOrHR, UserManager<ApplicationUser> userManager);
     bool EmployeeExists(string id);
-    ApplicationUser? GetCurrentUserWithSupervisedUsers(string userName);
+    ApplicationUser? GetCurrentUserWithSupervisedUsers(string userId);
     void AssignTimesheetApprover(ApplicationUser supervisor, string futureApproverId);
     List<LabourGrade> GetCurrentYearLabourGrades();
 }

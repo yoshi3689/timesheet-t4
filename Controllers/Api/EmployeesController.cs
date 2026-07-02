@@ -166,7 +166,8 @@ namespace TimesheetApp.Controllers.Api
         [HttpPost("assign-tsa")]
         public async Task<IActionResult> AssignTSApprover([FromBody] AssignTsaRequest req)
         {
-            var user = _employeeService.GetCurrentUserWithSupervisedUsers(User.Identity!.Name!);
+            var userId = _userManager.GetUserId(User);
+            var user = userId == null ? null : _employeeService.GetCurrentUserWithSupervisedUsers(userId);
             var futureTSA = await _employeeService.FindEmployeeAsync(req.UserId!);
             if (user == null || futureTSA == null ||
                 (futureTSA.SupervisorId != user.Id && futureTSA.Id != user.Id))
