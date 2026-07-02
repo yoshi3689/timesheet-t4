@@ -127,7 +127,8 @@ public class ProjectService : IProjectService
             input.project.ProjectManagerId!,
             "You have been added to the project " + input.project.ProjectTitle + " as a Project Manager.",
             Convert.ToString(input.project.ProjectId) + " Add",
-            1);
+            1,
+            $"/projects/{input.project.ProjectId}");
         _context.SaveChanges();
 
         var pm = await _userManager.FindByIdAsync(input.project.ProjectManagerId!);
@@ -668,7 +669,7 @@ public class ProjectService : IProjectService
             }
         }
 
-        _notificationService.AddNotification(proj.AssistantProjectManagerId, "You have been added to the project " + proj.ProjectTitle + " as an Assistant Project Manager.", Convert.ToString(projectId) + " Add", 1);
+        _notificationService.AddNotification(proj.AssistantProjectManagerId, "You have been added to the project " + proj.ProjectTitle + " as an Assistant Project Manager.", Convert.ToString(projectId) + " Add", 1, $"/projects/{projectId}");
 
         var newAsm = await _userManager.FindByIdAsync(user);
         if (newAsm != null && !await _userManager.IsInRoleAsync(newAsm, "PM"))

@@ -200,7 +200,7 @@ public class EmployeeService : IEmployeeService
         futureTSA.TimesheetApproverId = supervisor.Id;
         _notificationService.AddNotification(futureApproverId,
             $"You are now the timesheet approver for {supervisor.FirstName} {supervisor.LastName}'s team.",
-            $"tsa-{supervisor.Id} assign", 1);
+            $"tsa-{supervisor.Id} assign", 1, "/approvals");
 
         _context.SaveChanges();
     }

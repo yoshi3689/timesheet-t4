@@ -633,7 +633,7 @@ public class WorkPackageService : IWorkPackageService
         {
             if (_context.Users.Any(e => e.Id == notifiedEmployeeId) && !_notificationService.NotificationExistsFor(notifiedEmployeeId!, workPackageString + " Add"))
             {
-                _notificationService.AddNotification(notifiedEmployeeId!, "You have been added to the work package " + currentWp.Title + " in the project " + currentWp.Project!.ProjectTitle, workPackageString + " Add", 1);
+                _notificationService.AddNotification(notifiedEmployeeId!, "You have been added to the work package " + currentWp.Title + " in the project " + currentWp.Project!.ProjectTitle, workPackageString + " Add", 1, $"/projects/{workPackageProjectId}");
             }
         }
 
@@ -677,7 +677,7 @@ public class WorkPackageService : IWorkPackageService
         {
             _notificationService.AddNotification(oldRE, "You have been removed from the work package " + fullEwp.WorkPackage!.Title + " in the project " + fullEwp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", workPackageString + " Remove", 2);
         }
-        _notificationService.AddNotification(ewp.UserId!, "You have been added to the work package " + fullEwp.WorkPackage!.Title + " in the project " + fullEwp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", workPackageString + " Add", 1);
+        _notificationService.AddNotification(ewp.UserId!, "You have been added to the work package " + fullEwp.WorkPackage!.Title + " in the project " + fullEwp.WorkPackage.Project!.ProjectTitle + " as a Responsible Engineer.", workPackageString + " Add", 1, $"/projects/{fullEwp.WorkPackageProjectId}");
 
         _context.SaveChanges();
         return user.FirstName + " " + user.LastName;
