@@ -181,7 +181,13 @@ public class ProjectService : IProjectService
 
         double pDEstimate = totalPDActual;
         double costEstimate = totalCostActual;
-        foreach (var estimate in estimates)
+        // Each submission is a snapshot of "remaining P.D.", not a delta — only the
+        // latest submission per (WP, labour code) counts toward EAC, earlier ones
+        // are historical record only.
+        var latestEstimates = estimates
+            .GroupBy(e => (e.WPProjectId, e.LabourCode))
+            .Select(g => g.OrderByDescending(e => e.Date).ThenByDescending(e => e.Id).First());
+        foreach (var estimate in latestEstimates)
         {
             pDEstimate += estimate.EstimatedCost;
             costEstimate += estimate.EstimatedCost * (labourGrades.Where(c => c.LabourCode == estimate.LabourCode && c.Year == DateTime.Now.Year).FirstOrDefault()?.Rate ?? 0);
