@@ -74,7 +74,8 @@ public class ProjectService : IProjectService
             .FirstOrDefault(p => p.ProjectId == id &&
                 (p.ProjectManagerId == userId ||
                  p.AssistantProjectManagerId == userId ||
-                 _context.EmployeeWorkPackages.Any(ewp => ewp.UserId == userId && ewp.WorkPackageProjectId == p.ProjectId)));
+                 _context.EmployeeWorkPackages.Any(ewp => ewp.UserId == userId && ewp.WorkPackageProjectId == p.ProjectId) ||
+                 _context.WorkPackages.Any(wp => wp.ProjectId == p.ProjectId && wp.ResponsibleUserId == userId)));
     }
 
     public (bool valid, string? error) ValidateNewProject(CreateProjectViewModel input)
