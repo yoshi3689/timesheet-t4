@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +29,17 @@ namespace TimesheetApp.Controllers.Api
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
-            return Ok(_notificationService.GetUserNotifications(user.Id));
+            var notifications = _notificationService.GetUserNotifications(user.Id).Select(n => new
+            {
+                n.Id,
+                n.Message,
+                n.Importance,
+                n.For,
+                n.UserId,
+                n.CreatedAt,
+                n.TargetUrl
+            });
+            return Ok(notifications);
         }
 
         // POST /api/notifications/dismiss
