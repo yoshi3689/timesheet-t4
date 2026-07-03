@@ -161,7 +161,7 @@ public class WorkPackageService : IWorkPackageService
         return false;
     }
 
-    public void SubmitWeeklyEstimate(string wpProjectId, List<(string LabourCode, double EstimatedCost)> entries)
+    public void SubmitWeeklyEstimate(string wpProjectId, List<(string LabourCode, double EstimatedCost)> entries, string? submitterId = null)
     {
         int offset = (7 - (int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Friday) % 7;
         DateTime nextFriday = DateTime.Today.AddDays(offset);
@@ -176,6 +176,32 @@ public class WorkPackageService : IWorkPackageService
             });
         }
         _context.SaveChanges();
+
+        if (submitterId != null)
+        {
+            var parts = wpProjectId.Split('~');
+            int projectId = int.Parse(parts[0]);
+            string wpId = parts[1];
+
+            var project = _context.Projects.FirstOrDefault(p => p.ProjectId == projectId);
+            var wp = GetWorkPackage(wpId, projectId);
+            var submitter = _context.Users.FirstOrDefault(u => u.Id == submitterId);
+            if (project != null && wp != null && submitter != null)
+            {
+                var recipientIds = new[] { project.ProjectManagerId, project.AssistantProjectManagerId }
+                    .Where(id => id != null && id != submitterId)
+                    .Distinct();
+                foreach (var recipientId in recipientIds)
+                {
+                    _notificationService.AddNotification(
+                        recipientId!,
+                        $"{submitter.FirstName} {submitter.LastName} submitted a weekly estimate for {wp.Title}.",
+                        $"estimate-{wpProjectId}-{DateOnly.FromDateTime(DateTime.Today)}",
+                        1,
+                        $"/projects/{projectId}");
+                }
+            }
+        }
     }
 
     public List<WorkPackage> GetProjectWorkPackagesTree(int projectId)

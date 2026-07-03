@@ -99,7 +99,7 @@ namespace TimesheetApp.Controllers.Api
       if (!isPM && !isAdmin && !isResponsibleEngineer) return Forbid();
 
       var entries = input.Entries.Select(e => (e.LabourCode, e.EstimatedCost)).ToList();
-      _workPackageService.SubmitWeeklyEstimate(input.ProjectId + "~" + id, entries);
+      _workPackageService.SubmitWeeklyEstimate(input.ProjectId + "~" + id, entries, userId);
       return Ok();
     }
 
