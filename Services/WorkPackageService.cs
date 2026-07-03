@@ -200,6 +200,7 @@ public class WorkPackageService : IWorkPackageService
                         1,
                         $"/projects/{projectId}");
                 }
+                _context.SaveChanges();
             }
         }
     }
