@@ -253,6 +253,7 @@ public class WorkPackageService : IWorkPackageService
 
         var wpLookup = allWps.ToDictionary(w => (w.ProjectId, w.WorkPackageId));
         var labourGrades = _context.LabourGrades.ToList();
+        var currentYearGrades = labourGrades.Where(lg => lg.Year == DateTime.Now.Year).ToList();
         var groups = new List<ResponsibleBudgetGroupDto>();
 
         foreach (var key in responsibleWpKeys)
@@ -308,6 +309,15 @@ public class WorkPackageService : IWorkPackageService
                     ? reCodes
                     : wpBudgets.Where(b => !b.isREBudget).Select(b => b.LabourCode!).Distinct().ToList();
 
+                var latestEstimates = estimates
+                    .Where(e => e.WPProjectId == wpKey)
+                    .GroupBy(e => e.LabourCode)
+                    .Select(g => g.OrderByDescending(e => e.Date).ThenByDescending(e => e.Id).First())
+                    .ToDictionary(e => e.LabourCode!, e => e.EstimatedCost);
+
+                var labourRates = labourCodes
+                    .ToDictionary(code => code, code => currentYearGrades.FirstOrDefault(g => g.LabourCode == code)?.Rate ?? 0);
+
                 group.WorkPackages.Add(new ResponsibleBudgetWpDto
                 {
                     WorkPackageId = wp.WorkPackageId,
@@ -315,7 +325,9 @@ public class WorkPackageService : IWorkPackageService
                     Title = wp.Title ?? "",
                     IsBottomLevel = wp.IsBottomLevel,
                     Rollup = rollup,
-                    LabourCodes = labourCodes
+                    LabourCodes = labourCodes,
+                    LatestEstimates = latestEstimates,
+                    LabourRates = labourRates
                 });
             }
 

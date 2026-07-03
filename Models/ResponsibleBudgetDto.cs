@@ -8,6 +8,8 @@ public class ResponsibleBudgetWpDto
     public bool IsBottomLevel { get; set; }
     public WpCostRollup Rollup { get; set; } = null!;
     public List<string> LabourCodes { get; set; } = new();
+    public Dictionary<string, double> LatestEstimates { get; set; } = new();
+    public Dictionary<string, double> LabourRates { get; set; } = new();
 }
 
 public class ResponsibleBudgetGroupDto
