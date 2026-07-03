@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TimesheetApp.Data;
@@ -311,7 +312,7 @@ public class TimesheetService : ITimesheetService
         {
             _notificationService.AddNotification(
                 user.TimesheetApproverId,
-                $"{user.FirstName} {user.LastName} submitted their timesheet for week ending {timesheet.EndDate:MMM d}.",
+                $"{user.FirstName} {user.LastName} submitted their timesheet for week ending {timesheet.EndDate.ToString("MMM d", CultureInfo.InvariantCulture)}.",
                 $"timesheet-{timesheetId} submitted",
                 1,
                 $"/timesheets/approve/{timesheetId}");
@@ -367,7 +368,7 @@ public class TimesheetService : ITimesheetService
 
         _notificationService.AddNotification(
             timesheet.UserId!,
-            $"Your timesheet for week ending {timesheet.EndDate:MMM d} was approved.",
+            $"Your timesheet for week ending {timesheet.EndDate.ToString("MMM d", CultureInfo.InvariantCulture)} was approved.",
             $"timesheet-{timesheetId} approved",
             1,
             $"/timesheets/{timesheetId}");
@@ -406,7 +407,7 @@ public class TimesheetService : ITimesheetService
         var reason = string.IsNullOrWhiteSpace(approverNotes) ? "" : $" Reason: {approverNotes}";
         _notificationService.AddNotification(
             timesheet.UserId!,
-            $"Your timesheet for week ending {timesheet.EndDate:MMM d} was sent back for changes.{reason}",
+            $"Your timesheet for week ending {timesheet.EndDate.ToString("MMM d", CultureInfo.InvariantCulture)} was sent back for changes.{reason}",
             $"timesheet-{timesheetId} declined",
             2,
             $"/timesheets/{timesheetId}");
