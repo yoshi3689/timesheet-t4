@@ -226,7 +226,7 @@ public class ProjectService : IProjectService
         Document document = new Document(pdfDoc, PageSize.A4.Rotate(), false);
         writer.SetCloseStream(false);
 
-        Paragraph header = new Paragraph("Project Cost Performace Report")
+        Paragraph header = new Paragraph("Project Cost Performance Report")
             .SetTextAlignment(TextAlignment.CENTER)
             .SetFontSize(15);
         document.Add(header);
@@ -298,7 +298,6 @@ public class ProjectService : IProjectService
         foreach (var wp in _context.WorkPackages.Where(c => c.ProjectId == prj.ProjectId).OrderBy(c => c.WorkPackageId).ToList())
         {
             wpTable.AddCell(new Cell()
-                .Add(new Paragraph(wp.WorkPackageId).SetFontSize(fontSizeSH))
                 .Add(new Paragraph(wp.Title).SetFontSize(fontSizeSH)));
 
             Cell engineers = new Cell();
@@ -452,7 +451,6 @@ public class ProjectService : IProjectService
             if (wp.EmployeeWorkPackages != null && wp.EmployeeWorkPackages.Count() > 0)
             {
                 wpTable.AddCell(new Cell(wp.EmployeeWorkPackages.Count(), 1)
-                    .Add(new Paragraph(wp.WorkPackageId).SetFontSize(fontSizeSH))
                     .Add(new Paragraph(wp.Title).SetFontSize(fontSizeSH)));
 
                 foreach (var ewp in wp.EmployeeWorkPackages)
