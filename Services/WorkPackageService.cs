@@ -204,6 +204,22 @@ public class WorkPackageService : IWorkPackageService
         }
     }
 
+    public List<EstimateHistoryEntryDto> GetEstimateHistory(string workPackageId, int projectId)
+    {
+        string wpProjectId = projectId + "~" + workPackageId;
+        return _context.ResponsibleEngineerEstimates
+            .Where(e => e.WPProjectId == wpProjectId)
+            .OrderByDescending(e => e.Date)
+            .ThenBy(e => e.LabourCode)
+            .Select(e => new EstimateHistoryEntryDto
+            {
+                LabourCode = e.LabourCode!,
+                Date = e.Date,
+                EstimatedCost = e.EstimatedCost,
+            })
+            .ToList();
+    }
+
     public List<WorkPackage> GetProjectWorkPackagesTree(int projectId)
     {
         // Load all WPs at once — EF relationship fixup wires up ChildWorkPackages

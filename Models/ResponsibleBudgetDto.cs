@@ -12,6 +12,13 @@ public class ResponsibleBudgetWpDto
     public Dictionary<string, double> LabourRates { get; set; } = new();
 }
 
+public class EstimateHistoryEntryDto
+{
+    public string LabourCode { get; set; } = null!;
+    public DateOnly? Date { get; set; }
+    public double EstimatedCost { get; set; }
+}
+
 public class ResponsibleBudgetGroupDto
 {
     public string RootWorkPackageId { get; set; } = null!;

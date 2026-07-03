@@ -31,4 +31,5 @@ public interface IWorkPackageService
     WorkPackage? GetWorkPackage(string workPackageId, int projectId);
     bool IsUserResponsibleForWorkPackage(string workPackageId, int projectId, string userId);
     void SubmitWeeklyEstimate(string wpProjectId, List<(string LabourCode, double EstimatedCost)> entries, string? submitterId = null);
+    List<EstimateHistoryEntryDto> GetEstimateHistory(string workPackageId, int projectId);
 }

@@ -103,6 +103,22 @@ namespace TimesheetApp.Controllers.Api
       return Ok();
     }
 
+    // GET /api/workpackages/{id}/estimates?projectId={projectId}
+    [HttpGet("{id}/estimates")]
+    public async Task<IActionResult> GetEstimateHistory(string id, [FromQuery] int projectId)
+    {
+      var wp = _workPackageService.GetWorkPackage(id, projectId);
+      if (wp == null) return NotFound();
+
+      string userId = _userManager.GetUserId(HttpContext.User)!;
+      bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId);
+      bool isAdmin = User.IsInRole("Admin");
+      bool isResponsibleEngineer = _workPackageService.IsUserResponsibleForWorkPackage(id, projectId, userId);
+      if (!isPM && !isAdmin && !isResponsibleEngineer) return Forbid();
+
+      return Ok(_workPackageService.GetEstimateHistory(id, projectId));
+    }
+
     // GET /api/workpackages/project/{projectId}/tree
     [HttpGet("project/{projectId}/tree")]
     public async Task<IActionResult> GetProjectTree(int projectId)
