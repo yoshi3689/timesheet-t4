@@ -27,6 +27,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<Notification> Notifications => Set<Notification>();
     public virtual DbSet<ApplicationUser> ApplicationUsers => Set<ApplicationUser>();
     public virtual DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public virtual DbSet<SystemSettings> SystemSettings => Set<SystemSettings>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -63,10 +64,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasMaxLength(250);
 
 
+        // IDs pinned to match production's current AspNetRoles rows (verified 2026-07-05).
+        // Without an explicit Id, EF regenerates a random Guid via IdentityRole's default
+        // constructor on every `dotnet ef migrations add`, scaffolding a spurious
+        // delete-and-reinsert of these rows on every future migration — which would break
+        // every AspNetUserRoles FK row pointing at the old Ids (verified in prod: HR/Admin/
+        // Supervisor are referenced by 8 live user-role rows; PM/Employee are seeded
+        // elsewhere via RoleManager, not HasData, so they're unaffected by this).
         modelBuilder.Entity<IdentityRole>().HasData(
-            new IdentityRole { Name = "HR", NormalizedName = "HR" },
-            new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" },
-            new IdentityRole { Name = "Supervisor", NormalizedName = "SUPERVISOR" }
+            new IdentityRole { Id = "3aa3ac9c-2ea8-4f91-a13c-3e98476fac1b", Name = "HR", NormalizedName = "HR" },
+            new IdentityRole { Id = "c930ec34-3a30-482b-9df2-00b27bb7c0b2", Name = "Admin", NormalizedName = "ADMIN" },
+            new IdentityRole { Id = "488c0c63-7db3-4dcb-9cea-225890c4368e", Name = "Supervisor", NormalizedName = "SUPERVISOR" }
         );
 
         List<LabourGrade> labourGrades = new List<LabourGrade>();
@@ -85,5 +93,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             counter += 7;
         }
         modelBuilder.Entity<LabourGrade>().HasData(labourGrades);
+
+        modelBuilder.Entity<SystemSettings>().HasData(
+            new SystemSettings { Id = 1, Require2FA = false }
+        );
     }
 }

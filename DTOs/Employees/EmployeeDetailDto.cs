@@ -16,4 +16,6 @@ public class EmployeeDetailDto
     public double Overtime { get; set; }
     public double Salary { get; set; }
     public List<string> Roles { get; set; } = [];
+    public bool? TwoFactorPolicyOverride { get; set; }
+    public bool TwoFactorEnabled { get; set; }
 }

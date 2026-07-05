@@ -11,6 +11,7 @@ using TimesheetApp.Data;
 using TimesheetApp.Helpers;
 using TimesheetApp.Models;
 using TimesheetApp.Models.TimesheetModels;
+using TimesheetApp.Services;
 
 namespace TimesheetApp.Controllers
 {
@@ -21,12 +22,18 @@ namespace TimesheetApp.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _config;
         private readonly ApplicationDbContext _db;
+        private readonly ISecuritySettingsService _securitySettings;
 
-        public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, ApplicationDbContext db)
+        public AuthController(
+            UserManager<ApplicationUser> userManager,
+            IConfiguration config,
+            ApplicationDbContext db,
+            ISecuritySettingsService securitySettings)
         {
             _userManager = userManager;
             _config = config;
             _db = db;
+            _securitySettings = securitySettings;
         }
 
         public record LoginRequest(string Email, string Password);
@@ -50,6 +57,53 @@ namespace TimesheetApp.Controllers
 
             await _userManager.ResetAccessFailedCountAsync(user);
 
+            var globalRequire2FA = await _securitySettings.GetGlobalRequirementAsync();
+            var effectiveRequire2FA = _securitySettings.GetEffectiveRequirement(user, globalRequire2FA);
+
+            if (effectiveRequire2FA && user.TwoFactorEnabled)
+            {
+                var preAuthToken = BuildPreAuthToken(user);
+                return Ok(new { success = true, twoFactorRequired = true, preAuthToken });
+            }
+
+            return await IssueLoginResponseAsync(user);
+        }
+
+        public record Verify2FaRequest(string PreAuthToken, string Code);
+
+        // POST /api/auth/login/verify-2fa
+        [HttpPost("login/verify-2fa")]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyTwoFactor([FromBody] Verify2FaRequest request)
+        {
+            var userId = ValidatePreAuthToken(request.PreAuthToken);
+            if (userId == null)
+                return Unauthorized(new { success = false, message = "Invalid or expired session. Please log in again." });
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return Unauthorized(new { success = false, message = "Invalid or expired session. Please log in again." });
+
+            bool codeValid;
+            if (request.Code.Contains('-'))
+            {
+                var redeemResult = await _userManager.RedeemTwoFactorRecoveryCodeAsync(user, request.Code);
+                codeValid = redeemResult.Succeeded;
+            }
+            else
+            {
+                codeValid = await _userManager.VerifyTwoFactorTokenAsync(
+                    user, TokenOptions.DefaultAuthenticatorProvider, request.Code);
+            }
+
+            if (!codeValid)
+                return Ok(new { success = false, message = "Invalid code." });
+
+            return await IssueLoginResponseAsync(user);
+        }
+
+        private async Task<IActionResult> IssueLoginResponseAsync(ApplicationUser user)
+        {
             var roles = await _userManager.GetRolesAsync(user);
             var tokenString = BuildJwt(roles, user);
 
@@ -96,6 +150,8 @@ namespace TimesheetApp.Controllers
             if (user == null) return Unauthorized();
 
             var roles = await _userManager.GetRolesAsync(user);
+            var globalRequire2FA = await _securitySettings.GetGlobalRequirementAsync();
+            var effectiveRequire2FA = _securitySettings.GetEffectiveRequirement(user, globalRequire2FA);
 
             return Ok(new
             {
@@ -108,7 +164,9 @@ namespace TimesheetApp.Controllers
                 labourGradeCode = user.LabourGradeCode,
                 supervisorId = user.SupervisorId,
                 hasTempPassword = user.HasTempPassword,
-                timesheetApproverId = user.TimesheetApproverId
+                timesheetApproverId = user.TimesheetApproverId,
+                twoFactorEnabled = user.TwoFactorEnabled,
+                needsTwoFactorSetup = effectiveRequire2FA && !user.TwoFactorEnabled
             });
         }
 
@@ -166,6 +224,120 @@ namespace TimesheetApp.Controllers
                 return StatusCode(500, new { success = false, message = "Failed to save user." });
 
             return Ok(new { success = true, message = "Account activated." });
+        }
+
+        public record TwoFactorSetupResponse(string SharedKey, string OtpauthUri);
+
+        // POST /api/auth/2fa/setup
+        [HttpPost("2fa/setup")]
+        [Authorize]
+        public async Task<IActionResult> SetupTwoFactor()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            await _userManager.ResetAuthenticatorKeyAsync(user);
+            var sharedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+
+            var otpauthUri = $"otpauth://totp/{Uri.EscapeDataString("SHEET")}:{Uri.EscapeDataString(user.Email!)}" +
+                $"?secret={sharedKey}&issuer={Uri.EscapeDataString("SHEET")}&digits=6";
+
+            return Ok(new TwoFactorSetupResponse(sharedKey!, otpauthUri));
+        }
+
+        public record ConfirmTwoFactorRequest(string Code);
+        public record ConfirmTwoFactorResponse(string[] RecoveryCodes);
+
+        // POST /api/auth/2fa/confirm
+        [HttpPost("2fa/confirm")]
+        [Authorize]
+        public async Task<IActionResult> ConfirmTwoFactor([FromBody] ConfirmTwoFactorRequest request)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var codeValid = await _userManager.VerifyTwoFactorTokenAsync(
+                user, TokenOptions.DefaultAuthenticatorProvider, request.Code);
+            if (!codeValid)
+                return BadRequest(new { success = false, message = "Invalid code." });
+
+            await _userManager.SetTwoFactorEnabledAsync(user, true);
+            var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+
+            return Ok(new ConfirmTwoFactorResponse(recoveryCodes!.ToArray()));
+        }
+
+        // POST /api/auth/2fa/disable
+        [HttpPost("2fa/disable")]
+        [Authorize]
+        public async Task<IActionResult> DisableTwoFactor()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var globalRequire2FA = await _securitySettings.GetGlobalRequirementAsync();
+            var effectiveRequire2FA = _securitySettings.GetEffectiveRequirement(user, globalRequire2FA);
+            if (effectiveRequire2FA)
+                return BadRequest(new { success = false, message = "Two-factor authentication is required by policy and cannot be disabled." });
+
+            await _userManager.SetTwoFactorEnabledAsync(user, false);
+            await _userManager.ResetAuthenticatorKeyAsync(user);
+
+            return Ok(new { success = true });
+        }
+
+        private const string PreAuthStageClaim = "stage";
+        private const string PreAuthStageValue = "2fa-pending";
+
+        private string BuildPreAuthToken(ApplicationUser user)
+        {
+            var claims = new List<Claim>
+            {
+                new(JwtRegisteredClaimNames.Sub, user.Id),
+                new(PreAuthStageClaim, PreAuthStageValue),
+            };
+
+            var secret = _config["JWT_SECRET"] ?? throw new InvalidOperationException("JWT_SECRET is not configured.");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(5),
+                signingCredentials: creds);
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        // Deliberately validated by hand rather than routed through the shared JWT-bearer
+        // [Authorize] pipeline, so this narrowly-scoped token can never be replayed against
+        // any other endpoint even though it shares a signing key with the real session JWT.
+        private string? ValidatePreAuthToken(string token)
+        {
+            var secret = _config["JWT_SECRET"] ?? throw new InvalidOperationException("JWT_SECRET is not configured.");
+            var handler = new JwtSecurityTokenHandler();
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+                ClockSkew = TimeSpan.FromSeconds(30),
+            };
+
+            try
+            {
+                var principal = handler.ValidateToken(token, validationParameters, out _);
+                var stage = principal.FindFirstValue(PreAuthStageClaim);
+                if (stage != PreAuthStageValue) return null;
+                // JwtSecurityTokenHandler's default inbound claim map silently renames
+                // "sub" to ClaimTypes.NameIdentifier during ValidateToken — FindFirstValue(sub)
+                // returns null post-validation even though the token clearly has it.
+                return principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private string BuildJwt(IList<string> roles, ApplicationUser user)

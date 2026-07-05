@@ -163,6 +163,12 @@ public class EmployeeService : IEmployeeService
         await _context.SaveChangesAsync();
     }
 
+    public async Task SetTwoFactorOverrideAsync(ApplicationUser existing, bool? twoFactorOverride)
+    {
+        existing.TwoFactorPolicyOverride = twoFactorOverride;
+        await _context.SaveChangesAsync();
+    }
+
     public bool EmployeeExists(string id)
     {
         return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();

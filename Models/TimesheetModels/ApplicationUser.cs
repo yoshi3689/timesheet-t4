@@ -57,6 +57,8 @@ namespace TimesheetApp.Models
         public string? SupervisorId { get; set; }
         [Display(Name = "Timesheet Approver")]
         public string? TimesheetApproverId { get; set; }
+        [Display(Name = "Two-Factor Override")]
+        public bool? TwoFactorPolicyOverride { get; set; }
 
         [InverseProperty("User")]
         public virtual ICollection<Timesheet> Timesheets { get; } = new List<Timesheet>();

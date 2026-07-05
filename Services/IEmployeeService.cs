@@ -19,4 +19,5 @@ public interface IEmployeeService
     ApplicationUser? GetCurrentUserWithSupervisedUsers(string userId);
     void AssignTimesheetApprover(ApplicationUser supervisor, string futureApproverId);
     List<LabourGrade> GetCurrentYearLabourGrades();
+    Task SetTwoFactorOverrideAsync(ApplicationUser existing, bool? twoFactorOverride);
 }

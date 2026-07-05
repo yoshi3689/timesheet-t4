@@ -97,6 +97,7 @@ internal partial class Program
         builder.Services.AddScoped<ITimesheetService, TimesheetService>();
         builder.Services.AddScoped<IWorkPackageService, WorkPackageService>();
         builder.Services.AddScoped<IProjectService, ProjectService>();
+        builder.Services.AddScoped<ISecuritySettingsService, SecuritySettingsService>();
         builder.Services.AddSingleton(new IpAllowlistSettings
         {
             Enabled = ipRestrictionEnabled,

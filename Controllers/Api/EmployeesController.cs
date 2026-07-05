@@ -81,6 +81,8 @@ namespace TimesheetApp.Controllers.Api
                     Overtime = user.Overtime,
                     Salary = user.Salary,
                     Roles = roles.ToList(),
+                    TwoFactorPolicyOverride = user.TwoFactorPolicyOverride,
+                    TwoFactorEnabled = user.TwoFactorEnabled,
                 });
             }
 
@@ -154,6 +156,22 @@ namespace TimesheetApp.Controllers.Api
             await _employeeService.UpdateEmployeeAsync(existing, dto, isAdminOrHR, _userManager);
             return NoContent();
         }
+
+        // PUT /api/employees/{id}/two-factor-override
+        [HttpPut("{id}/two-factor-override")]
+        public async Task<IActionResult> SetTwoFactorOverride(string id, [FromBody] SetTwoFactorOverrideRequest req)
+        {
+            bool isAdminOrHR = User.IsInRole("Admin") || User.IsInRole("HR");
+            if (!isAdminOrHR) return Forbid();
+
+            var existing = await _employeeService.FindEmployeeAsync(id);
+            if (existing == null) return NotFound();
+
+            await _employeeService.SetTwoFactorOverrideAsync(existing, req.Override);
+            return NoContent();
+        }
+
+        public record SetTwoFactorOverrideRequest(bool? Override);
 
         // GET /api/employees/timesheet-approvers?supervisorId=xxx
         [HttpGet("timesheet-approvers")]
