@@ -236,8 +236,16 @@ namespace TimesheetApp.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            await _userManager.ResetAuthenticatorKeyAsync(user);
+            // Reuse an existing not-yet-confirmed key rather than resetting on every call —
+            // this endpoint gets hit more than once per enrollment in practice (React effect
+            // double-invoke in dev, a page refresh mid-scan), and resetting each time silently
+            // invalidates whatever QR code the user already scanned.
             var sharedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+            if (string.IsNullOrEmpty(sharedKey))
+            {
+                await _userManager.ResetAuthenticatorKeyAsync(user);
+                sharedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+            }
 
             var otpauthUri = $"otpauth://totp/{Uri.EscapeDataString("SHEET")}:{Uri.EscapeDataString(user.Email!)}" +
                 $"?secret={sharedKey}&issuer={Uri.EscapeDataString("SHEET")}&digits=6";
