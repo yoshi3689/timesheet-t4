@@ -90,7 +90,7 @@ namespace TimesheetApp.Controllers.Api
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
-            var employees = await _projectService.GetAllProjectEmployeesAsync(id, user.Id);
+            var employees = await _projectService.GetAllProjectEmployeesAsync(id, user.Id, excludeSelf: false);
             return Ok(employees);
         }
 

@@ -624,10 +624,10 @@ public class ProjectService : IProjectService
         return byteInfo;
     }
 
-    public async Task<List<ProjectEmployeeDto>> GetAllProjectEmployeesAsync(int projectId, string currentUserId)
+    public async Task<List<ProjectEmployeeDto>> GetAllProjectEmployeesAsync(int projectId, string currentUserId, bool excludeSelf = true)
     {
         return await _context.EmployeeWorkPackages
-            .Where(e => e.WorkPackageProjectId == projectId && e.UserId != currentUserId)
+            .Where(e => e.WorkPackageProjectId == projectId && (!excludeSelf || e.UserId != currentUserId))
             .Select(e => e.User!)
             .Distinct()
             .Select(u => new ProjectEmployeeDto

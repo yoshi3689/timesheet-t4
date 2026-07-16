@@ -18,6 +18,6 @@ public interface IProjectService
     WpCostRollup CalculateWpCostRollup(
         List<Budget> budgets, List<ResponsibleEngineerEstimate> estimates,
         List<TimesheetRow> verifiedRows, List<LabourGrade> labourGrades);
-    Task<List<ProjectEmployeeDto>> GetAllProjectEmployeesAsync(int projectId, string currentUserId);
+    Task<List<ProjectEmployeeDto>> GetAllProjectEmployeesAsync(int projectId, string currentUserId, bool excludeSelf = true);
     Task<bool> AssignAssistantProjectManagerAsync(int projectId, string employeeNumber, string currentPmId);
 }
