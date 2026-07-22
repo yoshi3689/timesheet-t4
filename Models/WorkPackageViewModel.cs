@@ -33,6 +33,33 @@ namespace TimesheetApp.Models
         public string? ResponsibleUserId { get; set; }
     }
 
+    // Safe projection for tree responses — ResponsibleUser is a lazy-loading proxy
+    // navigation property on WorkPackage, so returning the raw entity graph (as
+    // GetProjectTree used to) pulls in the full ApplicationUser including
+    // PasswordHash, SecurityStamp, PrivateKey, and Salary. Only expose display fields.
+    public class WorkPackageResponsibleUserDto
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+    }
+
+    public class WorkPackageTreeDto
+    {
+        public string WorkPackageId { get; set; } = "";
+        public string? Title { get; set; }
+        public int ProjectId { get; set; }
+        public string? ParentWorkPackageId { get; set; }
+        public bool IsClosed { get; set; }
+        public double TotalBudget { get; set; }
+        public double TotalRemaining { get; set; }
+        public double ActualCost { get; set; }
+        public int AssigneeCount { get; set; }
+        public string? ResponsibleUserId { get; set; }
+        public WorkPackageResponsibleUserDto? ResponsibleUser { get; set; }
+        public bool IsBottomLevel { get; set; }
+        public List<WorkPackageTreeDto> ChildWorkPackages { get; set; } = new();
+    }
+
     public class WorkPackageViewModel
     {
         public List<TimesheetApp.Models.TimesheetModels.WorkPackage> wps { get; set; } = new List<WorkPackage>();

@@ -32,7 +32,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var user = await _userManager.GetUserAsync(User);
       if (user == null) return Unauthorized();
-      return Ok(await _workPackageService.GetResponsibleWorkPackagesAsync(user.Id));
+      var wps = await _workPackageService.GetResponsibleWorkPackagesAsync(user.Id);
+      return Ok(wps.Select(MapWorkPackageTree));
     }
 
     // GET /api/workpackages/responsible/budget
@@ -50,7 +51,8 @@ namespace TimesheetApp.Controllers.Api
     {
       var user = await _userManager.GetUserAsync(User);
       if (user == null) return Unauthorized();
-      return Ok(await _workPackageService.GetAssignedWorkPackagesAsync(user.Id));
+      var wps = await _workPackageService.GetAssignedWorkPackagesAsync(user.Id);
+      return Ok(wps.Select(MapWorkPackageTree));
     }
 
     // GET /api/workpackages/{id}
@@ -59,7 +61,7 @@ namespace TimesheetApp.Controllers.Api
     {
       var wp = await _workPackageService.GetWorkPackageDetailsAsync(id);
       if (wp == null) return NotFound();
-      return Ok(wp);
+      return Ok(MapWorkPackageTree(wp));
     }
 
     // POST /api/workpackages/budgets-and-estimates
@@ -126,13 +128,39 @@ namespace TimesheetApp.Controllers.Api
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
       bool isAdminOrHR = User.IsInRole("Admin") || User.IsInRole("HR");
+      if (!isPM && !isAdminOrHR) return Forbid();
+
       var wps = _workPackageService.GetProjectWorkPackagesTree(projectId);
-      if (isPM || isAdminOrHR)
+      var budgets = _workPackageService.GetProjectBudgets(projectId);
+      wps = _workPackageService.CalculateTotalMoney(wps, budgets);
+      return Ok(wps.Select(MapWorkPackageTree));
+    }
+
+    // Projects to a safe DTO instead of the raw EF entity — WorkPackage.ResponsibleUser
+    // is a lazy-loading proxy nav property, so serializing the entity graph directly
+    // pulls in the full ApplicationUser (PasswordHash, SecurityStamp, PrivateKey, Salary).
+    private static WorkPackageTreeDto MapWorkPackageTree(WorkPackage wp)
+    {
+      return new WorkPackageTreeDto
       {
-        var budgets = _workPackageService.GetProjectBudgets(projectId);
-        wps = _workPackageService.CalculateTotalMoney(wps, budgets);
-      }
-      return Ok(wps);
+        WorkPackageId = wp.WorkPackageId,
+        Title = wp.Title,
+        ProjectId = wp.ProjectId,
+        ParentWorkPackageId = wp.ParentWorkPackageId,
+        IsClosed = wp.IsClosed,
+        TotalBudget = wp.TotalBudget,
+        TotalRemaining = wp.TotalRemaining,
+        ActualCost = wp.ActualCost,
+        AssigneeCount = wp.AssigneeCount,
+        ResponsibleUserId = wp.ResponsibleUserId,
+        ResponsibleUser = wp.ResponsibleUser == null ? null : new WorkPackageResponsibleUserDto
+        {
+          FirstName = wp.ResponsibleUser.FirstName,
+          LastName = wp.ResponsibleUser.LastName,
+        },
+        IsBottomLevel = wp.IsBottomLevel,
+        ChildWorkPackages = wp.ChildWorkPackages.Select(MapWorkPackageTree).ToList(),
+      };
     }
 
     // POST /api/workpackages/project/{projectId}/split
@@ -167,7 +195,8 @@ namespace TimesheetApp.Controllers.Api
 
       try
       {
-        return Ok(_workPackageService.CreateChildWorkPackage(p, projectId));
+        var created = _workPackageService.CreateChildWorkPackage(p, projectId);
+        return Ok(MapWorkPackageTree(created));
       }
       catch (InvalidOperationException ex)
       {
