@@ -413,7 +413,8 @@ public class WorkPackageService : IWorkPackageService
             ParentWorkPackageId = requestedParentId,
             IsBottomLevel = true,
             IsClosed = false,
-            Title = p.WorkPackage.Title
+            Title = p.WorkPackage.Title,
+            ResponsibleUserId = p.WorkPackage.ResponsibleUserId
         };
 
         if (p.budgets != null)

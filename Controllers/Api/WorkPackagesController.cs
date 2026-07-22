@@ -137,21 +137,33 @@ namespace TimesheetApp.Controllers.Api
 
     // POST /api/workpackages/project/{projectId}/split
     [HttpPost("project/{projectId}/split")]
-    public async Task<IActionResult> Split(int projectId, [FromBody] WorkPackageViewModel p)
+    public async Task<IActionResult> Split(int projectId, [FromBody] CreateWorkPackageRequest req)
     {
       var userId = _userManager.GetUserId(HttpContext.User);
       bool isPM = await _projectService.VerifyProjectManagerAsync(projectId, userId!);
       bool isAdmin = User.IsInRole("Admin");
       if (!isPM && !isAdmin) return Forbid();
-      if (p.WorkPackage == null) return BadRequest();
+      if (req.WorkPackage == null) return BadRequest();
 
       var project = _projectService.GetProjectById(projectId);
       if (project == null) return NotFound();
       if (project.IsClosed) return BadRequest();
 
       var wps = _workPackageService.GetProjectWorkPackagesTree(projectId);
-      var parent = wps.FirstOrDefault(c => c.WorkPackageId == p.WorkPackage.ParentWorkPackageId);
+      var parent = wps.FirstOrDefault(c => c.WorkPackageId == req.WorkPackage.ParentWorkPackageId);
       if (parent != null && parent.IsClosed) return BadRequest();
+
+      var p = new WorkPackageViewModel
+      {
+        WorkPackage = new WorkPackage
+        {
+          Title = req.WorkPackage.Title,
+          ParentWorkPackageId = req.WorkPackage.ParentWorkPackageId,
+          ResponsibleUserId = req.WorkPackage.ResponsibleUserId,
+          ProjectId = projectId,
+        },
+        budgets = req.budgets,
+      };
 
       try
       {

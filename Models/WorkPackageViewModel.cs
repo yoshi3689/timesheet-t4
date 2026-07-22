@@ -1,4 +1,5 @@
 
+using System.ComponentModel.DataAnnotations;
 using TimesheetApp.Models.TimesheetModels;
 
 namespace TimesheetApp.Models
@@ -6,6 +7,23 @@ namespace TimesheetApp.Models
     public class WorkPackageIdRequest
     {
         public string WorkPackageId { get; set; } = "";
+    }
+
+    // Create-time request shape for POST .../split. Deliberately excludes WorkPackageId —
+    // the server always generates it (Guid.NewGuid()) — so client-side omission of a dead
+    // placeholder field can't trip [Required] validation the way it does on the raw WorkPackage entity.
+    public class CreateWorkPackageFields
+    {
+        [Required]
+        public string Title { get; set; } = "";
+        public string? ParentWorkPackageId { get; set; }
+        public string? ResponsibleUserId { get; set; }
+    }
+
+    public class CreateWorkPackageRequest
+    {
+        public CreateWorkPackageFields WorkPackage { get; set; } = new();
+        public List<Budget>? budgets { get; set; } = new List<Budget>();
     }
 
     public class WorkPackageUpdateRequest
