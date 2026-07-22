@@ -243,7 +243,16 @@ namespace TimesheetApp.Controllers
             var sharedKey = await _userManager.GetAuthenticatorKeyAsync(user);
             if (string.IsNullOrEmpty(sharedKey))
             {
-                await _userManager.ResetAuthenticatorKeyAsync(user);
+                try
+                {
+                    await _userManager.ResetAuthenticatorKeyAsync(user);
+                }
+                catch (DbUpdateException)
+                {
+                    // Lost the race to a concurrent call (same double-invoke/refresh scenario
+                    // above) — it already inserted the AspNetUserTokens row for this user, so
+                    // just read back the key it created instead of surfacing a 500.
+                }
                 sharedKey = await _userManager.GetAuthenticatorKeyAsync(user);
             }
 
