@@ -19,6 +19,9 @@ namespace TimesheetApp.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
+        private const int RefreshTokenSlidingDays = 14;
+        private const int RefreshTokenAbsoluteDays = 30;
+
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _config;
         private readonly ApplicationDbContext _db;
@@ -107,18 +110,23 @@ namespace TimesheetApp.Controllers
             var roles = await _userManager.GetRolesAsync(user);
             var tokenString = BuildJwt(roles, user);
 
-            var rawRefreshToken = await IssueRefreshTokenAsync(user.Id);
+            var (rawRefreshToken, refreshExpiresAt) = await IssueRefreshTokenAsync(user.Id);
+            Response.Cookies.Append("refreshToken", rawRefreshToken, BuildRefreshCookieOptions(refreshExpiresAt));
+
+            return Ok(new { success = true, token = tokenString, message = "Logged in." });
+        }
+
+        private static CookieOptions BuildRefreshCookieOptions(DateTime expiresAt)
+        {
             var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-            Response.Cookies.Append("refreshToken", rawRefreshToken, new CookieOptions
+            return new CookieOptions
             {
                 HttpOnly = true,
                 Secure = !isDev,
                 SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddDays(30),
+                Expires = expiresAt,
                 Path = "/api/auth",
-            });
-
-            return Ok(new { success = true, token = tokenString, message = "Logged in." });
+            };
         }
 
         // POST /api/auth/logout
@@ -181,13 +189,32 @@ namespace TimesheetApp.Controllers
             var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
             var stored = await _db.RefreshTokens
                 .Include(rt => rt.User)
-                .FirstOrDefaultAsync(rt => rt.TokenHash == hash && rt.RevokedAt == null);
+                .FirstOrDefaultAsync(rt => rt.TokenHash == hash);
 
-            if (stored == null || !stored.IsActive)
+            if (stored == null)
                 return Unauthorized(new { message = "Invalid or expired refresh token." });
 
+            if (stored.RevokedAt != null)
+            {
+                // Rotation means every valid refresh token is presented exactly once. Seeing an
+                // already-revoked one again means it was copied/stolen — kill the whole session
+                // family rather than just rejecting this one request.
+                var siblings = await _db.RefreshTokens
+                    .Where(rt => rt.UserId == stored.UserId && rt.RevokedAt == null)
+                    .ToListAsync();
+                foreach (var sibling in siblings) sibling.RevokedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+                return Unauthorized(new { message = "Invalid or expired refresh token." });
+            }
+
+            if (!stored.IsActive)
+                return Unauthorized(new { message = "Invalid or expired refresh token." });
+
+            stored.RevokedAt = DateTime.UtcNow;
             var roles = await _userManager.GetRolesAsync(stored.User!);
             var tokenString = BuildJwt(roles, stored.User!);
+            var (newRawRefreshToken, newExpiresAt) = await IssueRefreshTokenAsync(stored.UserId, stored.CreatedAt);
+            Response.Cookies.Append("refreshToken", newRawRefreshToken, BuildRefreshCookieOptions(newExpiresAt));
 
             return Ok(new { success = true, token = tokenString });
         }
@@ -371,7 +398,7 @@ namespace TimesheetApp.Controllers
             var secret = _config["JWT_SECRET"] ?? throw new InvalidOperationException("JWT_SECRET is not configured.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expiresHours = int.TryParse(_config["JWT_EXPIRES_HOURS"], out var h) ? h : 8;
+            var expiresHours = int.TryParse(_config["JWT_EXPIRES_HOURS"], out var h) ? h : 1;
             var token = new JwtSecurityToken(
                 claims: claims,
                 expires: DateTime.UtcNow.AddHours(expiresHours),
@@ -379,18 +406,26 @@ namespace TimesheetApp.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private async Task<string> IssueRefreshTokenAsync(string userId)
+        // sessionStartedAt tracks the original login time across a rotation chain so the sliding
+        // window can never be renewed past the absolute cap by repeated use.
+        private async Task<(string Raw, DateTime ExpiresAt)> IssueRefreshTokenAsync(string userId, DateTime? sessionStartedAt = null)
         {
+            var startedAt = sessionStartedAt ?? DateTime.UtcNow;
+            var slidingExpiry = DateTime.UtcNow.AddDays(RefreshTokenSlidingDays);
+            var absoluteExpiry = startedAt.AddDays(RefreshTokenAbsoluteDays);
+            var expiresAt = slidingExpiry < absoluteExpiry ? slidingExpiry : absoluteExpiry;
+
             var raw = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
             var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
             _db.RefreshTokens.Add(new RefreshToken
             {
                 UserId = userId,
                 TokenHash = hash,
-                ExpiresAt = DateTime.UtcNow.AddDays(30),
+                CreatedAt = startedAt,
+                ExpiresAt = expiresAt,
             });
             await _db.SaveChangesAsync();
-            return raw;
+            return (raw, expiresAt);
         }
     }
 }
