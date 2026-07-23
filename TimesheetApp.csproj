@@ -8,6 +8,12 @@
     <None Update="app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Remove="TimesheetApp.Tests/**" />
+    <Content Remove="TimesheetApp.Tests/**" />
+    <EmbeddedResource Remove="TimesheetApp.Tests/**" />
+    <None Remove="TimesheetApp.Tests/**" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="itext7" Version="7.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
